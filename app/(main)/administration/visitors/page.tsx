@@ -1,295 +1,193 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Save, User, ExternalLink, Plus, Trash2 } from 'lucide-react';
 
 interface Visitor {
+  id?: number;
   name: string;
   title: string;
   description: string;
-  websiteLabel: string;
-  websiteUrl: string;
+  website_label: string;
+  website_url: string;
 }
 
-interface VisitorData {
-  // Hero Section
-  heroHeading: string;
-  heroSubheading: string;
-  // Visitors
-  visitors: Visitor[];
+interface PageInfo {
+  hero_heading: string;
+  hero_subheading: string;
 }
 
-export default function VisitorPage() {
-  const [visitorData, setVisitorData] = useState<VisitorData>({
-    // Hero Section
-    heroHeading: 'Visitor',
-    heroSubheading: 'President of India',
-    // Visitors
-    visitors: [
-      {
-        name: 'Smt. Droupadi Murmu',
-        title: 'Her Excellency Honourable',
-        description:
-          'Her Excellency Honourable Smt. Droupadi Murmu, The President of India, is the ex-officio visitor of the Institute.',
-        websiteLabel: 'Official Website of Visitor',
-        websiteUrl: 'https://presidentofindia.nic.in/',
-      },
-    ],
+export default function VisitorAdminPage() {
+  const [visitors, setVisitors] = useState<Visitor[]>([]);
+  const [info, setInfo] = useState<PageInfo>({ hero_heading: '', hero_subheading: '' });
+  const [loading, setLoading] = useState(true);
+  
+  const [formData, setFormData] = useState<Visitor>({
+    name: '', title: '', description: '', website_label: '', website_url: ''
   });
+  const [editingId, setEditingId] = useState<number | null>(null);
 
-  const handleSave = () => {
-    alert('Changes saved successfully!');
-    console.log(visitorData);
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const [infoRes, listRes] = await Promise.all([
+        fetch('http://localhost:5000/api/v1/administration/visitors-info'),
+        fetch('http://localhost:5000/api/v1/administration/visitors')
+      ]);
+      const infoData = await infoRes.json();
+      const listData = await listRes.json();
+      
+      if (infoData.success && infoData.data) setInfo(infoData.data);
+      if (listData.success) setVisitors(listData.data);
+      setLoading(false);
+    } catch (err) {
+      console.error(err);
+      setLoading(false);
+    }
   };
 
-  // Visitor handlers
-  const updateVisitor = (
-    index: number,
-    field: keyof Visitor,
-    value: string
-  ) => {
-    const updated = [...visitorData.visitors];
-    updated[index] = { ...updated[index], [field]: value };
-    setVisitorData({ ...visitorData, visitors: updated });
+  const handleSaveInfo = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/v1/administration/visitors-info', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(info)
+      });
+      if ((await res.json()).success) alert('Header saved!');
+    } catch (err) { alert('Error saving header'); }
   };
 
-  const addVisitor = () => {
-    setVisitorData({
-      ...visitorData,
-      visitors: [
-        ...visitorData.visitors,
-        {
-          name: '',
-          title: '',
-          description: '',
-          websiteLabel: '',
-          websiteUrl: '',
-        },
-      ],
-    });
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const method = editingId ? 'PUT' : 'POST';
+      const url = editingId 
+        ? `http://localhost:5000/api/v1/administration/visitors/${editingId}`
+        : 'http://localhost:5000/api/v1/administration/visitors';
+      
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      if ((await res.json()).success) {
+        fetchData();
+        setFormData({ name: '', title: '', description: '', website_label: '', website_url: '' });
+        setEditingId(null);
+      }
+    } catch (err) { alert('Error saving visitor'); }
   };
 
-  const removeVisitor = (index: number) => {
-    setVisitorData({
-      ...visitorData,
-      visitors: visitorData.visitors.filter((_, i) => i !== index),
-    });
+  const handleEdit = (v: Visitor) => {
+    setFormData(v);
+    setEditingId(v.id!);
   };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Delete this visitor?')) return;
+    try {
+      await fetch(`http://localhost:5000/api/v1/administration/visitors/${id}`, { method: 'DELETE' });
+      setVisitors(visitors.filter(v => v.id !== id));
+    } catch (err) { alert('Error deleting'); }
+  };
+
+  if (loading) return <div className="p-8 text-black font-bold">Loading...</div>;
 
   return (
-    <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 lg:p-6">
-      {/* Gradient Header */}
-      <div className="bg-gradient-to-r from-[#631012] to-[#7a1214] rounded-lg shadow-lg p-4 sm:p-6 lg:p-8 text-white">
-        <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-          <User className="w-6 h-6 sm:w-8 sm:h-8" />
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Visitor</h1>
+    <div className="space-y-6 p-4 lg:p-8 text-black bg-[#F8F9FA] min-h-screen">
+      <div className="bg-gradient-to-r from-[#631012] to-[#800000] rounded-2xl shadow-xl p-8 text-white">
+        <div className="flex items-center gap-4 mb-2">
+          <User className="w-10 h-10" />
+          <h1 className="text-3xl font-extrabold tracking-tight">Visitor Management</h1>
         </div>
-        <p className="text-sm sm:text-base text-white/90">
-          Manage Visitor section content
-        </p>
+        <p className="text-white/80 text-lg">Manage institutional visitors and their profiles</p>
       </div>
 
-      {/* Action Bar */}
-      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="bg-[#631012]/10 p-2 sm:p-3 rounded-full text-[#631012] flex-shrink-0">
-              <User className="w-6 h-6 sm:w-7 sm:h-7" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#171717] break-words">
-                Visitor Editor
-              </h1>
-              <p className="text-sm sm:text-base text-[#171717]/60 mt-1">
-                Edit Visitor content
-              </p>
-            </div>
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+        <h2 className="text-xl font-bold mb-4 border-b pb-4">Page Header</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-gray-400 uppercase">Heading</label>
+            <input type="text" value={info.hero_heading} onChange={e => setInfo({...info, hero_heading: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" />
           </div>
-          <button
-            onClick={handleSave}
-            className="bg-[#631012] hover:bg-[#7a1214] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg flex items-center gap-2 transition-colors shadow-md w-full sm:w-auto justify-center text-sm sm:text-base"
-          >
-            <Save className="w-4 h-4 sm:w-5 sm:h-5" />
-            Save Changes
-          </button>
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-gray-400 uppercase">Subheading</label>
+            <input type="text" value={info.hero_subheading} onChange={e => setInfo({...info, hero_subheading: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" />
+          </div>
         </div>
+        <button onClick={handleSaveInfo} className="bg-[#631012] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#800000] flex items-center gap-2">
+          <Save size={20} /> Save Headers
+        </button>
       </div>
 
-      {/* Page Header Editor */}
-      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-        <h2 className="text-lg font-semibold text-[#171717] mb-4">
-          Page Header
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-[#171717] mb-2">
-              Page Heading
-            </label>
-            <input
-              type="text"
-              value={visitorData.heroHeading}
-              onChange={(e) =>
-                setVisitorData({ ...visitorData, heroHeading: e.target.value })
-              }
-              className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm sm:text-base"
-              placeholder="Visitor"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-[#171717] mb-2">
-              Page Subheading
-            </label>
-            <input
-              type="text"
-              value={visitorData.heroSubheading}
-              onChange={(e) =>
-                setVisitorData({
-                  ...visitorData,
-                  heroSubheading: e.target.value,
-                })
-              }
-              className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm sm:text-base"
-              placeholder="President of India"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Visitors List Editor */}
-      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-        <div className="flex items-center justify-between mb-4 sm:mb-6">
-          <div className="flex items-center gap-2">
-            <User className="text-[#631012] w-5 h-5 sm:w-6 sm:h-6" />
-            <h2 className="text-xl sm:text-2xl font-bold text-[#171717]">
-              Visitors
-            </h2>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          {visitorData.visitors.map((visitor, index) => (
-            <div
-              key={index}
-              className="p-4 border border-[#171717]/20 rounded-lg bg-[#F9F9F9]"
-            >
-              <div className="flex justify-between items-center mb-3">
-                <span className="text-sm font-medium text-[#171717]/60">
-                  Visitor {index + 1}
-                </span>
-                <button
-                  onClick={() => removeVisitor(index)}
-                  className="px-2 py-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                >
-                  <Trash2 size={16} />
-                </button>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-1">
+          <div className="bg-white rounded-2xl shadow-sm border p-6 sticky top-8">
+            <h2 className="text-xl font-bold mb-6">{editingId ? 'Edit Visitor' : 'Add New Visitor'}</h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-400 mb-1 uppercase">Name</label>
+                <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" required />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <input
-                  type="text"
-                  value={visitor.title}
-                  onChange={(e) =>
-                    updateVisitor(index, 'title', e.target.value)
-                  }
-                  className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm"
-                  placeholder="Title (e.g., Her Excellency Honourable)"
-                />
-                <input
-                  type="text"
-                  value={visitor.name}
-                  onChange={(e) => updateVisitor(index, 'name', e.target.value)}
-                  className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm"
-                  placeholder="Name"
-                />
+              <div>
+                <label className="block text-sm font-bold text-gray-400 mb-1 uppercase">Title/Salutation</label>
+                <input type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" />
               </div>
-              <div className="mt-3">
-                <textarea
-                  rows={2}
-                  value={visitor.description}
-                  onChange={(e) =>
-                    updateVisitor(index, 'description', e.target.value)
-                  }
-                  className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm"
-                  placeholder="Description"
-                />
+              <div>
+                <label className="block text-sm font-bold text-gray-400 mb-1 uppercase">Description</label>
+                <textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" rows={4} />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-                <input
-                  type="text"
-                  value={visitor.websiteLabel}
-                  onChange={(e) =>
-                    updateVisitor(index, 'websiteLabel', e.target.value)
-                  }
-                  className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm"
-                  placeholder="Website Label"
-                />
-                <input
-                  type="text"
-                  value={visitor.websiteUrl}
-                  onChange={(e) =>
-                    updateVisitor(index, 'websiteUrl', e.target.value)
-                  }
-                  className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm"
-                  placeholder="Website URL"
-                />
-              </div>
-            </div>
-          ))}
-          <button
-            onClick={addVisitor}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2 text-[#631012] hover:bg-[#631012]/10 rounded-lg transition-colors text-sm sm:text-base"
-          >
-            <Plus size={18} />
-            Add Visitor
-          </button>
-        </div>
-
-        {/* Preview */}
-        <div className="mt-6 sm:mt-8 p-4 sm:p-6 bg-[#F9F9F9] rounded-lg border-2 border-dashed border-[#171717]/20">
-          <p className="text-xs sm:text-sm font-medium text-[#171717]/60 mb-3">
-            Preview:
-          </p>
-          <div className="bg-white p-6 sm:p-8 rounded-lg">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl sm:text-3xl font-bold text-[#171717] mb-1">
-                {visitorData.heroHeading}
-              </h2>
-              <p className="text-sm sm:text-base text-[#171717]/60">
-                {visitorData.heroSubheading}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {visitorData.visitors.map((visitor, index) => (
-                <div
-                  key={index}
-                  className="text-center p-4 border border-[#171717]/10 rounded-lg"
-                >
-                  <div className="w-24 h-24 mx-auto bg-[#631012]/10 rounded-full flex items-center justify-center mb-3">
-                    <User className="w-12 h-12 text-[#631012]" />
-                  </div>
-                  <h3 className="text-lg font-bold text-[#631012] mb-1">
-                    {visitor.name}
-                  </h3>
-                  <p className="text-xs text-[#171717]/60 mb-2">
-                    {visitor.title}
-                  </p>
-                  <p className="text-sm text-[#171717]/80 mb-3">
-                    {visitor.description}
-                  </p>
-                  {visitor.websiteUrl && (
-                    <a
-                      href={visitor.websiteUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 px-3 py-1 bg-[#631012] text-white text-xs rounded-lg hover:bg-[#7a1214] transition-colors"
-                    >
-                      {visitor.websiteLabel || 'Visit Website'}
-                      <ExternalLink size={12} />
-                    </a>
-                  )}
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-400 mb-1 uppercase">Website Label</label>
+                  <input type="text" value={formData.website_label} onChange={e => setFormData({...formData, website_label: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" />
                 </div>
-              ))}
-            </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-400 mb-1 uppercase">Website URL</label>
+                  <input type="text" value={formData.website_url} onChange={e => setFormData({...formData, website_url: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" />
+                </div>
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button type="submit" className="flex-1 bg-[#631012] text-white py-3 rounded-xl font-bold hover:bg-[#800000]">
+                  {editingId ? 'Update' : 'Add Visitor'}
+                </button>
+                {editingId && (
+                  <button type="button" onClick={() => {setEditingId(null); setFormData({name:'', title:'', description:'', website_label:'', website_url:''})}} className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-xl font-bold">
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div className="lg:col-span-2">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+             <div className="grid grid-cols-1 gap-4 p-4">
+                {visitors.map(v => (
+                  <div key={v.id} className="p-6 border rounded-2xl bg-gray-50 hover:border-[#631012] transition-all relative group">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <div className="text-xs text-gray-400 font-bold uppercase mb-1">{v.title}</div>
+                        <h3 className="text-xl font-bold text-gray-900">{v.name}</h3>
+                      </div>
+                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                        <button onClick={() => handleEdit(v)} className="p-2 text-blue-600 hover:bg-white rounded-xl shadow-sm border"><Save size={18}/></button>
+                        <button onClick={() => handleDelete(v.id!)} className="p-2 text-red-600 hover:bg-white rounded-xl shadow-sm border"><Trash2 size={18}/></button>
+                      </div>
+                    </div>
+                    <p className="text-gray-600 text-sm leading-relaxed mb-4">{v.description}</p>
+                    {v.website_url && (
+                      <a href={v.website_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-[#631012] font-bold text-sm hover:underline">
+                        <ExternalLink size={16}/> {v.website_label || 'Visit Official Website'}
+                      </a>
+                    )}
+                  </div>
+                ))}
+             </div>
           </div>
         </div>
       </div>
