@@ -190,9 +190,88 @@ export default function ActivitiesPage() {
     },
   ];
 
-  const handleSave = () => {
-    alert('Changes saved successfully!');
-    console.log(activitiesData);
+  const [editLang, setEditLang] = useState<'en' | 'hi'>('en');
+
+  const [activitiesData, setActivitiesData] = useState<any>({
+    heroHeading_en: 'Activities',
+    heroHeading_hi: 'गतिविधियां',
+    heroDescription_en: 'Academic governance...',
+    heroDescription_hi: 'डीन (शैक्षणिक)...',
+    content: {
+      activitiesHeading_en: 'ACTIVITIES',
+      activitiesHeading_hi: 'गतिविधियां',
+      activitiesDescription_en: '',
+      activitiesDescription_hi: '',
+      responsibilitiesHeading_en: 'Responsibilities & Activities',
+      responsibilitiesHeading_hi: 'कर्तव्य और जिम्मेदारियां',
+      responsibilitiesSubtitle_en: '',
+      responsibilitiesSubtitle_hi: '',
+      responsibilities_en: [],
+      responsibilities_hi: [],
+      governanceHeading_en: 'Academic Governance Flow',
+      governanceHeading_hi: 'अकादमिक शासन प्रवाह',
+      governanceSubheading_en: 'Decision Flow Process',
+      governanceSubheading_hi: 'निर्णय प्रवाह प्रक्रिया',
+      governanceDescription_en: '',
+      governanceDescription_hi: '',
+      governanceSteps_en: [],
+      governanceSteps_hi: [],
+      ctaHeading_en: 'Connect with Academic Office',
+      ctaHeading_hi: 'अकादमिक कार्यालय से जुड़ें',
+      ctaDescription_en: '',
+      ctaDescription_hi: '',
+      ctaButtons_en: [],
+      ctaButtons_hi: []
+    }
+  });
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/v1/academics/overview?page_name=activities');
+      const json = await res.json();
+      if (json.success && json.data.length > 0) {
+        const item = json.data[0];
+        setActivitiesData({
+          heroHeading_en: item.title_en || '',
+          heroHeading_hi: item.title_hi || '',
+          heroDescription_en: item.description_en || '',
+          heroDescription_hi: item.description_hi || '',
+          content: item.content || {}
+        });
+      }
+    } catch (err) {
+      console.error('Error fetching data:', err);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      const payload = {
+        page_name: 'activities',
+        title_en: activitiesData.heroHeading_en,
+        title_hi: activitiesData.heroHeading_hi,
+        description_en: activitiesData.heroDescription_en,
+        description_hi: activitiesData.heroDescription_hi,
+        content: activitiesData.content
+      };
+      const res = await fetch('http://localhost:5000/api/v1/academics/overview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const json = await res.json();
+      if (json.success) {
+        alert('Changes saved successfully!');
+      } else {
+        alert('Error: ' + json.message);
+      }
+    } catch (err) {
+      alert('Error saving changes');
+    }
   };
 
   const updateResponsibility = (
@@ -200,27 +279,28 @@ export default function ActivitiesPage() {
     field: 'title' | 'description',
     value: string
   ) => {
-    const updated = [...activitiesData.responsibilities];
+    const updated = [...(activitiesData.content[`responsibilities_${editLang}`] || [])];
     updated[index] = { ...updated[index], [field]: value };
-    setActivitiesData({ ...activitiesData, responsibilities: updated });
+    setActivitiesData({
+      ...activitiesData,
+      content: { ...activitiesData.content, [`responsibilities_${editLang}`]: updated }
+    });
   };
 
   const addResponsibility = () => {
+    const updated = [...(activitiesData.content[`responsibilities_${editLang}`] || [])];
+    updated.push({ title: '', description: '' });
     setActivitiesData({
       ...activitiesData,
-      responsibilities: [
-        ...activitiesData.responsibilities,
-        { title: '', description: '' },
-      ],
+      content: { ...activitiesData.content, [`responsibilities_${editLang}`]: updated }
     });
   };
 
   const removeResponsibility = (index: number) => {
+    const updated = (activitiesData.content[`responsibilities_${editLang}`] || []).filter((_: any, i: number) => i !== index);
     setActivitiesData({
       ...activitiesData,
-      responsibilities: activitiesData.responsibilities.filter(
-        (_, i) => i !== index
-      ),
+      content: { ...activitiesData.content, [`responsibilities_${editLang}`]: updated }
     });
   };
 
@@ -229,51 +309,58 @@ export default function ActivitiesPage() {
     field: 'number' | 'title' | 'description',
     value: string
   ) => {
-    const updated = [...activitiesData.governanceSteps];
+    const updated = [...(activitiesData.content[`governanceSteps_${editLang}`] || [])];
     updated[index] = { ...updated[index], [field]: value };
-    setActivitiesData({ ...activitiesData, governanceSteps: updated });
+    setActivitiesData({
+      ...activitiesData,
+      content: { ...activitiesData.content, [`governanceSteps_${editLang}`]: updated }
+    });
   };
 
   const addGovernanceStep = () => {
+    const updated = [...(activitiesData.content[`governanceSteps_${editLang}`] || [])];
+    updated.push({
+      number: String(updated.length + 1),
+      title: '',
+      description: '',
+    });
     setActivitiesData({
       ...activitiesData,
-      governanceSteps: [
-        ...activitiesData.governanceSteps,
-        {
-          number: String(activitiesData.governanceSteps.length + 1),
-          title: '',
-          description: '',
-        },
-      ],
+      content: { ...activitiesData.content, [`governanceSteps_${editLang}`]: updated }
     });
   };
 
   const removeGovernanceStep = (index: number) => {
+    const updated = (activitiesData.content[`governanceSteps_${editLang}`] || []).filter((_: any, i: number) => i !== index);
     setActivitiesData({
       ...activitiesData,
-      governanceSteps: activitiesData.governanceSteps.filter(
-        (_, i) => i !== index
-      ),
+      content: { ...activitiesData.content, [`governanceSteps_${editLang}`]: updated }
     });
   };
 
   const updateCtaButton = (index: number, value: string) => {
-    const updated = [...activitiesData.ctaButtons];
+    const updated = [...(activitiesData.content[`ctaButtons_${editLang}`] || [])];
     updated[index] = { buttonText: value };
-    setActivitiesData({ ...activitiesData, ctaButtons: updated });
+    setActivitiesData({
+      ...activitiesData,
+      content: { ...activitiesData.content, [`ctaButtons_${editLang}`]: updated }
+    });
   };
 
   const addCtaButton = () => {
+    const updated = [...(activitiesData.content[`ctaButtons_${editLang}`] || [])];
+    updated.push({ buttonText: '' });
     setActivitiesData({
       ...activitiesData,
-      ctaButtons: [...activitiesData.ctaButtons, { buttonText: '' }],
+      content: { ...activitiesData.content, [`ctaButtons_${editLang}`]: updated }
     });
   };
 
   const removeCtaButton = (index: number) => {
+    const updated = (activitiesData.content[`ctaButtons_${editLang}`] || []).filter((_: any, i: number) => i !== index);
     setActivitiesData({
       ...activitiesData,
-      ctaButtons: activitiesData.ctaButtons.filter((_, i) => i !== index),
+      content: { ...activitiesData.content, [`ctaButtons_${editLang}`]: updated }
     });
   };
 

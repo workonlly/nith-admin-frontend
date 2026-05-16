@@ -11,7 +11,6 @@ const administrationLinks = [
   { header: 'Leadership' },
   { label: 'Chairperson', href: '/administration/chairperson' },
   { label: 'Institute Coordinators', href: '/administration/institute-coordinators' },
-  { label: 'Nodal Officers', href: '/administration/nodal-officers' },
   { label: 'Deans & Assoc. Deans', href: '/administration/deans' },
   
   { header: 'Executive' },
@@ -21,6 +20,7 @@ const administrationLinks = [
   
   { header: 'Registry' },
   { label: 'Registrar & Staff', href: '/administration/registrar' },
+  { label: 'Nodal Officers', href: '/administration/nodal-officers' },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
