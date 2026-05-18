@@ -9,12 +9,18 @@ interface Member {
   responsibility: string;
   phone: string;
   email: string;
+  name_en?: string;
+  name_hi?: string;
+  responsibility_en?: string;
+  responsibility_hi?: string;
 }
 
 interface Download {
   id?: number;
   title: string;
   file_path: string;
+  title_en?: string;
+  title_hi?: string;
 }
 
 export default function VigilanceAdminPage() {
@@ -24,14 +30,16 @@ export default function VigilanceAdminPage() {
   const [loading, setLoading] = useState(true);
 
   // Forms
-  const [memberForm, setMemberForm] = useState<Member>({ name: '', responsibility: '', phone: '', email: '' });
+  const [memberForm, setMemberForm] = useState<Member>({ name: '', name_en: '', name_hi: '', responsibility: '', responsibility_en: '', responsibility_hi: '', phone: '', email: '' });
   const [editingMemberId, setEditingMemberId] = useState<number | null>(null);
   
-  const [downloadForm, setDownloadForm] = useState<Download>({ title: '', file_path: '' });
+  const [downloadForm, setDownloadForm] = useState<Download>({ title: '', title_en: '', title_hi: '', file_path: '' });
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  const isHindi = (text: string) => /[\u0900-\u097F]/.test(text || '');
 
   const fetchData = async () => {
     try {
@@ -41,8 +49,24 @@ export default function VigilanceAdminPage() {
       ]);
       const memData = await memRes.json();
       const dlData = await dlRes.json();
-      if (memData.success) setMembers(memData.data);
-      if (dlData.success) setDownloads(dlData.data);
+      if (memData.success) {
+        const mapped = memData.data.map((m: any) => ({
+          ...m,
+          name_en: isHindi(m.name) ? '' : m.name,
+          name_hi: isHindi(m.name) ? m.name : '',
+          responsibility_en: isHindi(m.responsibility) ? '' : m.responsibility,
+          responsibility_hi: isHindi(m.responsibility) ? m.responsibility : '',
+        }));
+        setMembers(mapped);
+      }
+      if (dlData.success) {
+        const mapped = dlData.data.map((d: any) => ({
+          ...d,
+          title_en: isHindi(d.title) ? '' : d.title,
+          title_hi: isHindi(d.title) ? d.title : '',
+        }));
+        setDownloads(mapped);
+      }
       setLoading(false);
     } catch (err) {
       console.error(err);
@@ -52,6 +76,14 @@ export default function VigilanceAdminPage() {
 
   const handleMemberSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const nameVal = memberForm.name_hi || memberForm.name_en || memberForm.name;
+    const responsibilityVal = memberForm.responsibility_hi || memberForm.responsibility_en || memberForm.responsibility;
+    if (!nameVal || !responsibilityVal) return;
+    const payload = {
+      ...memberForm,
+      name: nameVal,
+      responsibility: responsibilityVal
+    };
     const method = editingMemberId ? 'PUT' : 'POST';
     const url = editingMemberId 
       ? `http://localhost:5000/api/v1/administration/vigilance/${editingMemberId}`
@@ -60,31 +92,48 @@ export default function VigilanceAdminPage() {
     const res = await fetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(memberForm)
+      body: JSON.stringify(payload)
     });
     if ((await res.json()).success) {
       alert('Member saved successfully!');
       fetchData();
-      setMemberForm({ name: '', responsibility: '', phone: '', email: '' });
+      setMemberForm({ name: '', name_en: '', name_hi: '', responsibility: '', responsibility_en: '', responsibility_hi: '', phone: '', email: '' });
       setEditingMemberId(null);
     }
   };
 
   const handleDownloadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const titleVal = downloadForm.title_hi || downloadForm.title_en || downloadForm.title;
+    if (!titleVal) return;
+    const payload = {
+      ...downloadForm,
+      title: titleVal
+    };
     const res = await fetch('http://localhost:5000/api/v1/administration/vigilance-downloads', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(downloadForm)
+      body: JSON.stringify(payload)
     });
     const json = await res.json();
     if (json.success) {
       alert('Download added successfully!');
       fetchData();
-      setDownloadForm({ title: '', file_path: '' });
+      setDownloadForm({ title: '', title_en: '', title_hi: '', file_path: '' });
     } else {
       alert('Error: ' + json.message);
     }
+  };
+
+  const handleEditMember = (m: Member) => {
+    setMemberForm({
+      ...m,
+      name_en: isHindi(m.name) ? '' : m.name,
+      name_hi: isHindi(m.name) ? m.name : '',
+      responsibility_en: isHindi(m.responsibility) ? '' : m.responsibility,
+      responsibility_hi: isHindi(m.responsibility) ? m.responsibility : '',
+    });
+    setEditingMemberId(m.id!);
   };
 
   if (loading) return <div className="p-8 text-black font-bold text-center">Loading...</div>;
@@ -114,15 +163,21 @@ export default function VigilanceAdminPage() {
             <div className="bg-white rounded-2xl shadow-sm border p-6 sticky top-8">
               <h2 className="text-xl font-bold mb-6">{editingMemberId ? 'Edit Member' : 'Add CVO Member'}</h2>
               <form onSubmit={handleMemberSubmit} className="space-y-4">
-                <input type="text" placeholder="Name" value={memberForm.name} onChange={e => setMemberForm({...memberForm, name: e.target.value})} className="w-full p-3 border rounded-xl" required />
-                <input type="text" placeholder="Responsibility" value={memberForm.responsibility} onChange={e => setMemberForm({...memberForm, responsibility: e.target.value})} className="w-full p-3 border rounded-xl" required />
-                <input type="text" placeholder="Phone" value={memberForm.phone} onChange={e => setMemberForm({...memberForm, phone: e.target.value})} className="w-full p-3 border rounded-xl" />
-                <input type="email" placeholder="Email" value={memberForm.email} onChange={e => setMemberForm({...memberForm, email: e.target.value})} className="w-full p-3 border rounded-xl" required />
+                <div className="flex flex-col gap-2">
+                  <input type="text" placeholder="Name (English)" value={memberForm.name_en || ''} onChange={e => setMemberForm({...memberForm, name_en: e.target.value, name: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" required />
+                  <input type="text" placeholder="नाम (हिंदी)" value={memberForm.name_hi || ''} onChange={e => setMemberForm({...memberForm, name_hi: e.target.value, name: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <input type="text" placeholder="Responsibility (English)" value={memberForm.responsibility_en || ''} onChange={e => setMemberForm({...memberForm, responsibility_en: e.target.value, responsibility: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" required />
+                  <input type="text" placeholder="जिम्मेदारी (हिंदी)" value={memberForm.responsibility_hi || ''} onChange={e => setMemberForm({...memberForm, responsibility_hi: e.target.value, responsibility: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" />
+                </div>
+                <input type="text" placeholder="Phone" value={memberForm.phone} onChange={e => setMemberForm({...memberForm, phone: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" />
+                <input type="email" placeholder="Email" value={memberForm.email} onChange={e => setMemberForm({...memberForm, email: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" required />
                 <div className="flex gap-2">
                   <button type="submit" className="flex-1 bg-[#631012] text-white py-3 rounded-xl font-bold">
                     {editingMemberId ? 'Update' : 'Add Member'}
                   </button>
-                  {editingMemberId && <button type="button" onClick={() => {setEditingMemberId(null); setMemberForm({name:'', responsibility:'', phone:'', email:''})}} className="bg-gray-200 px-4 rounded-xl">Cancel</button>}
+                  {editingMemberId && <button type="button" onClick={() => {setEditingMemberId(null); setMemberForm({name:'', name_en:'', name_hi:'', responsibility:'', responsibility_en:'', responsibility_hi:'', phone:'', email:''})}} className="bg-gray-200 px-4 rounded-xl">Cancel</button>}
                 </div>
               </form>
             </div>
@@ -145,7 +200,7 @@ export default function VigilanceAdminPage() {
                         </div>
                       </td>
                       <td className="p-4 text-right">
-                        <button onClick={() => {setEditingMemberId(m.id!); setMemberForm(m)}} className="p-2 text-blue-600 mr-2"><Save size={18}/></button>
+                        <button onClick={() => handleEditMember(m)} className="p-2 text-blue-600 mr-2"><Save size={18}/></button>
                         <button onClick={async () => { if(confirm('Delete?')){ await fetch(`http://localhost:5000/api/v1/administration/vigilance/${m.id}`, {method:'DELETE'}); fetchData(); } }} className="p-2 text-red-600"><Trash2 size={18}/></button>
                       </td>
                     </tr>
@@ -161,7 +216,10 @@ export default function VigilanceAdminPage() {
             <div className="bg-white rounded-2xl shadow-sm border p-6 sticky top-8">
               <h2 className="text-xl font-bold mb-6">Add New Download</h2>
               <form onSubmit={handleDownloadSubmit} className="space-y-4">
-                <input type="text" placeholder="Document Title" value={downloadForm.title} onChange={e => setDownloadForm({...downloadForm, title: e.target.value})} className="w-full p-3 border rounded-xl" required />
+                <div className="flex flex-col gap-2">
+                  <input type="text" placeholder="Document Title (English)" value={downloadForm.title_en || ''} onChange={e => setDownloadForm({...downloadForm, title_en: e.target.value, title: e.target.value})} className="w-full p-3 border rounded-xl" required />
+                  <input type="text" placeholder="दस्तावेज़ शीर्षक (हिंदी)" value={downloadForm.title_hi || ''} onChange={e => setDownloadForm({...downloadForm, title_hi: e.target.value, title: e.target.value})} className="w-full p-3 border rounded-xl" />
+                </div>
                 <input type="text" placeholder="File Path (e.g. /pdfs/...) or URL" value={downloadForm.file_path} onChange={e => setDownloadForm({...downloadForm, file_path: e.target.value})} className="w-full p-3 border rounded-xl" required />
                 <button type="submit" className="w-full bg-[#631012] text-white py-3 rounded-xl font-bold">Add Download</button>
               </form>

@@ -16,6 +16,8 @@ export default function FunctionariesPage() {
     description_hi: 'संस्थान के प्रमुख शैक्षणिक प्रशासनिक अधिकारी और सहायक कर्मचारी।'
   });
 
+  const isHindi = (text: string) => /[\u0900-\u097F]/.test(text || '');
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -38,7 +40,14 @@ export default function FunctionariesPage() {
       const resMembers = await fetch('http://localhost:5000/api/v1/academics/tables');
       const jsonMembers = await resMembers.json();
       if (jsonMembers.success) {
-        setMembers(jsonMembers.data);
+        const mapped = jsonMembers.data.map((m: any) => ({
+          ...m,
+          name_en: isHindi(m.name) ? '' : m.name,
+          name_hi: isHindi(m.name) ? m.name : '',
+          responsibility_en: isHindi(m.responsibility) ? '' : m.responsibility,
+          responsibility_hi: isHindi(m.responsibility) ? m.responsibility : ''
+        }));
+        setMembers(mapped);
       }
       setLoading(false);
     } catch (err) {
@@ -84,7 +93,14 @@ export default function FunctionariesPage() {
       });
       const json = await res.json();
       if (json.success) {
-        setMembers([...members, json.data]);
+        const newMember = {
+          ...json.data,
+          name_en: isHindi(json.data.name) ? '' : json.data.name,
+          name_hi: isHindi(json.data.name) ? json.data.name : '',
+          responsibility_en: isHindi(json.data.responsibility) ? '' : json.data.responsibility,
+          responsibility_hi: isHindi(json.data.responsibility) ? json.data.responsibility : ''
+        };
+        setMembers([...members, newMember]);
       }
     } catch (err) {
       alert('Error adding member');
@@ -94,14 +110,27 @@ export default function FunctionariesPage() {
   const handleUpdateMember = async (id: number, updatedFields: any) => {
     try {
       const member = members.find(m => m.id === id);
+      const merged = { ...member, ...updatedFields };
+      const payload = {
+        ...merged,
+        name: merged.name_hi || merged.name_en || merged.name,
+        responsibility: merged.responsibility_hi || merged.responsibility_en || merged.responsibility
+      };
       const res = await fetch(`http://localhost:5000/api/v1/academics/tables/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...member, ...updatedFields })
+        body: JSON.stringify(payload)
       });
       const json = await res.json();
       if (json.success) {
-        setMembers(members.map(m => m.id === id ? json.data : m));
+        const updated = {
+          ...json.data,
+          name_en: isHindi(json.data.name) ? '' : json.data.name,
+          name_hi: isHindi(json.data.name) ? json.data.name : '',
+          responsibility_en: isHindi(json.data.responsibility) ? '' : json.data.responsibility,
+          responsibility_hi: isHindi(json.data.responsibility) ? json.data.responsibility : ''
+        };
+        setMembers(members.map(m => m.id === id ? updated : m));
       }
     } catch (err) {
       alert('Error updating member');
@@ -275,20 +304,36 @@ export default function FunctionariesPage() {
                       <tbody className="divide-y divide-gray-100">
                         {section.members.map((member: any) => (
                           <tr key={member.id} className="hover:bg-gray-50/50 transition-colors">
-                            <td className="px-4 py-2">
+                            <td className="px-4 py-2 space-y-1">
                               <input
                                 type="text"
-                                value={member.name}
-                                onChange={(e) => handleUpdateMember(member.id, { name: e.target.value })}
-                                className="w-full bg-transparent border-b border-transparent focus:border-[#631012] outline-none text-black font-medium"
+                                value={member.name_en || ''}
+                                onChange={(e) => handleUpdateMember(member.id, { name_en: e.target.value })}
+                                className="w-full bg-transparent border-b border-gray-200 focus:border-[#631012] outline-none text-black font-medium text-xs py-0.5 bg-gray-50/50 px-1 rounded"
+                                placeholder="Name (English)"
+                              />
+                              <input
+                                type="text"
+                                value={member.name_hi || ''}
+                                onChange={(e) => handleUpdateMember(member.id, { name_hi: e.target.value })}
+                                className="w-full bg-transparent border-b border-gray-200 focus:border-[#631012] outline-none text-[#631012] font-semibold text-xs py-0.5 bg-gray-50/50 px-1 rounded"
+                                placeholder="नाम (हिंदी)"
                               />
                             </td>
-                            <td className="px-4 py-2">
+                            <td className="px-4 py-2 space-y-1">
                               <input
                                 type="text"
-                                value={member.responsibility}
-                                onChange={(e) => handleUpdateMember(member.id, { responsibility: e.target.value })}
-                                className="w-full bg-transparent border-b border-transparent focus:border-[#631012] outline-none text-gray-600"
+                                value={member.responsibility_en || ''}
+                                onChange={(e) => handleUpdateMember(member.id, { responsibility_en: e.target.value })}
+                                className="w-full bg-transparent border-b border-gray-200 focus:border-[#631012] outline-none text-gray-600 text-xs py-0.5 bg-gray-50/50 px-1 rounded"
+                                placeholder="Responsibility (EN)"
+                              />
+                              <input
+                                type="text"
+                                value={member.responsibility_hi || ''}
+                                onChange={(e) => handleUpdateMember(member.id, { responsibility_hi: e.target.value })}
+                                className="w-full bg-transparent border-b border-gray-200 focus:border-[#631012] outline-none text-[#631012] font-medium text-xs py-0.5 bg-gray-50/50 px-1 rounded"
+                                placeholder="दायित्व (हिंदी)"
                               />
                             </td>
                             <td className="px-4 py-2">

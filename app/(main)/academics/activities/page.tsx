@@ -9,8 +9,7 @@ import {
   FileText,
   ClipboardList,
   GitBranch,
-  Megaphone,
-  Globe
+  Megaphone
 } from 'lucide-react';
 
 interface ResponsibilityItem {
@@ -65,7 +64,6 @@ type TabType = 'hero' | 'responsibilities' | 'governance' | 'cta';
 
 export default function ActivitiesPage() {
   const [activeTab, setActiveTab] = useState<TabType>('hero');
-  const [editLang, setEditLang] = useState<'en' | 'hi'>('en');
   const [loading, setLoading] = useState(true);
 
   const [activitiesData, setActivitiesData] = useState<ActivitiesData>({
@@ -129,7 +127,6 @@ export default function ActivitiesPage() {
       const json = await res.json();
       if (json.success && json.data.length > 0) {
         const item = json.data[0];
-        // Ensure content structure matches expectations
         const content = item.content || {};
         setActivitiesData({
           heroHeading_en: item.title_en || '',
@@ -200,11 +197,15 @@ export default function ActivitiesPage() {
 
   const updateResponsibility = (
     index: number,
+    lang: 'en' | 'hi',
     field: 'title' | 'description',
     value: string
   ) => {
-    const listKey = `responsibilities_${editLang}` as 'responsibilities_en' | 'responsibilities_hi';
+    const listKey = `responsibilities_${lang}` as 'responsibilities_en' | 'responsibilities_hi';
     const updated = [...(activitiesData.content[listKey] || [])];
+    if (!updated[index]) {
+      updated[index] = { title: '', description: '' };
+    }
     updated[index] = { ...updated[index], [field]: value };
     setActivitiesData({
       ...activitiesData,
@@ -213,31 +214,44 @@ export default function ActivitiesPage() {
   };
 
   const addResponsibility = () => {
-    const listKey = `responsibilities_${editLang}` as 'responsibilities_en' | 'responsibilities_hi';
-    const updated = [...(activitiesData.content[listKey] || [])];
-    updated.push({ title: '', description: '' });
+    const updatedEn = [...(activitiesData.content.responsibilities_en || [])];
+    const updatedHi = [...(activitiesData.content.responsibilities_hi || [])];
+    updatedEn.push({ title: '', description: '' });
+    updatedHi.push({ title: '', description: '' });
     setActivitiesData({
       ...activitiesData,
-      content: { ...activitiesData.content, [listKey]: updated }
+      content: {
+        ...activitiesData.content,
+        responsibilities_en: updatedEn,
+        responsibilities_hi: updatedHi
+      }
     });
   };
 
   const removeResponsibility = (index: number) => {
-    const listKey = `responsibilities_${editLang}` as 'responsibilities_en' | 'responsibilities_hi';
-    const updated = (activitiesData.content[listKey] || []).filter((_: any, i: number) => i !== index);
+    const updatedEn = (activitiesData.content.responsibilities_en || []).filter((_: any, i: number) => i !== index);
+    const updatedHi = (activitiesData.content.responsibilities_hi || []).filter((_: any, i: number) => i !== index);
     setActivitiesData({
       ...activitiesData,
-      content: { ...activitiesData.content, [listKey]: updated }
+      content: {
+        ...activitiesData.content,
+        responsibilities_en: updatedEn,
+        responsibilities_hi: updatedHi
+      }
     });
   };
 
   const updateGovernanceStep = (
     index: number,
+    lang: 'en' | 'hi',
     field: 'number' | 'title' | 'description',
     value: string
   ) => {
-    const listKey = `governanceSteps_${editLang}` as 'governanceSteps_en' | 'governanceSteps_hi';
+    const listKey = `governanceSteps_${lang}` as 'governanceSteps_en' | 'governanceSteps_hi';
     const updated = [...(activitiesData.content[listKey] || [])];
+    if (!updated[index]) {
+      updated[index] = { number: String(index + 1), title: '', description: '' };
+    }
     updated[index] = { ...updated[index], [field]: value };
     setActivitiesData({
       ...activitiesData,
@@ -246,31 +260,42 @@ export default function ActivitiesPage() {
   };
 
   const addGovernanceStep = () => {
-    const listKey = `governanceSteps_${editLang}` as 'governanceSteps_en' | 'governanceSteps_hi';
-    const updated = [...(activitiesData.content[listKey] || [])];
-    updated.push({
-      number: String(updated.length + 1),
-      title: '',
-      description: '',
-    });
+    const updatedEn = [...(activitiesData.content.governanceSteps_en || [])];
+    const updatedHi = [...(activitiesData.content.governanceSteps_hi || [])];
+    const nextNum = String(Math.max(updatedEn.length, updatedHi.length) + 1);
+    updatedEn.push({ number: nextNum, title: '', description: '' });
+    updatedHi.push({ number: nextNum, title: '', description: '' });
     setActivitiesData({
       ...activitiesData,
-      content: { ...activitiesData.content, [listKey]: updated }
+      content: {
+        ...activitiesData.content,
+        governanceSteps_en: updatedEn,
+        governanceSteps_hi: updatedHi
+      }
     });
   };
 
   const removeGovernanceStep = (index: number) => {
-    const listKey = `governanceSteps_${editLang}` as 'governanceSteps_en' | 'governanceSteps_hi';
-    const updated = (activitiesData.content[listKey] || []).filter((_: any, i: number) => i !== index);
+    const updatedEn = (activitiesData.content.governanceSteps_en || []).filter((_: any, i: number) => i !== index);
+    const updatedHi = (activitiesData.content.governanceSteps_hi || []).filter((_: any, i: number) => i !== index);
+    const mappedEn = updatedEn.map((item, i) => ({ ...item, number: String(i + 1) }));
+    const mappedHi = updatedHi.map((item, i) => ({ ...item, number: String(i + 1) }));
     setActivitiesData({
       ...activitiesData,
-      content: { ...activitiesData.content, [listKey]: updated }
+      content: {
+        ...activitiesData.content,
+        governanceSteps_en: mappedEn,
+        governanceSteps_hi: mappedHi
+      }
     });
   };
 
-  const updateCtaButton = (index: number, value: string) => {
-    const listKey = `ctaButtons_${editLang}` as 'ctaButtons_en' | 'ctaButtons_hi';
+  const updateCtaButton = (index: number, lang: 'en' | 'hi', value: string) => {
+    const listKey = `ctaButtons_${lang}` as 'ctaButtons_en' | 'ctaButtons_hi';
     const updated = [...(activitiesData.content[listKey] || [])];
+    if (!updated[index]) {
+      updated[index] = { buttonText: '' };
+    }
     updated[index] = { buttonText: value };
     setActivitiesData({
       ...activitiesData,
@@ -279,21 +304,30 @@ export default function ActivitiesPage() {
   };
 
   const addCtaButton = () => {
-    const listKey = `ctaButtons_${editLang}` as 'ctaButtons_en' | 'ctaButtons_hi';
-    const updated = [...(activitiesData.content[listKey] || [])];
-    updated.push({ buttonText: '' });
+    const updatedEn = [...(activitiesData.content.ctaButtons_en || [])];
+    const updatedHi = [...(activitiesData.content.ctaButtons_hi || [])];
+    updatedEn.push({ buttonText: '' });
+    updatedHi.push({ buttonText: '' });
     setActivitiesData({
       ...activitiesData,
-      content: { ...activitiesData.content, [listKey]: updated }
+      content: {
+        ...activitiesData.content,
+        ctaButtons_en: updatedEn,
+        ctaButtons_hi: updatedHi
+      }
     });
   };
 
   const removeCtaButton = (index: number) => {
-    const listKey = `ctaButtons_${editLang}` as 'ctaButtons_en' | 'ctaButtons_hi';
-    const updated = (activitiesData.content[listKey] || []).filter((_: any, i: number) => i !== index);
+    const updatedEn = (activitiesData.content.ctaButtons_en || []).filter((_: any, i: number) => i !== index);
+    const updatedHi = (activitiesData.content.ctaButtons_hi || []).filter((_: any, i: number) => i !== index);
     setActivitiesData({
       ...activitiesData,
-      content: { ...activitiesData.content, [listKey]: updated }
+      content: {
+        ...activitiesData.content,
+        ctaButtons_en: updatedEn,
+        ctaButtons_hi: updatedHi
+      }
     });
   };
 
@@ -308,25 +342,20 @@ export default function ActivitiesPage() {
     return <div className="p-8 text-black font-semibold text-center">Loading Activities Editor...</div>;
   }
 
-  // Language specific properties for active editor state
-  const heroHeading = editLang === 'en' ? activitiesData.heroHeading_en : activitiesData.heroHeading_hi;
-  const heroDescription = editLang === 'en' ? activitiesData.heroDescription_en : activitiesData.heroDescription_hi;
+  const responsibilitiesCount = Math.max(
+    activitiesData.content.responsibilities_en.length,
+    activitiesData.content.responsibilities_hi.length
+  );
 
-  const activitiesHeading = editLang === 'en' ? activitiesData.content.activitiesHeading_en : activitiesData.content.activitiesHeading_hi;
-  const activitiesDescription = editLang === 'en' ? activitiesData.content.activitiesDescription_en : activitiesData.content.activitiesDescription_hi;
+  const governanceStepsCount = Math.max(
+    activitiesData.content.governanceSteps_en.length,
+    activitiesData.content.governanceSteps_hi.length
+  );
 
-  const responsibilitiesHeading = editLang === 'en' ? activitiesData.content.responsibilitiesHeading_en : activitiesData.content.responsibilitiesHeading_hi;
-  const responsibilitiesSubtitle = editLang === 'en' ? activitiesData.content.responsibilitiesSubtitle_en : activitiesData.content.responsibilitiesSubtitle_hi;
-  const responsibilitiesList = editLang === 'en' ? activitiesData.content.responsibilities_en : activitiesData.content.responsibilities_hi;
-
-  const governanceHeading = editLang === 'en' ? activitiesData.content.governanceHeading_en : activitiesData.content.governanceHeading_hi;
-  const governanceSubheading = editLang === 'en' ? activitiesData.content.governanceSubheading_en : activitiesData.content.governanceSubheading_hi;
-  const governanceDescription = editLang === 'en' ? activitiesData.content.governanceDescription_en : activitiesData.content.governanceDescription_hi;
-  const governanceStepsList = editLang === 'en' ? activitiesData.content.governanceSteps_en : activitiesData.content.governanceSteps_hi;
-
-  const ctaHeading = editLang === 'en' ? activitiesData.content.ctaHeading_en : activitiesData.content.ctaHeading_hi;
-  const ctaDescription = editLang === 'en' ? activitiesData.content.ctaDescription_en : activitiesData.content.ctaDescription_hi;
-  const ctaButtonsList = editLang === 'en' ? activitiesData.content.ctaButtons_en : activitiesData.content.ctaButtons_hi;
+  const ctaButtonsCount = Math.max(
+    activitiesData.content.ctaButtons_en.length,
+    activitiesData.content.ctaButtons_hi.length
+  );
 
   return (
     <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 lg:p-6 text-black bg-[#F8F9FA] min-h-screen">
@@ -350,32 +379,6 @@ export default function ActivitiesPage() {
           >
             <Save className="w-5 h-5" />
             Save Changes
-          </button>
-        </div>
-      </div>
-
-      {/* Language Selector */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-2 text-gray-500">
-          <Globe size={20} className="text-[#631012]" />
-          <span className="font-semibold text-sm sm:text-base">Editing Language Context:</span>
-        </div>
-        <div className="flex bg-gray-100 p-1 rounded-xl">
-          <button
-            onClick={() => setEditLang('en')}
-            className={`px-6 py-2 rounded-lg font-bold text-sm transition-all ${
-              editLang === 'en' ? 'bg-[#631012] text-white shadow-md' : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            English (EN)
-          </button>
-          <button
-            onClick={() => setEditLang('hi')}
-            className={`px-6 py-2 rounded-lg font-bold text-sm transition-all ${
-              editLang === 'hi' ? 'bg-[#631012] text-white shadow-md' : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            Hindi (HI)
           </button>
         </div>
       </div>
@@ -407,94 +410,127 @@ export default function ActivitiesPage() {
         <div className="p-4 sm:p-8">
           {/* Tab 1: Hero & Overview Section */}
           {activeTab === 'hero' && (
-            <div className="space-y-6">
+            <div className="space-y-8">
               <div className="flex items-center gap-2 border-b pb-3 mb-4">
                 <FileText className="text-[#631012]" />
                 <h2 className="text-xl font-bold">Hero & Academic Overview</h2>
               </div>
 
-              <div className="grid grid-cols-1 gap-6">
-                <div>
-                  <label className="block text-sm font-bold text-gray-400 mb-2 uppercase">Hero Page Title ({editLang.toUpperCase()})</label>
-                  <input
-                    type="text"
-                    value={heroHeading}
-                    onChange={(e) =>
-                      setActivitiesData({
-                        ...activitiesData,
-                        [editLang === 'en' ? 'heroHeading_en' : 'heroHeading_hi']: e.target.value,
-                      })
-                    }
-                    className="w-full p-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-[#631012]"
-                    placeholder="Activities"
-                  />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Hero Title */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-bold text-gray-400 uppercase">English</h3>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 mb-1">HERO PAGE TITLE</label>
+                    <input
+                      type="text"
+                      value={activitiesData.heroHeading_en}
+                      onChange={(e) => setActivitiesData({ ...activitiesData, heroHeading_en: e.target.value })}
+                      className="w-full p-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-[#631012] text-black"
+                      placeholder="Activities"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 mb-1">HERO DESCRIPTION</label>
+                    <textarea
+                      rows={3}
+                      value={activitiesData.heroDescription_en}
+                      onChange={(e) => setActivitiesData({ ...activitiesData, heroDescription_en: e.target.value })}
+                      className="w-full p-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-[#631012] text-black"
+                      placeholder="Enter hero banner description..."
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-bold text-gray-400 mb-2 uppercase">Hero Description ({editLang.toUpperCase()})</label>
-                  <textarea
-                    rows={3}
-                    value={heroDescription}
-                    onChange={(e) =>
-                      setActivitiesData({
-                        ...activitiesData,
-                        [editLang === 'en' ? 'heroDescription_en' : 'heroDescription_hi']: e.target.value,
-                      })
-                    }
-                    className="w-full p-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-[#631012]"
-                    placeholder="Enter hero banner description..."
-                  />
-                </div>
-
-                <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100">
-                  <h3 className="text-lg font-bold mb-4">Academic Statues / Overview</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-bold text-gray-400 mb-2 uppercase">Section Heading ({editLang.toUpperCase()})</label>
-                      <input
-                        type="text"
-                        value={activitiesHeading || ''}
-                        onChange={(e) =>
-                          setActivitiesData({
-                            ...activitiesData,
-                            content: {
-                              ...activitiesData.content,
-                              [`activitiesHeading_${editLang}`]: e.target.value,
-                            },
-                          })
-                        }
-                        className="w-full p-3 border rounded-xl bg-white focus:ring-2 focus:ring-[#631012]"
-                        placeholder="ACTIVITIES"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold text-gray-400 mb-2 uppercase">Section Description ({editLang.toUpperCase()})</label>
-                      <textarea
-                        rows={3}
-                        value={activitiesDescription || ''}
-                        onChange={(e) =>
-                          setActivitiesData({
-                            ...activitiesData,
-                            content: {
-                              ...activitiesData.content,
-                              [`activitiesDescription_${editLang}`]: e.target.value,
-                            },
-                          })
-                        }
-                        className="w-full p-3 border rounded-xl bg-white focus:ring-2 focus:ring-[#631012]"
-                        placeholder="Statutes description..."
-                      />
-                    </div>
+                {/* Hero Title Hindi */}
+                <div className="space-y-4 border-t md:border-t-0 md:border-l md:pl-6 pt-4 md:pt-0">
+                  <h3 className="text-sm font-bold text-[#631012] uppercase">Hindi</h3>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 mb-1">मुख्य शीर्षक (हिंदी)</label>
+                    <input
+                      type="text"
+                      value={activitiesData.heroHeading_hi}
+                      onChange={(e) => setActivitiesData({ ...activitiesData, heroHeading_hi: e.target.value })}
+                      className="w-full p-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-[#631012] text-black"
+                      placeholder="गतिविधियां"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 mb-1">मुख्य विवरण (हिंदी)</label>
+                    <textarea
+                      rows={3}
+                      value={activitiesData.heroDescription_hi}
+                      onChange={(e) => setActivitiesData({ ...activitiesData, heroDescription_hi: e.target.value })}
+                      className="w-full p-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-[#631012] text-black"
+                      placeholder="बैनर का हिंदी विवरण..."
+                    />
                   </div>
                 </div>
               </div>
 
-              {/* Responsive Live Preview */}
-              <div className="mt-8 p-6 bg-gray-50 rounded-2xl border border-gray-200">
-                <p className="text-sm font-bold text-gray-400 uppercase mb-4">Responsive Banner Live Preview ({editLang.toUpperCase()} Mode):</p>
-                <div className="bg-[#800000] text-white p-8 rounded-xl space-y-4 text-center">
-                  <h3 className="text-3xl font-black tracking-tight uppercase">{heroHeading}</h3>
-                  <p className="text-white/80 max-w-2xl mx-auto text-base leading-relaxed font-light">{heroDescription}</p>
+              {/* Statutes Section */}
+              <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100 space-y-6">
+                <h3 className="text-lg font-bold border-b pb-2">Academic Statutes / Overview</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <h4 className="text-xs font-bold text-gray-400 uppercase">English</h4>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 mb-1">SECTION HEADING</label>
+                      <input
+                        type="text"
+                        value={activitiesData.content.activitiesHeading_en}
+                        onChange={(e) => setActivitiesData({
+                          ...activitiesData,
+                          content: { ...activitiesData.content, activitiesHeading_en: e.target.value }
+                        })}
+                        className="w-full p-3 border rounded-xl bg-white focus:ring-2 focus:ring-[#631012] text-black"
+                        placeholder="ACTIVITIES"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 mb-1">SECTION DESCRIPTION</label>
+                      <textarea
+                        rows={3}
+                        value={activitiesData.content.activitiesDescription_en}
+                        onChange={(e) => setActivitiesData({
+                          ...activitiesData,
+                          content: { ...activitiesData.content, activitiesDescription_en: e.target.value }
+                        })}
+                        className="w-full p-3 border rounded-xl bg-white focus:ring-2 focus:ring-[#631012] text-black"
+                        placeholder="Statutes description..."
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 border-t md:border-t-0 md:border-l md:pl-6 pt-4 md:pt-0">
+                    <h4 className="text-xs font-bold text-[#631012] uppercase">Hindi</h4>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 mb-1">विभाग शीर्षक (हिंदी)</label>
+                      <input
+                        type="text"
+                        value={activitiesData.content.activitiesHeading_hi}
+                        onChange={(e) => setActivitiesData({
+                          ...activitiesData,
+                          content: { ...activitiesData.content, activitiesHeading_hi: e.target.value }
+                        })}
+                        className="w-full p-3 border rounded-xl bg-white focus:ring-2 focus:ring-[#631012] text-black"
+                        placeholder="गतिविधियां"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 mb-1">विभाग विवरण (हिंदी)</label>
+                      <textarea
+                        rows={3}
+                        value={activitiesData.content.activitiesDescription_hi}
+                        onChange={(e) => setActivitiesData({
+                          ...activitiesData,
+                          content: { ...activitiesData.content, activitiesDescription_hi: e.target.value }
+                        })}
+                        className="w-full p-3 border rounded-xl bg-white focus:ring-2 focus:ring-[#631012] text-black"
+                        placeholder="संवैधानिक विवरण..."
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -508,87 +544,142 @@ export default function ActivitiesPage() {
                 <h2 className="text-xl font-bold">Responsibilities & Action Items</h2>
               </div>
 
-              <div className="grid grid-cols-1 gap-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Responsibilities Headers */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-gray-50 rounded-2xl border border-gray-100">
+                <div className="space-y-4">
+                  <h3 className="text-xs font-bold text-gray-400 uppercase">English Header</h3>
                   <div>
-                    <label className="block text-sm font-bold text-gray-400 mb-2 uppercase">Section Title ({editLang.toUpperCase()})</label>
+                    <label className="block text-xs font-bold text-gray-500 mb-1">SECTION TITLE</label>
                     <input
                       type="text"
-                      value={responsibilitiesHeading || ''}
-                      onChange={(e) =>
-                        setActivitiesData({
-                          ...activitiesData,
-                          content: {
-                            ...activitiesData.content,
-                            [`responsibilitiesHeading_${editLang}`]: e.target.value,
-                          },
-                        })
-                      }
-                      className="w-full p-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-[#631012]"
+                      value={activitiesData.content.responsibilitiesHeading_en}
+                      onChange={(e) => setActivitiesData({
+                        ...activitiesData,
+                        content: { ...activitiesData.content, responsibilitiesHeading_en: e.target.value }
+                      })}
+                      className="w-full p-3 border rounded-xl bg-white focus:ring-2 focus:ring-[#631012] text-black"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-gray-400 mb-2 uppercase">Section Subtitle ({editLang.toUpperCase()})</label>
+                    <label className="block text-xs font-bold text-gray-500 mb-1">SECTION SUBTITLE</label>
                     <input
                       type="text"
-                      value={responsibilitiesSubtitle || ''}
-                      onChange={(e) =>
-                        setActivitiesData({
-                          ...activitiesData,
-                          content: {
-                            ...activitiesData.content,
-                            [`responsibilitiesSubtitle_${editLang}`]: e.target.value,
-                          },
-                        })
-                      }
-                      className="w-full p-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-[#631012]"
+                      value={activitiesData.content.responsibilitiesSubtitle_en}
+                      onChange={(e) => setActivitiesData({
+                        ...activitiesData,
+                        content: { ...activitiesData.content, responsibilitiesSubtitle_en: e.target.value }
+                      })}
+                      className="w-full p-3 border rounded-xl bg-white focus:ring-2 focus:ring-[#631012] text-black"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <label className="block text-sm font-bold text-gray-400 uppercase">Responsibility Items List</label>
-                  <div className="grid grid-cols-1 gap-4">
-                    {responsibilitiesList.map((item, index) => (
-                      <div key={index} className="p-4 border rounded-xl bg-gray-50 relative group">
+                <div className="space-y-4 border-t md:border-t-0 md:border-l md:pl-6 pt-4 md:pt-0">
+                  <h3 className="text-xs font-bold text-[#631012] uppercase">Hindi Header</h3>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 mb-1">शीर्षक (हिंदी)</label>
+                    <input
+                      type="text"
+                      value={activitiesData.content.responsibilitiesHeading_hi}
+                      onChange={(e) => setActivitiesData({
+                        ...activitiesData,
+                        content: { ...activitiesData.content, responsibilitiesHeading_hi: e.target.value }
+                      })}
+                      className="w-full p-3 border rounded-xl bg-white focus:ring-2 focus:ring-[#631012] text-black"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 mb-1">उपशीर्षक (हिंदी)</label>
+                    <input
+                      type="text"
+                      value={activitiesData.content.responsibilitiesSubtitle_hi}
+                      onChange={(e) => setActivitiesData({
+                        ...activitiesData,
+                        content: { ...activitiesData.content, responsibilitiesSubtitle_hi: e.target.value }
+                      })}
+                      className="w-full p-3 border rounded-xl bg-white focus:ring-2 focus:ring-[#631012] text-black"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Responsibilities Items list */}
+              <div className="space-y-4">
+                <label className="block text-sm font-bold text-gray-400 uppercase">Responsibility Items List</label>
+                <div className="grid grid-cols-1 gap-4">
+                  {Array.from({ length: responsibilitiesCount }).map((_, index) => {
+                    const enItem = activitiesData.content.responsibilities_en[index] || { title: '', description: '' };
+                    const hiItem = activitiesData.content.responsibilities_hi[index] || { title: '', description: '' };
+
+                    return (
+                      <div key={index} className="p-6 border rounded-xl bg-gray-50 relative group border-gray-200">
                         <button
                           onClick={() => removeResponsibility(index)}
                           className="absolute top-4 right-4 text-red-500 hover:bg-red-50 p-2 rounded-lg transition-all"
                         >
                           <Trash2 size={18} />
                         </button>
-                        <div className="space-y-3 pr-10">
-                          <div>
-                            <label className="block text-xs font-bold text-gray-400 mb-1 uppercase">Title</label>
-                            <input
-                              type="text"
-                              value={item.title}
-                              onChange={(e) => updateResponsibility(index, 'title', e.target.value)}
-                              className="w-full p-2 border rounded-lg bg-white"
-                              placeholder="e.g. Course Allocation"
-                            />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pr-10">
+                          {/* English Inputs */}
+                          <div className="space-y-3">
+                            <h4 className="text-xs font-bold text-gray-400 uppercase">Item {index + 1} (English)</h4>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">TITLE</label>
+                              <input
+                                type="text"
+                                value={enItem.title}
+                                onChange={(e) => updateResponsibility(index, 'en', 'title', e.target.value)}
+                                className="w-full p-2.5 border rounded-lg bg-white text-black text-sm"
+                                placeholder="Course Allocation"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">DESCRIPTION</label>
+                              <textarea
+                                rows={2}
+                                value={enItem.description}
+                                onChange={(e) => updateResponsibility(index, 'en', 'description', e.target.value)}
+                                className="w-full p-2.5 border rounded-lg bg-white text-black text-sm"
+                                placeholder="Details about this responsibility..."
+                              />
+                            </div>
                           </div>
-                          <div>
-                            <label className="block text-xs font-bold text-gray-400 mb-1 uppercase">Description</label>
-                            <textarea
-                              rows={2}
-                              value={item.description}
-                              onChange={(e) => updateResponsibility(index, 'description', e.target.value)}
-                              className="w-full p-2 border rounded-lg bg-white"
-                              placeholder="e.g. Allocation of teaching roles..."
-                            />
+
+                          {/* Hindi Inputs */}
+                          <div className="space-y-3 border-t md:border-t-0 md:border-l md:pl-6 pt-3 md:pt-0">
+                            <h4 className="text-xs font-bold text-[#631012] uppercase">मद {index + 1} (हिंदी)</h4>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">शीर्षक (हिंदी)</label>
+                              <input
+                                type="text"
+                                value={hiItem.title}
+                                onChange={(e) => updateResponsibility(index, 'hi', 'title', e.target.value)}
+                                className="w-full p-2.5 border rounded-lg bg-white text-black text-sm"
+                                placeholder="पाठ्यक्रम आवंटन"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">विवरण (हिंदी)</label>
+                              <textarea
+                                rows={2}
+                                value={hiItem.description}
+                                onChange={(e) => updateResponsibility(index, 'hi', 'description', e.target.value)}
+                                className="w-full p-2.5 border rounded-lg bg-white text-black text-sm"
+                                placeholder="इस जिम्मेदारी के बारे में विवरण..."
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
-                    ))}
-                    <button
-                      onClick={addResponsibility}
-                      className="w-full py-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-400 font-bold hover:border-[#631012] hover:text-[#631012] transition-all bg-white flex items-center justify-center gap-2"
-                    >
-                      <Plus size={18} />
-                      Add Responsibility Item
-                    </button>
-                  </div>
+                    );
+                  })}
+                  <button
+                    onClick={addResponsibility}
+                    className="w-full py-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-400 font-bold hover:border-[#631012] hover:text-[#631012] transition-all bg-white flex items-center justify-center gap-2"
+                  >
+                    <Plus size={18} />
+                    Add Responsibility Item
+                  </button>
                 </div>
               </div>
             </div>
@@ -602,112 +693,176 @@ export default function ActivitiesPage() {
                 <h2 className="text-xl font-bold">Academic Governance Flow Process</h2>
               </div>
 
-              <div className="grid grid-cols-1 gap-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-bold text-gray-400 mb-2 uppercase">Governance Main Heading ({editLang.toUpperCase()})</label>
-                    <input
-                      type="text"
-                      value={governanceHeading || ''}
-                      onChange={(e) =>
-                        setActivitiesData({
-                          ...activitiesData,
-                          content: {
-                            ...activitiesData.content,
-                            [`governanceHeading_${editLang}`]: e.target.value,
-                          },
-                        })
-                      }
-                      className="w-full p-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-[#631012]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold text-gray-400 mb-2 uppercase">Governance Subtitle ({editLang.toUpperCase()})</label>
-                    <input
-                      type="text"
-                      value={governanceSubheading || ''}
-                      onChange={(e) =>
-                        setActivitiesData({
-                          ...activitiesData,
-                          content: {
-                            ...activitiesData.content,
-                            [`governanceSubheading_${editLang}`]: e.target.value,
-                          },
-                        })
-                      }
-                      className="w-full p-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-[#631012]"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-gray-400 mb-2 uppercase">Governance Description ({editLang.toUpperCase()})</label>
-                  <textarea
-                    rows={2}
-                    value={governanceDescription || ''}
-                    onChange={(e) =>
-                      setActivitiesData({
-                        ...activitiesData,
-                        content: {
-                          ...activitiesData.content,
-                          [`governanceDescription_${editLang}`]: e.target.value,
-                        },
-                      })
-                    }
-                    className="w-full p-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-[#631012]"
-                  />
-                </div>
-
+              {/* Governance Headers */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-gray-50 rounded-2xl border border-gray-100">
                 <div className="space-y-4">
-                  <label className="block text-sm font-bold text-gray-400 uppercase">Governance Decision Steps</label>
-                  <div className="space-y-3">
-                    {governanceStepsList.map((step, index) => (
-                      <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-3 p-4 border rounded-xl bg-gray-50 relative">
-                        <div className="md:col-span-1">
-                          <label className="block text-xs font-bold text-gray-400 mb-1 uppercase">Step #</label>
-                          <input
-                            type="text"
-                            value={step.number}
-                            onChange={(e) => updateGovernanceStep(index, 'number', e.target.value)}
-                            className="w-full p-2 border rounded-lg bg-white text-center"
-                          />
-                        </div>
-                        <div className="md:col-span-3">
-                          <label className="block text-xs font-bold text-gray-400 mb-1 uppercase">Title</label>
-                          <input
-                            type="text"
-                            value={step.title}
-                            onChange={(e) => updateGovernanceStep(index, 'title', e.target.value)}
-                            className="w-full p-2 border rounded-lg bg-white"
-                          />
-                        </div>
-                        <div className="md:col-span-7">
-                          <label className="block text-xs font-bold text-gray-400 mb-1 uppercase">Description</label>
-                          <input
-                            type="text"
-                            value={step.description}
-                            onChange={(e) => updateGovernanceStep(index, 'description', e.target.value)}
-                            className="w-full p-2 border rounded-lg bg-white"
-                          />
-                        </div>
-                        <div className="md:col-span-1 flex items-end justify-center">
-                          <button
-                            onClick={() => removeGovernanceStep(index)}
-                            className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-all"
-                          >
-                            <Trash2 size={18} />
-                          </button>
+                  <h3 className="text-xs font-bold text-gray-400 uppercase">English</h3>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 mb-1">GOVERNANCE HEADING</label>
+                    <input
+                      type="text"
+                      value={activitiesData.content.governanceHeading_en}
+                      onChange={(e) => setActivitiesData({
+                        ...activitiesData,
+                        content: { ...activitiesData.content, governanceHeading_en: e.target.value }
+                      })}
+                      className="w-full p-3 border rounded-xl bg-white focus:ring-2 focus:ring-[#631012] text-black"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 mb-1">GOVERNANCE SUBTITLE</label>
+                    <input
+                      type="text"
+                      value={activitiesData.content.governanceSubheading_en}
+                      onChange={(e) => setActivitiesData({
+                        ...activitiesData,
+                        content: { ...activitiesData.content, governanceSubheading_en: e.target.value }
+                      })}
+                      className="w-full p-3 border rounded-xl bg-white focus:ring-2 focus:ring-[#631012] text-black"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 mb-1">DESCRIPTION</label>
+                    <textarea
+                      rows={2}
+                      value={activitiesData.content.governanceDescription_en}
+                      onChange={(e) => setActivitiesData({
+                        ...activitiesData,
+                        content: { ...activitiesData.content, governanceDescription_en: e.target.value }
+                      })}
+                      className="w-full p-3 border rounded-xl bg-white focus:ring-2 focus:ring-[#631012] text-black"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4 border-t md:border-t-0 md:border-l md:pl-6 pt-4 md:pt-0">
+                  <h3 className="text-xs font-bold text-[#631012] uppercase">Hindi</h3>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 mb-1">शीर्षक (हिंदी)</label>
+                    <input
+                      type="text"
+                      value={activitiesData.content.governanceHeading_hi}
+                      onChange={(e) => setActivitiesData({
+                        ...activitiesData,
+                        content: { ...activitiesData.content, governanceHeading_hi: e.target.value }
+                      })}
+                      className="w-full p-3 border rounded-xl bg-white focus:ring-2 focus:ring-[#631012] text-black"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 mb-1">उपशीर्षक (हिंदी)</label>
+                    <input
+                      type="text"
+                      value={activitiesData.content.governanceSubheading_hi}
+                      onChange={(e) => setActivitiesData({
+                        ...activitiesData,
+                        content: { ...activitiesData.content, governanceSubheading_hi: e.target.value }
+                      })}
+                      className="w-full p-3 border rounded-xl bg-white focus:ring-2 focus:ring-[#631012] text-black"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 mb-1">विवरण (हिंदी)</label>
+                    <textarea
+                      rows={2}
+                      value={activitiesData.content.governanceDescription_hi}
+                      onChange={(e) => setActivitiesData({
+                        ...activitiesData,
+                        content: { ...activitiesData.content, governanceDescription_hi: e.target.value }
+                      })}
+                      className="w-full p-3 border rounded-xl bg-white focus:ring-2 focus:ring-[#631012] text-black"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Governance Steps list */}
+              <div className="space-y-4">
+                <label className="block text-sm font-bold text-gray-400 uppercase">Governance Decision Steps</label>
+                <div className="space-y-3">
+                  {Array.from({ length: governanceStepsCount }).map((_, index) => {
+                    const enStep = activitiesData.content.governanceSteps_en[index] || { number: String(index + 1), title: '', description: '' };
+                    const hiStep = activitiesData.content.governanceSteps_hi[index] || { number: String(index + 1), title: '', description: '' };
+
+                    return (
+                      <div key={index} className="p-6 border rounded-xl bg-gray-50 relative border-gray-200">
+                        <button
+                          onClick={() => removeGovernanceStep(index)}
+                          className="absolute top-4 right-4 text-red-500 hover:bg-red-50 p-2 rounded-lg transition-all"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 pr-10">
+                          {/* Step number common label */}
+                          <div className="md:col-span-2 space-y-1">
+                            <label className="block text-xs font-bold text-gray-400 uppercase">Step Number</label>
+                            <input
+                              type="text"
+                              value={enStep.number}
+                              onChange={(e) => {
+                                updateGovernanceStep(index, 'en', 'number', e.target.value);
+                                updateGovernanceStep(index, 'hi', 'number', e.target.value);
+                              }}
+                              className="w-full p-2 border rounded-lg bg-white text-center font-bold text-black text-sm"
+                            />
+                          </div>
+
+                          {/* English Inputs */}
+                          <div className="md:col-span-5 space-y-3">
+                            <h4 className="text-xs font-bold text-gray-400 uppercase">Step {index + 1} (English)</h4>
+                            <div>
+                              <input
+                                type="text"
+                                value={enStep.title}
+                                onChange={(e) => updateGovernanceStep(index, 'en', 'title', e.target.value)}
+                                className="w-full p-2 border rounded-lg bg-white text-black text-sm"
+                                placeholder="Title (e.g. BOAC)"
+                              />
+                            </div>
+                            <div>
+                              <textarea
+                                rows={2}
+                                value={enStep.description}
+                                onChange={(e) => updateGovernanceStep(index, 'en', 'description', e.target.value)}
+                                className="w-full p-2 border rounded-lg bg-white text-black text-sm"
+                                placeholder="Description (e.g. Board review...)"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Hindi Inputs */}
+                          <div className="md:col-span-5 space-y-3 border-t md:border-t-0 md:border-l md:pl-6 pt-3 md:pt-0">
+                            <h4 className="text-xs font-bold text-[#631012] uppercase">चरण {index + 1} (हिंदी)</h4>
+                            <div>
+                              <input
+                                type="text"
+                                value={hiStep.title}
+                                onChange={(e) => updateGovernanceStep(index, 'hi', 'title', e.target.value)}
+                                className="w-full p-2 border rounded-lg bg-white text-black text-sm"
+                                placeholder="शीर्षक (जैसे बीओएसी)"
+                              />
+                            </div>
+                            <div>
+                              <textarea
+                                rows={2}
+                                value={hiStep.description}
+                                onChange={(e) => updateGovernanceStep(index, 'hi', 'description', e.target.value)}
+                                className="w-full p-2 border rounded-lg bg-white text-black text-sm"
+                                placeholder="विवरण (जैसे बोर्ड समीक्षा...)"
+                              />
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    ))}
-                    <button
-                      onClick={addGovernanceStep}
-                      className="w-full py-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-400 font-bold hover:border-[#631012] hover:text-[#631012] transition-all bg-white flex items-center justify-center gap-2"
-                    >
-                      <Plus size={18} />
-                      Add Decision Step
-                    </button>
-                  </div>
+                    );
+                  })}
+                  <button
+                    onClick={addGovernanceStep}
+                    className="w-full py-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-400 font-bold hover:border-[#631012] hover:text-[#631012] transition-all bg-white flex items-center justify-center gap-2"
+                  >
+                    <Plus size={18} />
+                    Add Decision Step
+                  </button>
                 </div>
               </div>
             </div>
@@ -721,71 +876,111 @@ export default function ActivitiesPage() {
                 <h2 className="text-xl font-bold">Call to Action & Contacts</h2>
               </div>
 
-              <div className="grid grid-cols-1 gap-6">
-                <div>
-                  <label className="block text-sm font-bold text-gray-400 mb-2 uppercase">CTA Main Heading ({editLang.toUpperCase()})</label>
-                  <input
-                    type="text"
-                    value={ctaHeading || ''}
-                    onChange={(e) =>
-                      setActivitiesData({
-                        ...activitiesData,
-                        content: {
-                          ...activitiesData.content,
-                          [`ctaHeading_${editLang}`]: e.target.value,
-                        },
-                      })
-                    }
-                    className="w-full p-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-[#631012]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-gray-400 mb-2 uppercase">CTA Description ({editLang.toUpperCase()})</label>
-                  <textarea
-                    rows={3}
-                    value={ctaDescription || ''}
-                    onChange={(e) =>
-                      setActivitiesData({
-                        ...activitiesData,
-                        content: {
-                          ...activitiesData.content,
-                          [`ctaDescription_${editLang}`]: e.target.value,
-                        },
-                      })
-                    }
-                    className="w-full p-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-[#631012]"
-                  />
-                </div>
-
+              {/* CTA Headers */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-gray-50 rounded-2xl border border-gray-100">
                 <div className="space-y-4">
-                  <label className="block text-sm font-bold text-gray-400 uppercase">Interactive Action Buttons ({editLang.toUpperCase()})</label>
-                  <div className="space-y-3">
-                    {ctaButtonsList.map((button, index) => (
-                      <div key={index} className="flex gap-2">
-                        <input
-                          type="text"
-                          value={button.buttonText}
-                          onChange={(e) => updateCtaButton(index, e.target.value)}
-                          className="flex-1 p-3 border rounded-xl bg-gray-50"
-                          placeholder="Button Action Text"
-                        />
+                  <h3 className="text-xs font-bold text-gray-400 uppercase">English</h3>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 mb-1">CTA MAIN HEADING</label>
+                    <input
+                      type="text"
+                      value={activitiesData.content.ctaHeading_en}
+                      onChange={(e) => setActivitiesData({
+                        ...activitiesData,
+                        content: { ...activitiesData.content, ctaHeading_en: e.target.value }
+                      })}
+                      className="w-full p-3 border rounded-xl bg-white focus:ring-2 focus:ring-[#631012] text-black"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 mb-1">CTA DESCRIPTION</label>
+                    <textarea
+                      rows={3}
+                      value={activitiesData.content.ctaDescription_en}
+                      onChange={(e) => setActivitiesData({
+                        ...activitiesData,
+                        content: { ...activitiesData.content, ctaDescription_en: e.target.value }
+                      })}
+                      className="w-full p-3 border rounded-xl bg-white focus:ring-2 focus:ring-[#631012] text-black"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4 border-t md:border-t-0 md:border-l md:pl-6 pt-4 md:pt-0">
+                  <h3 className="text-xs font-bold text-[#631012] uppercase">Hindi</h3>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 mb-1">शीर्षक (हिंदी)</label>
+                    <input
+                      type="text"
+                      value={activitiesData.content.ctaHeading_hi}
+                      onChange={(e) => setActivitiesData({
+                        ...activitiesData,
+                        content: { ...activitiesData.content, ctaHeading_hi: e.target.value }
+                      })}
+                      className="w-full p-3 border rounded-xl bg-white focus:ring-2 focus:ring-[#631012] text-black"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 mb-1">विवरण (हिंदी)</label>
+                    <textarea
+                      rows={3}
+                      value={activitiesData.content.ctaDescription_hi}
+                      onChange={(e) => setActivitiesData({
+                        ...activitiesData,
+                        content: { ...activitiesData.content, ctaDescription_hi: e.target.value }
+                      })}
+                      className="w-full p-3 border rounded-xl bg-white focus:ring-2 focus:ring-[#631012] text-black"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-4">
+                <label className="block text-sm font-bold text-gray-400 uppercase">Interactive Action Buttons</label>
+                <div className="space-y-3">
+                  {Array.from({ length: ctaButtonsCount }).map((_, index) => {
+                    const enButton = activitiesData.content.ctaButtons_en[index] || { buttonText: '' };
+                    const hiButton = activitiesData.content.ctaButtons_hi[index] || { buttonText: '' };
+
+                    return (
+                      <div key={index} className="flex flex-col md:flex-row gap-4 p-4 border rounded-xl bg-gray-50 relative border-gray-200">
                         <button
                           onClick={() => removeCtaButton(index)}
-                          className="text-red-500 hover:bg-red-50 p-3 rounded-xl transition-all"
+                          className="absolute top-4 right-4 text-red-500 hover:bg-red-50 p-2 rounded-lg transition-all"
                         >
                           <Trash2 size={18} />
                         </button>
+                        <div className="flex-1 space-y-2">
+                          <label className="block text-xs font-bold text-gray-400 uppercase">English Button Text</label>
+                          <input
+                            type="text"
+                            value={enButton.buttonText}
+                            onChange={(e) => updateCtaButton(index, 'en', e.target.value)}
+                            className="w-full p-3 border rounded-xl bg-white text-black"
+                            placeholder="Button Action Text (EN)"
+                          />
+                        </div>
+                        <div className="flex-1 space-y-2 border-t md:border-t-0 md:border-l md:pl-6 pt-3 md:pt-0">
+                          <label className="block text-xs font-bold text-[#631012] uppercase">Hindi Button Text</label>
+                          <input
+                            type="text"
+                            value={hiButton.buttonText}
+                            onChange={(e) => updateCtaButton(index, 'hi', e.target.value)}
+                            className="w-full p-3 border rounded-xl bg-white text-black"
+                            placeholder="बटन का नाम (हिंदी)"
+                          />
+                        </div>
                       </div>
-                    ))}
-                    <button
-                      onClick={addCtaButton}
-                      className="w-full py-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-400 font-bold hover:border-[#631012] hover:text-[#631012] transition-all bg-white flex items-center justify-center gap-2"
-                    >
-                      <Plus size={18} />
-                      Add Action Button
-                    </button>
-                  </div>
+                    );
+                  })}
+                  <button
+                    onClick={addCtaButton}
+                    className="w-full py-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-400 font-bold hover:border-[#631012] hover:text-[#631012] transition-all bg-white flex items-center justify-center gap-2"
+                  >
+                    <Plus size={18} />
+                    Add Action Button
+                  </button>
                 </div>
               </div>
             </div>

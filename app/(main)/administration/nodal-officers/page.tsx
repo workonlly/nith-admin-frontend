@@ -9,13 +9,17 @@ interface NodalOfficer {
   responsibility: string;
   phone: string;
   email: string;
+  name_en?: string;
+  name_hi?: string;
+  responsibility_en?: string;
+  responsibility_hi?: string;
 }
 
 export default function NodalOfficersAdminPage() {
   const [list, setList] = useState<NodalOfficer[]>([]);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState<NodalOfficer>({
-    name: '', responsibility: '', phone: '', email: ''
+    name: '', name_en: '', name_hi: '', responsibility: '', responsibility_en: '', responsibility_hi: '', phone: '', email: ''
   });
   const [editingId, setEditingId] = useState<number | null>(null);
 
@@ -23,11 +27,22 @@ export default function NodalOfficersAdminPage() {
     fetchData();
   }, []);
 
+  const isHindi = (text: string) => /[\u0900-\u097F]/.test(text || '');
+
   const fetchData = async () => {
     try {
       const res = await fetch('http://localhost:5000/api/v1/administration/nodal-officers');
       const json = await res.json();
-      if (json.success) setList(json.data);
+      if (json.success) {
+        const mapped = json.data.map((item: any) => ({
+          ...item,
+          name_en: isHindi(item.name) ? '' : item.name,
+          name_hi: isHindi(item.name) ? item.name : '',
+          responsibility_en: isHindi(item.responsibility) ? '' : item.responsibility,
+          responsibility_hi: isHindi(item.responsibility) ? item.responsibility : '',
+        }));
+        setList(mapped);
+      }
       setLoading(false);
     } catch (err) {
       console.error(err);
@@ -37,6 +52,14 @@ export default function NodalOfficersAdminPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const nameVal = formData.name_hi || formData.name_en || formData.name;
+    const responsibilityVal = formData.responsibility_hi || formData.responsibility_en || formData.responsibility;
+    if (!nameVal || !responsibilityVal) return;
+    const payload = {
+      ...formData,
+      name: nameVal,
+      responsibility: responsibilityVal
+    };
     try {
       const method = editingId ? 'PUT' : 'POST';
       const url = editingId 
@@ -46,19 +69,25 @@ export default function NodalOfficersAdminPage() {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
       const json = await res.json();
       if (json.success) {
         fetchData();
-        setFormData({ name: '', responsibility: '', phone: '', email: '' });
+        setFormData({ name: '', name_en: '', name_hi: '', responsibility: '', responsibility_en: '', responsibility_hi: '', phone: '', email: '' });
         setEditingId(null);
       }
     } catch (err) { alert('Error saving'); }
   };
 
   const handleEdit = (item: NodalOfficer) => {
-    setFormData(item);
+    setFormData({
+      ...item,
+      name_en: isHindi(item.name) ? '' : item.name,
+      name_hi: isHindi(item.name) ? item.name : '',
+      responsibility_en: isHindi(item.responsibility) ? '' : item.responsibility,
+      responsibility_hi: isHindi(item.responsibility) ? item.responsibility : '',
+    });
     setEditingId(item.id!);
   };
 
@@ -91,11 +120,17 @@ export default function NodalOfficersAdminPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-bold text-gray-400 mb-1 uppercase">Name</label>
-                <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-[#631012]" required />
+                <div className="flex flex-col gap-2">
+                  <input type="text" value={formData.name_en || ''} onChange={e => setFormData({...formData, name_en: e.target.value, name: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-[#631012]" placeholder="Name (English)" required />
+                  <input type="text" value={formData.name_hi || ''} onChange={e => setFormData({...formData, name_hi: e.target.value, name: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-[#631012]" placeholder="नाम (हिंदी)" />
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-bold text-gray-400 mb-1 uppercase">Responsibility</label>
-                <textarea value={formData.responsibility} onChange={e => setFormData({...formData, responsibility: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-[#631012]" rows={3} required />
+                <div className="flex flex-col gap-2">
+                  <textarea value={formData.responsibility_en || ''} onChange={e => setFormData({...formData, responsibility_en: e.target.value, responsibility: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-[#631012]" placeholder="Responsibility (English)" rows={2} required />
+                  <textarea value={formData.responsibility_hi || ''} onChange={e => setFormData({...formData, responsibility_hi: e.target.value, responsibility: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-[#631012]" placeholder="जिम्मेदारी (हिंदी)" rows={2} />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -112,7 +147,7 @@ export default function NodalOfficersAdminPage() {
                   {editingId ? 'Update' : 'Add Officer'}
                 </button>
                 {editingId && (
-                  <button type="button" onClick={() => {setEditingId(null); setFormData({name:'', responsibility:'', phone:'', email:''})}} className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-xl font-bold">
+                  <button type="button" onClick={() => {setEditingId(null); setFormData({name:'', name_en:'', name_hi:'', responsibility:'', responsibility_en:'', responsibility_hi:'', phone:'', email:''})}} className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-xl font-bold">
                     Cancel
                   </button>
                 )}

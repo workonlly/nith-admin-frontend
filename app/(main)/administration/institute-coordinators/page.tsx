@@ -9,25 +9,35 @@ interface Coordinator {
   responsibility: string;
   phone: string;
   email: string;
+  name_en?: string;
+  name_hi?: string;
+  responsibility_en?: string;
+  responsibility_hi?: string;
 }
 
 interface PageInfo {
   hero_heading: string;
   hero_subheading: string;
+  hero_heading_en?: string;
+  hero_heading_hi?: string;
+  hero_subheading_en?: string;
+  hero_subheading_hi?: string;
 }
 
 export default function InstituteCoordinatorsAdminPage() {
   const [list, setList] = useState<Coordinator[]>([]);
-  const [info, setInfo] = useState<PageInfo>({ hero_heading: '', hero_subheading: '' });
+  const [info, setInfo] = useState<PageInfo>({ hero_heading: '', hero_subheading: '', hero_heading_en: '', hero_heading_hi: '', hero_subheading_en: '', hero_subheading_hi: '' });
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState<Coordinator>({
-    name: '', responsibility: '', phone: '', email: ''
+    name: '', name_en: '', name_hi: '', responsibility: '', responsibility_en: '', responsibility_hi: '', phone: '', email: ''
   });
   const [editingId, setEditingId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  const isHindi = (text: string) => /[\u0900-\u097F]/.test(text || '');
 
   const fetchData = async () => {
     try {
@@ -38,12 +48,30 @@ export default function InstituteCoordinatorsAdminPage() {
       
       if (infoRes.status === 'fulfilled') {
         const data = await infoRes.value.json();
-        if (data.success && data.data) setInfo(data.data);
+        if (data.success && data.data) {
+          const loaded = data.data;
+          setInfo({
+            ...loaded,
+            hero_heading_en: isHindi(loaded.hero_heading) ? '' : loaded.hero_heading,
+            hero_heading_hi: isHindi(loaded.hero_heading) ? loaded.hero_heading : '',
+            hero_subheading_en: isHindi(loaded.hero_subheading) ? '' : loaded.hero_subheading,
+            hero_subheading_hi: isHindi(loaded.hero_subheading) ? loaded.hero_subheading : '',
+          });
+        }
       }
       
       if (listRes.status === 'fulfilled') {
         const data = await listRes.value.json();
-        if (data.success) setList(data.data);
+        if (data.success) {
+          const mapped = data.data.map((item: any) => ({
+            ...item,
+            name_en: isHindi(item.name) ? '' : item.name,
+            name_hi: isHindi(item.name) ? item.name : '',
+            responsibility_en: isHindi(item.responsibility) ? '' : item.responsibility,
+            responsibility_hi: isHindi(item.responsibility) ? item.responsibility : '',
+          }));
+          setList(mapped);
+        }
       }
       setLoading(false);
     } catch (err) {
@@ -53,11 +81,19 @@ export default function InstituteCoordinatorsAdminPage() {
   };
 
   const handleSaveInfo = async () => {
+    const heroVal = info.hero_heading_hi || info.hero_heading_en || info.hero_heading;
+    const subVal = info.hero_subheading_hi || info.hero_subheading_en || info.hero_subheading;
+    if (!heroVal || !subVal) return;
+    const payload = {
+      ...info,
+      hero_heading: heroVal,
+      hero_subheading: subVal
+    };
     try {
       const res = await fetch('http://localhost:5000/api/v1/administration/institute-coordinators-info', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(info)
+        body: JSON.stringify(payload)
       });
       const json = await res.json();
       if (json.success) alert('Header saved successfully!');
@@ -67,6 +103,14 @@ export default function InstituteCoordinatorsAdminPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const nameVal = formData.name_hi || formData.name_en || formData.name;
+    const responsibilityVal = formData.responsibility_hi || formData.responsibility_en || formData.responsibility;
+    if (!nameVal || !responsibilityVal) return;
+    const payload = {
+      ...formData,
+      name: nameVal,
+      responsibility: responsibilityVal
+    };
     try {
       const method = editingId ? 'PUT' : 'POST';
       const url = editingId 
@@ -76,19 +120,25 @@ export default function InstituteCoordinatorsAdminPage() {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
       const json = await res.json();
       if (json.success) {
         fetchData();
-        setFormData({ name: '', responsibility: '', phone: '', email: '' });
+        setFormData({ name: '', name_en: '', name_hi: '', responsibility: '', responsibility_en: '', responsibility_hi: '', phone: '', email: '' });
         setEditingId(null);
       }
     } catch (err) { alert('Error saving'); }
   };
 
   const handleEdit = (item: Coordinator) => {
-    setFormData(item);
+    setFormData({
+      ...item,
+      name_en: isHindi(item.name) ? '' : item.name,
+      name_hi: isHindi(item.name) ? item.name : '',
+      responsibility_en: isHindi(item.responsibility) ? '' : item.responsibility,
+      responsibility_hi: isHindi(item.responsibility) ? item.responsibility : '',
+    });
     setEditingId(item.id!);
   };
 
@@ -117,11 +167,17 @@ export default function InstituteCoordinatorsAdminPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div className="space-y-2">
             <label className="text-sm font-bold text-gray-400 uppercase">Heading</label>
-            <input type="text" value={info.hero_heading} onChange={e => setInfo({...info, hero_heading: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" />
+            <div className="flex flex-col gap-2">
+              <input type="text" value={info.hero_heading_en || ''} onChange={e => setInfo({...info, hero_heading_en: e.target.value, hero_heading: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" placeholder="Heading (English)" />
+              <input type="text" value={info.hero_heading_hi || ''} onChange={e => setInfo({...info, hero_heading_hi: e.target.value, hero_heading: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" placeholder="शीर्षक (हिंदी)" />
+            </div>
           </div>
           <div className="space-y-2">
             <label className="text-sm font-bold text-gray-400 uppercase">Subheading</label>
-            <input type="text" value={info.hero_subheading} onChange={e => setInfo({...info, hero_subheading: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" />
+            <div className="flex flex-col gap-2">
+              <input type="text" value={info.hero_subheading_en || ''} onChange={e => setInfo({...info, hero_subheading_en: e.target.value, hero_subheading: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" placeholder="Subheading (English)" />
+              <input type="text" value={info.hero_subheading_hi || ''} onChange={e => setInfo({...info, hero_subheading_hi: e.target.value, hero_subheading: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" placeholder="उपशीर्षक (हिंदी)" />
+            </div>
           </div>
         </div>
         <button onClick={handleSaveInfo} className="bg-[#631012] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#800000] transition-all flex items-center gap-2">
@@ -138,11 +194,17 @@ export default function InstituteCoordinatorsAdminPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-bold text-gray-400 mb-1 uppercase">Name</label>
-                <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-[#631012]" required />
+                <div className="flex flex-col gap-2">
+                  <input type="text" value={formData.name_en || ''} onChange={e => setFormData({...formData, name_en: e.target.value, name: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-[#631012]" placeholder="Name (English)" required />
+                  <input type="text" value={formData.name_hi || ''} onChange={e => setFormData({...formData, name_hi: e.target.value, name: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-[#631012]" placeholder="नाम (हिंदी)" />
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-bold text-gray-400 mb-1 uppercase">Responsibility</label>
-                <input type="text" value={formData.responsibility} onChange={e => setFormData({...formData, responsibility: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-[#631012]" required />
+                <div className="flex flex-col gap-2">
+                  <input type="text" value={formData.responsibility_en || ''} onChange={e => setFormData({...formData, responsibility_en: e.target.value, responsibility: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-[#631012]" placeholder="Responsibility (English)" required />
+                  <input type="text" value={formData.responsibility_hi || ''} onChange={e => setFormData({...formData, responsibility_hi: e.target.value, responsibility: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-[#631012]" placeholder="जिम्मेदारी (हिंदी)" />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -159,7 +221,7 @@ export default function InstituteCoordinatorsAdminPage() {
                   {editingId ? 'Update' : 'Add Coordinator'}
                 </button>
                 {editingId && (
-                  <button type="button" onClick={() => {setEditingId(null); setFormData({name:'', responsibility:'', phone:'', email:''})}} className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-xl font-bold">
+                  <button type="button" onClick={() => {setEditingId(null); setFormData({name:'', name_en:'', name_hi:'', responsibility:'', responsibility_en:'', responsibility_hi:'', phone:'', email:''})}} className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-xl font-bold">
                     Cancel
                   </button>
                 )}

@@ -11,6 +11,8 @@ interface Registrar {
   phone: string;
   profile_summary_en: string[];
   profile_summary_hi: string[];
+  name_en?: string;
+  name_hi?: string;
 }
 
 interface Staff {
@@ -20,6 +22,10 @@ interface Staff {
   phone: string;
   email: string;
   is_registrar: boolean;
+  name_en?: string;
+  name_hi?: string;
+  designation_en?: string;
+  designation_hi?: string;
 }
 
 export default function RegistrarAdminPage() {
@@ -32,13 +38,15 @@ export default function RegistrarAdminPage() {
   
   // Staff Form
   const [staffForm, setStaffForm] = useState<Staff>({
-    name: '', designation: '', phone: '', email: '', is_registrar: false
+    name: '', name_en: '', name_hi: '', designation: '', designation_en: '', designation_hi: '', phone: '', email: '', is_registrar: false
   });
   const [editingStaffId, setEditingStaffId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  const isHindi = (text: string) => /[\u0900-\u097F]/.test(text || '');
 
   const fetchData = async () => {
     try {
@@ -50,17 +58,27 @@ export default function RegistrarAdminPage() {
       if (regRes.status === 'fulfilled') {
         const data = await regRes.value.json();
         if (data.success && data.data) {
-          // Ensure arrays are initialized
           const reg = data.data;
           reg.profile_summary_en = reg.profile_summary_en || [''];
           reg.profile_summary_hi = reg.profile_summary_hi || [''];
+          reg.name_en = isHindi(reg.name) ? '' : reg.name;
+          reg.name_hi = isHindi(reg.name) ? reg.name : '';
           setRegistrar(reg);
         }
       }
 
       if (staffRes.status === 'fulfilled') {
         const data = await staffRes.value.json();
-        if (data.success) setStaffList(data.data);
+        if (data.success) {
+          const mapped = data.data.map((s: any) => ({
+            ...s,
+            name_en: isHindi(s.name) ? '' : s.name,
+            name_hi: isHindi(s.name) ? s.name : '',
+            designation_en: isHindi(s.designation) ? '' : s.designation,
+            designation_hi: isHindi(s.designation) ? s.designation : '',
+          }));
+          setStaffList(mapped);
+        }
       }
       setLoading(false);
     } catch (err) {
@@ -70,11 +88,15 @@ export default function RegistrarAdminPage() {
   };
 
   const handleSaveRegistrar = async () => {
+    const payload = {
+      ...registrar,
+      name: registrar.name_hi || registrar.name_en || registrar.name
+    };
     try {
       const res = await fetch('http://localhost:5000/api/v1/administration/registrar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(registrar)
+        body: JSON.stringify(payload)
       });
       const json = await res.json();
       if (json.success) alert('Registrar profile saved successfully!');
@@ -84,6 +106,14 @@ export default function RegistrarAdminPage() {
 
   const handleStaffSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const nameVal = staffForm.name_hi || staffForm.name_en || staffForm.name;
+    const designationVal = staffForm.designation_hi || staffForm.designation_en || staffForm.designation;
+    if (!nameVal || !designationVal) return;
+    const payload = {
+      ...staffForm,
+      name: nameVal,
+      designation: designationVal
+    };
     try {
       const method = editingStaffId ? 'PUT' : 'POST';
       const url = editingStaffId 
@@ -93,18 +123,29 @@ export default function RegistrarAdminPage() {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(staffForm)
+        body: JSON.stringify(payload)
       });
       const json = await res.json();
       if (json.success) {
         alert('Staff member saved!');
         fetchData();
-        setStaffForm({ name: '', designation: '', phone: '', email: '', is_registrar: false });
+        setStaffForm({ name: '', name_en: '', name_hi: '', designation: '', designation_en: '', designation_hi: '', phone: '', email: '', is_registrar: false });
         setEditingStaffId(null);
       } else {
         alert('Error: ' + json.message);
       }
     } catch (err) { alert('Error saving staff'); }
+  };
+
+  const handleEditStaff = (s: Staff) => {
+    setStaffForm({
+      ...s,
+      name_en: isHindi(s.name) ? '' : s.name,
+      name_hi: isHindi(s.name) ? s.name : '',
+      designation_en: isHindi(s.designation) ? '' : s.designation,
+      designation_hi: isHindi(s.designation) ? s.designation : '',
+    });
+    setEditingStaffId(s.id!);
   };
 
   const handleDeleteStaff = async (id: number) => {
@@ -144,7 +185,10 @@ export default function RegistrarAdminPage() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-bold text-gray-400 mb-1 uppercase">Name</label>
-                  <input type="text" value={registrar.name} onChange={e => setRegistrar({...registrar, name: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" />
+                  <div className="flex flex-col gap-2">
+                    <input type="text" value={registrar.name_en || ''} onChange={e => setRegistrar({...registrar, name_en: e.target.value, name: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" placeholder="Name (English)" />
+                    <input type="text" value={registrar.name_hi || ''} onChange={e => setRegistrar({...registrar, name_hi: e.target.value, name: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" placeholder="नाम (हिंदी)" />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-gray-400 mb-1 uppercase">Image URL</label>
@@ -227,11 +271,17 @@ export default function RegistrarAdminPage() {
                 <form onSubmit={handleStaffSubmit} className="space-y-4">
                   <div>
                     <label className="block text-sm font-bold text-gray-400 mb-1 uppercase">Name</label>
-                    <input type="text" value={staffForm.name} onChange={e => setStaffForm({...staffForm, name: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" required />
+                    <div className="flex flex-col gap-2">
+                      <input type="text" value={staffForm.name_en || ''} onChange={e => setStaffForm({...staffForm, name_en: e.target.value, name: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" placeholder="Name (English)" required />
+                      <input type="text" value={staffForm.name_hi || ''} onChange={e => setStaffForm({...staffForm, name_hi: e.target.value, name: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" placeholder="नाम (हिंदी)" />
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-gray-400 mb-1 uppercase">Designation</label>
-                    <input type="text" value={staffForm.designation} onChange={e => setStaffForm({...staffForm, designation: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" required />
+                    <div className="flex flex-col gap-2">
+                      <input type="text" value={staffForm.designation_en || ''} onChange={e => setStaffForm({...staffForm, designation_en: e.target.value, designation: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" placeholder="Designation (English)" required />
+                      <input type="text" value={staffForm.designation_hi || ''} onChange={e => setStaffForm({...staffForm, designation_hi: e.target.value, designation: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" placeholder="पद (हिंदी)" />
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-gray-400 mb-1 uppercase">Phone</label>
@@ -284,7 +334,7 @@ export default function RegistrarAdminPage() {
                         </td>
                         <td className="p-4 text-sm font-medium text-[#631012]">{s.designation}</td>
                         <td className="p-4 text-right">
-                          <button onClick={() => {setEditingStaffId(s.id!); setStaffForm(s)}} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg mr-2"><Save size={18}/></button>
+                          <button onClick={() => handleEditStaff(s)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg mr-2"><Save size={18}/></button>
                           <button onClick={() => handleDeleteStaff(s.id!)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={18}/></button>
                         </td>
                       </tr>

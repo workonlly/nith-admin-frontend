@@ -6,7 +6,11 @@ import { Save, Bell, Plus, Trash2, FileText } from 'lucide-react';
 interface Notice {
   id?: number;
   title: string;
+  title_en?: string;
+  title_hi?: string;
   description: string;
+  description_en?: string;
+  description_hi?: string;
   category: string;
   date: string;
   view_url: string;
@@ -17,6 +21,8 @@ export default function AcademicNoticesPage() {
   const [notices, setNotices] = useState<Notice[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const isHindi = (text: string) => /[\u0900-\u097F]/.test(text || '');
+
   useEffect(() => {
     fetchNotices();
   }, []);
@@ -25,7 +31,16 @@ export default function AcademicNoticesPage() {
     try {
       const res = await fetch('http://localhost:5000/api/v1/academics/notices');
       const json = await res.json();
-      if (json.success) setNotices(json.data);
+      if (json.success) {
+        const mapped = json.data.map((n: any) => ({
+          ...n,
+          title_en: isHindi(n.title) ? '' : n.title,
+          title_hi: isHindi(n.title) ? n.title : '',
+          description_en: isHindi(n.description) ? '' : n.description,
+          description_hi: isHindi(n.description) ? n.description : '',
+        }));
+        setNotices(mapped);
+      }
       setLoading(false);
     } catch (err) {
       console.error(err);
@@ -39,11 +54,17 @@ export default function AcademicNoticesPage() {
       ? `http://localhost:5000/api/v1/academics/notices/${notice.id}`
       : 'http://localhost:5000/api/v1/academics/notices';
 
+    const payload = {
+      ...notice,
+      title: notice.title_hi || notice.title_en || notice.title,
+      description: notice.description_hi || notice.description_en || notice.description,
+    };
+
     try {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(notice)
+        body: JSON.stringify(payload)
       });
       const json = await res.json();
       if (json.success) {
@@ -66,7 +87,7 @@ export default function AcademicNoticesPage() {
   };
 
   const addEmptyNotice = () => {
-    setNotices([{ title: '', description: '', category: 'General', date: new Date().toLocaleDateString(), view_url: '#', download_url: '#' }, ...notices]);
+    setNotices([{ title: '', title_en: '', title_hi: '', description: '', description_en: '', description_hi: '', category: 'General', date: new Date().toLocaleDateString(), view_url: '#', download_url: '#' }, ...notices]);
   };
 
   if (loading) return <div className="p-8 text-black">Loading Notices...</div>;
@@ -92,33 +113,65 @@ export default function AcademicNoticesPage() {
         {notices.map((notice, index) => (
           <div key={notice.id || `new-${index}`} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2 space-y-1">
-                <label className="text-xs font-bold text-gray-400 uppercase">Notice Title</label>
-                <input
-                  type="text"
-                  value={notice.title}
-                  onChange={e => {
-                    const next = [...notices];
-                    next[index].title = e.target.value;
-                    setNotices(next);
-                  }}
-                  className="w-full p-2 border rounded font-bold text-black"
-                  placeholder="e.g. End Semester Schedule"
-                />
+              <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-400 uppercase">Notice Title (English)</label>
+                  <input
+                    type="text"
+                    value={notice.title_en || ''}
+                    onChange={e => {
+                      const next = [...notices];
+                      next[index].title_en = e.target.value;
+                      setNotices(next);
+                    }}
+                    className="w-full p-2 border rounded font-bold text-black bg-gray-50"
+                    placeholder="e.g. End Semester Schedule"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-[#631012] uppercase">Notice Title (Hindi)</label>
+                  <input
+                    type="text"
+                    value={notice.title_hi || ''}
+                    onChange={e => {
+                      const next = [...notices];
+                      next[index].title_hi = e.target.value;
+                      setNotices(next);
+                    }}
+                    className="w-full p-2 border rounded font-bold text-black bg-gray-50 focus:ring-2 focus:ring-[#631012]"
+                    placeholder="उदा. सत्रांत परीक्षा कार्यक्रम"
+                  />
+                </div>
               </div>
-              <div className="md:col-span-2 space-y-1">
-                <label className="text-xs font-bold text-gray-400 uppercase">Description / Details</label>
-                <textarea
-                  value={notice.description}
-                  onChange={e => {
-                    const next = [...notices];
-                    next[index].description = e.target.value;
-                    setNotices(next);
-                  }}
-                  className="w-full p-2 border rounded text-black"
-                  rows={2}
-                  placeholder="Detailed information about the notice"
-                />
+              <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-400 uppercase">Description / Details (English)</label>
+                  <textarea
+                    value={notice.description_en || ''}
+                    onChange={e => {
+                      const next = [...notices];
+                      next[index].description_en = e.target.value;
+                      setNotices(next);
+                    }}
+                    className="w-full p-2 border rounded text-black bg-gray-50"
+                    rows={2}
+                    placeholder="Detailed information about the notice"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-[#631012] uppercase">Description / Details (Hindi)</label>
+                  <textarea
+                    value={notice.description_hi || ''}
+                    onChange={e => {
+                      const next = [...notices];
+                      next[index].description_hi = e.target.value;
+                      setNotices(next);
+                    }}
+                    className="w-full p-2 border rounded text-black bg-gray-50 focus:ring-2 focus:ring-[#631012]"
+                    rows={2}
+                    placeholder="सूचना के बारे में विस्तृत जानकारी"
+                  />
+                </div>
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-bold text-gray-400 uppercase">Category</label>
@@ -129,7 +182,7 @@ export default function AcademicNoticesPage() {
                     next[index].category = e.target.value;
                     setNotices(next);
                   }}
-                  className="w-full p-2 border rounded bg-white text-black"
+                  className="w-full p-2 border rounded bg-white text-black bg-gray-50"
                 >
                   <option value="General">General</option>
                   <option value="Examination">Examination</option>
@@ -148,7 +201,7 @@ export default function AcademicNoticesPage() {
                     next[index].date = e.target.value;
                     setNotices(next);
                   }}
-                  className="w-full p-2 border rounded bg-white text-black"
+                  className="w-full p-2 border rounded text-black bg-gray-50"
                   placeholder="e.g. May 15, 2026"
                 />
               </div>
@@ -162,7 +215,7 @@ export default function AcademicNoticesPage() {
                     next[index].view_url = e.target.value;
                     setNotices(next);
                   }}
-                  className="w-full p-2 border rounded bg-white text-black"
+                  className="w-full p-2 border rounded text-black bg-gray-50"
                 />
               </div>
               <div className="space-y-1">
@@ -175,7 +228,7 @@ export default function AcademicNoticesPage() {
                     next[index].download_url = e.target.value;
                     setNotices(next);
                   }}
-                  className="w-full p-2 border rounded bg-white text-black"
+                  className="w-full p-2 border rounded text-black bg-gray-50"
                 />
               </div>
             </div>

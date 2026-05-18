@@ -6,7 +6,11 @@ import { Save, Calendar, Plus, Trash2, Download } from 'lucide-react';
 interface SemesterCalendar {
   id?: number;
   title: string;
+  title_en?: string;
+  title_hi?: string;
   description: string;
+  description_en?: string;
+  description_hi?: string;
   pdf_url: string;
   view_url: string;
 }
@@ -14,6 +18,8 @@ interface SemesterCalendar {
 export default function AcademicCalendarPage() {
   const [calendars, setCalendars] = useState<SemesterCalendar[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const isHindi = (text: string) => /[\u0900-\u097F]/.test(text || '');
 
   useEffect(() => {
     fetchCalendars();
@@ -23,7 +29,16 @@ export default function AcademicCalendarPage() {
     try {
       const res = await fetch('http://localhost:5000/api/v1/academics/calendars');
       const json = await res.json();
-      if (json.success) setCalendars(json.data);
+      if (json.success) {
+        const mapped = json.data.map((c: any) => ({
+          ...c,
+          title_en: isHindi(c.title) ? '' : c.title,
+          title_hi: isHindi(c.title) ? c.title : '',
+          description_en: isHindi(c.description) ? '' : c.description,
+          description_hi: isHindi(c.description) ? c.description : '',
+        }));
+        setCalendars(mapped);
+      }
       setLoading(false);
     } catch (err) {
       console.error(err);
@@ -37,11 +52,17 @@ export default function AcademicCalendarPage() {
       ? `http://localhost:5000/api/v1/academics/calendars/${calendar.id}`
       : 'http://localhost:5000/api/v1/academics/calendars';
 
+    const payload = {
+      ...calendar,
+      title: calendar.title_hi || calendar.title_en || calendar.title,
+      description: calendar.description_hi || calendar.description_en || calendar.description,
+    };
+
     try {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(calendar)
+        body: JSON.stringify(payload)
       });
       const json = await res.json();
       if (json.success) {
@@ -64,7 +85,7 @@ export default function AcademicCalendarPage() {
   };
 
   const addEmptyCalendar = () => {
-    setCalendars([{ title: '', description: '', pdf_url: '#', view_url: '#' }, ...calendars]);
+    setCalendars([{ title: '', title_en: '', title_hi: '', description: '', description_en: '', description_hi: '', pdf_url: '#', view_url: '#' }, ...calendars]);
   };
 
   if (loading) return <div className="p-8 text-black">Loading Calendars...</div>;
@@ -90,33 +111,65 @@ export default function AcademicCalendarPage() {
         {calendars.map((calendar, index) => (
           <div key={calendar.id || `new-${index}`} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2 space-y-1">
-                <label className="text-xs font-bold text-gray-400 uppercase">Calendar Title</label>
-                <input
-                  type="text"
-                  value={calendar.title}
-                  onChange={e => {
-                    const next = [...calendars];
-                    next[index].title = e.target.value;
-                    setCalendars(next);
-                  }}
-                  className="w-full p-2 border rounded font-bold text-black"
-                  placeholder="e.g. Odd Semester 2025–26"
-                />
+              <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-400 uppercase">Calendar Title (English)</label>
+                  <input
+                    type="text"
+                    value={calendar.title_en || ''}
+                    onChange={e => {
+                      const next = [...calendars];
+                      next[index].title_en = e.target.value;
+                      setCalendars(next);
+                    }}
+                    className="w-full p-2 border rounded font-bold text-black bg-gray-50"
+                    placeholder="e.g. Odd Semester 2025–26"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-[#631012] uppercase">Calendar Title (Hindi)</label>
+                  <input
+                    type="text"
+                    value={calendar.title_hi || ''}
+                    onChange={e => {
+                      const next = [...calendars];
+                      next[index].title_hi = e.target.value;
+                      setCalendars(next);
+                    }}
+                    className="w-full p-2 border rounded font-bold text-black bg-gray-50 focus:ring-2 focus:ring-[#631012]"
+                    placeholder="उदा. विषम सेमेस्टर 2025-26"
+                  />
+                </div>
               </div>
-              <div className="md:col-span-2 space-y-1">
-                <label className="text-xs font-bold text-gray-400 uppercase">Short Description</label>
-                <textarea
-                  value={calendar.description}
-                  onChange={e => {
-                    const next = [...calendars];
-                    next[index].description = e.target.value;
-                    setCalendars(next);
-                  }}
-                  className="w-full p-2 border rounded text-black"
-                  rows={2}
-                  placeholder="Details about this calendar"
-                />
+              <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-400 uppercase">Short Description (English)</label>
+                  <textarea
+                    value={calendar.description_en || ''}
+                    onChange={e => {
+                      const next = [...calendars];
+                      next[index].description_en = e.target.value;
+                      setCalendars(next);
+                    }}
+                    className="w-full p-2 border rounded text-black bg-gray-50"
+                    rows={2}
+                    placeholder="Details about this calendar"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-[#631012] uppercase">Short Description (Hindi)</label>
+                  <textarea
+                    value={calendar.description_hi || ''}
+                    onChange={e => {
+                      const next = [...calendars];
+                      next[index].description_hi = e.target.value;
+                      setCalendars(next);
+                    }}
+                    className="w-full p-2 border rounded text-black bg-gray-50 focus:ring-2 focus:ring-[#631012]"
+                    rows={2}
+                    placeholder="इस कैलेंडर के बारे में विवरण"
+                  />
+                </div>
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-bold text-gray-400 uppercase">PDF View URL</label>
@@ -128,7 +181,7 @@ export default function AcademicCalendarPage() {
                     next[index].view_url = e.target.value;
                     setCalendars(next);
                   }}
-                  className="w-full p-2 border rounded text-black"
+                  className="w-full p-2 border rounded text-black bg-gray-50"
                   placeholder="https://..."
                 />
               </div>
@@ -142,7 +195,7 @@ export default function AcademicCalendarPage() {
                     next[index].pdf_url = e.target.value;
                     setCalendars(next);
                   }}
-                  className="w-full p-2 border rounded text-black"
+                  className="w-full p-2 border rounded text-black bg-gray-50"
                   placeholder="https://..."
                 />
               </div>

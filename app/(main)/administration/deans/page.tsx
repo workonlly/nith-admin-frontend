@@ -12,6 +12,12 @@ interface DeanMember {
   email: string;
   category: string;
   designation?: string;
+  name_en?: string;
+  name_hi?: string;
+  title_en?: string;
+  title_hi?: string;
+  responsibility_en?: string;
+  responsibility_hi?: string;
 }
 
 export default function DeansPage() {
@@ -22,11 +28,24 @@ export default function DeansPage() {
     fetchDeans();
   }, []);
 
+  const isHindi = (text: string) => /[\u0900-\u097F]/.test(text || '');
+
   const fetchDeans = async () => {
     try {
       const res = await fetch('http://localhost:5000/api/v1/administration/deans');
       const json = await res.json();
-      if (json.success) setDeans(json.data);
+      if (json.success) {
+        const mapped = json.data.map((d: any) => ({
+          ...d,
+          name_en: isHindi(d.name) ? '' : d.name,
+          name_hi: isHindi(d.name) ? d.name : '',
+          responsibility_en: isHindi(d.responsibility) ? '' : d.responsibility,
+          responsibility_hi: isHindi(d.responsibility) ? d.responsibility : '',
+          title_en: isHindi(d.title || d.designation) ? '' : (d.title || d.designation),
+          title_hi: isHindi(d.title || d.designation) ? (d.title || d.designation) : '',
+        }));
+        setDeans(mapped);
+      }
       setLoading(false);
     } catch (err) {
       console.error('Error fetching deans:', err);
@@ -42,7 +61,9 @@ export default function DeansPage() {
 
     const payload = {
       ...dean,
-      title: dean.designation || dean.title
+      name: dean.name_hi || dean.name_en || dean.name,
+      responsibility: dean.responsibility_hi || dean.responsibility_en || dean.responsibility,
+      title: dean.title_hi || dean.title_en || dean.title || dean.designation
     };
 
     try {
@@ -65,7 +86,12 @@ export default function DeansPage() {
   };
 
   const addEmptyDean = () => {
-    setDeans([{ name: '', title: '', responsibility: '', phone: '', email: '', category: 'Dean' }, ...deans]);
+    setDeans([{
+      name: '', name_en: '', name_hi: '',
+      title: '', title_en: '', title_hi: '',
+      responsibility: '', responsibility_en: '', responsibility_hi: '',
+      phone: '', email: '', category: 'Dean'
+    }, ...deans]);
   };
 
   if (loading) return <div className="p-8 text-black font-bold">Loading...</div>;
@@ -99,29 +125,62 @@ export default function DeansPage() {
                   <option value="Associate Dean">Associate Dean</option>
                 </select>
               </div>
-              <div className="space-y-1 lg:col-span-1">
-                <label className="text-[10px] font-bold text-gray-400 uppercase">Name</label>
-                <input type="text" value={d.name} onChange={e => {
-                  const next = [...deans];
-                  next[i].name = e.target.value;
-                  setDeans(next);
-                }} className="w-full p-2 border rounded-lg" placeholder="Name" />
+              <div className="space-y-1 lg:col-span-1 flex flex-col gap-1">
+                <div>
+                  <label className="text-[10px] font-bold text-gray-400 uppercase">Name</label>
+                  <input type="text" value={d.name_en || ''} onChange={e => {
+                    const next = [...deans];
+                    next[i].name_en = e.target.value;
+                    next[i].name = e.target.value;
+                    setDeans(next);
+                  }} className="w-full p-2 border rounded-lg text-sm" placeholder="Name (English)" />
+                </div>
+                <div>
+                  <input type="text" value={d.name_hi || ''} onChange={e => {
+                    const next = [...deans];
+                    next[i].name_hi = e.target.value;
+                    next[i].name = e.target.value;
+                    setDeans(next);
+                  }} className="w-full p-2 border rounded-lg text-sm" placeholder="नाम (हिंदी)" />
+                </div>
               </div>
-              <div className="space-y-1 lg:col-span-2">
-                <label className="text-[10px] font-bold text-gray-400 uppercase">Responsibility</label>
-                <input type="text" value={d.responsibility} onChange={e => {
-                  const next = [...deans];
-                  next[i].responsibility = e.target.value;
-                  setDeans(next);
-                }} className="w-full p-2 border rounded-lg" placeholder="Responsibility" />
+              <div className="space-y-1 lg:col-span-2 flex flex-col gap-1">
+                <div>
+                  <label className="text-[10px] font-bold text-gray-400 uppercase">Responsibility</label>
+                  <input type="text" value={d.responsibility_en || ''} onChange={e => {
+                    const next = [...deans];
+                    next[i].responsibility_en = e.target.value;
+                    next[i].responsibility = e.target.value;
+                    setDeans(next);
+                  }} className="w-full p-2 border rounded-lg text-sm" placeholder="Responsibility (English)" />
+                </div>
+                <div>
+                  <input type="text" value={d.responsibility_hi || ''} onChange={e => {
+                    const next = [...deans];
+                    next[i].responsibility_hi = e.target.value;
+                    next[i].responsibility = e.target.value;
+                    setDeans(next);
+                  }} className="w-full p-2 border rounded-lg text-sm" placeholder="उत्तरदायित्व (हिंदी)" />
+                </div>
               </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-gray-400 uppercase">Title / Dept</label>
-                <input type="text" value={d.title || d.designation} onChange={e => {
-                  const next = [...deans];
-                  next[i].title = e.target.value;
-                  setDeans(next);
-                }} className="w-full p-2 border rounded-lg text-xs" placeholder="Professor..." />
+              <div className="space-y-1 flex flex-col gap-1">
+                <div>
+                  <label className="text-[10px] font-bold text-gray-400 uppercase">Title / Dept</label>
+                  <input type="text" value={d.title_en || ''} onChange={e => {
+                    const next = [...deans];
+                    next[i].title_en = e.target.value;
+                    next[i].title = e.target.value;
+                    setDeans(next);
+                  }} className="w-full p-2 border rounded-lg text-xs" placeholder="Title/Dept (English)" />
+                </div>
+                <div>
+                  <input type="text" value={d.title_hi || ''} onChange={e => {
+                    const next = [...deans];
+                    next[i].title_hi = e.target.value;
+                    next[i].title = e.target.value;
+                    setDeans(next);
+                  }} className="w-full p-2 border rounded-lg text-xs" placeholder="शीर्षक / विभाग (हिंदी)" />
+                </div>
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-gray-400 uppercase">Email</label>
