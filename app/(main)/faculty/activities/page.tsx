@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Save,
   Calendar,
@@ -23,24 +23,55 @@ interface Activity {
 }
 
 interface ActivitiesData {
-  heroHeading: string;
-  heroDescription: string;
+  heroHeadingEn: string;
+  heroHeadingHn: string;
+  heroDescriptionEn: string;
+  heroDescriptionHn: string;
   filterHeading: string;
   categories: string[];
   activitiesTableHeading: string;
   activities: Activity[];
 }
 
-type TabType = 'hero' | 'activities';
+type TabType = 'hero' | 'activities' | 'sections';
 
 export default function FacultyActivitiesPage() {
   const [activeTab, setActiveTab] = useState<TabType>('hero');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
+  const [subtexts, setSubtexts] = useState<any[]>([]);
+
+  // Fetch heading and subtexts from backend on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const hData = await fetch('http://localhost:4000/api/faculty-activities').then(res => res.json());
+        if (hData) {
+          setActivitiesData(prev => ({
+            ...prev,
+            heroHeadingEn: hData.title_en || prev.heroHeadingEn,
+            heroHeadingHn: hData.title_hn || prev.heroHeadingHn,
+            heroDescriptionEn: hData.sub_title_en || prev.heroDescriptionEn,
+            heroDescriptionHn: hData.sub_title_hn || prev.heroDescriptionHn,
+          }));
+        }
+        
+        const sData = await fetch('http://localhost:4000/api/faculty-activities/subtext').then(res => res.json());
+        if (Array.isArray(sData)) {
+          setSubtexts(sData);
+        }
+      } catch (err) {
+        console.error('Failed to fetch data:', err);
+      }
+    };
+    fetchData();
+  }, []);
+
   const [activitiesData, setActivitiesData] = useState<ActivitiesData>({
-    heroHeading: 'Faculty Activities',
-    heroDescription:
-      'Stay connected with your alma mater through reunions, webinars, hackathons, and campus events.',
+    heroHeadingEn: 'Faculty Activities',
+    heroHeadingHn: 'संकाय गतिविधियां',
+    heroDescriptionEn: 'Stay connected with your alma mater through reunions, webinars, hackathons, and campus events.',
+    heroDescriptionHn: 'पुनर्मिलन, वेबिनार, हैकाथॉन और कैंपस कार्यक्रमों के माध्यम से अपने अल्मा मेटर से जुड़े रहें।',
     filterHeading: 'Filter by Category:',
     categories: ['All', 'Reunions', 'Webinars', 'Hackathons', 'Campus Events'],
     activitiesTableHeading: 'Faculty Activities',
@@ -143,11 +174,92 @@ export default function FacultyActivitiesPage() {
       label: 'Activities',
       icon: <Calendar size={18} />,
     },
+    {
+      id: 'sections' as TabType,
+      label: 'Responsibility Sections',
+      icon: <Monitor size={18} />,
+    },
   ];
 
-  const handleSave = () => {
-    alert('Changes saved successfully!');
-    console.log(activitiesData);
+  const handleSaveSections = async () => {
+    try {
+      for (const section of subtexts) {
+        if (section.id > 0 && section.id < 1000000) {
+          await fetch(`http://localhost:4000/api/faculty-activities/subtext/${section.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(section),
+          });
+        } else {
+          await fetch('http://localhost:4000/api/faculty-activities/subtext', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(section),
+          });
+        }
+      }
+      alert('Sections saved successfully!');
+      window.location.reload();
+    } catch (err) {
+      console.error('Save sections failed:', err);
+      alert('Failed to save sections');
+    }
+  };
+
+  const addSection = () => {
+    setSubtexts([
+      ...subtexts,
+      {
+        id: Date.now() + Math.floor(Math.random() * 1000),
+        heading_en: 'New Section Header',
+        heading_hn: 'नया अनुभाग',
+        subheading_en: 'Role & Responsibilities Description',
+        subheading_hn: 'भूमिका और जिम्मेदारियां विवरण',
+        small_text: '• Bullet Point 1\n• Bullet Point 2',
+      },
+    ]);
+  };
+
+  const removeSection = async (index: number, id?: number) => {
+    if (id && id > 0 && id < 1000000) {
+      if (!confirm('Are you sure you want to delete this section from database?')) return;
+      try {
+        await fetch(`http://localhost:4000/api/faculty-activities/subtext/${id}`, {
+          method: 'DELETE',
+        });
+      } catch (err) {
+        console.error('Delete failed:', err);
+      }
+    }
+    setSubtexts(subtexts.filter((_, i) => i !== index));
+  };
+
+  const updateSection = (index: number, field: string, value: string) => {
+    const updated = [...subtexts];
+    updated[index] = { ...updated[index], [field]: value };
+    setSubtexts(updated);
+  };
+
+  const handleSave = async () => {
+    try {
+      const response = await fetch('http://localhost:4000/api/faculty-activities', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title_en: activitiesData.heroHeadingEn,
+          title_hn: activitiesData.heroHeadingHn,
+          sub_title_en: activitiesData.heroDescriptionEn,
+          sub_title_hn: activitiesData.heroDescriptionHn,
+        }),
+      });
+      const res = await response.json();
+      console.log('Saved:', res);
+      alert('Changes saved successfully!');
+      window.location.reload();
+    } catch (err) {
+      console.error('Save failed:', err);
+      alert('Failed to save changes');
+    }
   };
 
   // Activities
@@ -279,54 +391,64 @@ export default function FacultyActivitiesPage() {
                 </h2>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-[#171717] mb-2">
-                    Heading
-                  </label>
-                  <input
-                    type="text"
-                    value={activitiesData.heroHeading}
-                    onChange={(e) =>
-                      setActivitiesData({
-                        ...activitiesData,
-                        heroHeading: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm sm:text-base"
-                    placeholder="Faculty Activities"
-                  />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-4">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#171717]/50">English Content</label>
+                  <div>
+                    <label className="block text-sm font-medium text-[#171717] mb-2">Heading</label>
+                    <input
+                      type="text"
+                      value={activitiesData.heroHeadingEn}
+                      onChange={(e) => setActivitiesData({...activitiesData, heroHeadingEn: e.target.value})}
+                      className="w-full px-4 py-2.5 border border-[#171717]/15 rounded-lg focus:ring-2 focus:ring-[#631012] outline-none text-sm"
+                      placeholder="Faculty Activities"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#171717] mb-2">Description</label>
+                    <textarea
+                      rows={4}
+                      value={activitiesData.heroDescriptionEn}
+                      onChange={(e) => setActivitiesData({...activitiesData, heroDescriptionEn: e.target.value})}
+                      className="w-full px-4 py-2.5 border border-[#171717]/15 rounded-lg focus:ring-2 focus:ring-[#631012] outline-none text-sm"
+                      placeholder="Enter description"
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-[#171717] mb-2">
-                    Description
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={activitiesData.heroDescription}
-                    onChange={(e) =>
-                      setActivitiesData({
-                        ...activitiesData,
-                        heroDescription: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm sm:text-base"
-                    placeholder="Enter description"
-                  />
+                <div className="space-y-4">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#171717]/50">Hindi Content</label>
+                  <div>
+                    <label className="block text-sm font-medium text-[#171717] mb-2">Heading (Hindi)</label>
+                    <input
+                      type="text"
+                      value={activitiesData.heroHeadingHn}
+                      onChange={(e) => setActivitiesData({...activitiesData, heroHeadingHn: e.target.value})}
+                      className="w-full px-4 py-2.5 border border-[#171717]/15 rounded-lg focus:ring-2 focus:ring-[#631012] outline-none text-sm"
+                      placeholder="संकाय गतिविधियां"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#171717] mb-2">Description (Hindi)</label>
+                    <textarea
+                      rows={4}
+                      value={activitiesData.heroDescriptionHn}
+                      onChange={(e) => setActivitiesData({...activitiesData, heroDescriptionHn: e.target.value})}
+                      className="w-full px-4 py-2.5 border border-[#171717]/15 rounded-lg focus:ring-2 focus:ring-[#631012] outline-none text-sm"
+                      placeholder="विवरण दर्ज करें"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="mt-4 sm:mt-6 p-4 sm:p-6 bg-[#F9F9F9] rounded-lg border-2 border-dashed border-[#171717]/20">
-                <p className="text-xs sm:text-sm font-medium text-[#171717]/60 mb-3">
-                  Preview:
-                </p>
-                <div className="bg-white p-4 sm:p-6 rounded-lg">
-                  <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#171717] mb-3">
-                    {activitiesData.heroHeading}
+              <div className="mt-8 p-6 bg-[#F9F9F9] rounded-xl border-2 border-dashed border-[#171717]/10">
+                <p className="text-xs font-bold uppercase tracking-wider text-[#171717]/50 mb-4">Preview (English):</p>
+                <div className="bg-white p-6 rounded-lg shadow-sm">
+                  <h3 className="text-2xl sm:text-3xl font-bold text-[#171717] mb-3">
+                    {activitiesData.heroHeadingEn}
                   </h3>
-                  <p className="text-base sm:text-lg text-[#171717]/70">
-                    {activitiesData.heroDescription}
+                  <p className="text-base text-[#171717]/70 leading-relaxed">
+                    {activitiesData.heroDescriptionEn}
                   </p>
                 </div>
               </div>
@@ -668,6 +790,106 @@ export default function FacultyActivitiesPage() {
                     </table>
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+          {/* Responsibility Sections (Bullet Points) */}
+          {activeTab === 'sections' && (
+            <div className="space-y-6">
+              <div className="flex items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <Monitor className="text-[#631012] w-5 h-5 sm:w-6 sm:h-6" />
+                  <h2 className="text-xl sm:text-2xl font-bold text-[#171717]">
+                    Responsibility Sections (Bullet Points)
+                  </h2>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={addSection}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shadow-md text-sm sm:text-base font-medium"
+                  >
+                    <Plus size={18} />
+                    Add Section
+                  </button>
+                  <button
+                    onClick={handleSaveSections}
+                    className="bg-[#631012] hover:bg-[#7a1214] text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shadow-md text-sm sm:text-base font-medium"
+                  >
+                    <Save size={18} />
+                    Save All
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-8 mt-6">
+                {subtexts.map((item, index) => (
+                  <div key={index} className="p-6 border border-[#171717]/10 rounded-xl bg-[#F9F9F9] shadow-sm relative">
+                    <button
+                      onClick={() => removeSection(index, item.id)}
+                      className="absolute top-4 right-4 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Remove Section"
+                    >
+                      <Trash2 size={20} />
+                    </button>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                      <div className="space-y-4">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-[#171717]/50">English Content</label>
+                        <input
+                          type="text"
+                          value={item.heading_en}
+                          onChange={(e) => updateSection(index, 'heading_en', e.target.value)}
+                          className="w-full px-4 py-2.5 border border-[#171717]/15 rounded-lg focus:ring-2 focus:ring-[#631012] outline-none text-sm font-semibold"
+                          placeholder="Section Heading (English)"
+                        />
+                        <textarea
+                          rows={2}
+                          value={item.subheading_en}
+                          onChange={(e) => updateSection(index, 'subheading_en', e.target.value)}
+                          className="w-full px-4 py-2.5 border border-[#171717]/15 rounded-lg focus:ring-2 focus:ring-[#631012] outline-none text-sm"
+                          placeholder="Section Subheading (English)"
+                        />
+                      </div>
+
+                      <div className="space-y-4">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-[#171717]/50">Hindi Content</label>
+                        <input
+                          type="text"
+                          value={item.heading_hn}
+                          onChange={(e) => updateSection(index, 'heading_hn', e.target.value)}
+                          className="w-full px-4 py-2.5 border border-[#171717]/15 rounded-lg focus:ring-2 focus:ring-[#631012] outline-none text-sm font-semibold"
+                          placeholder="Section Heading (Hindi)"
+                        />
+                        <textarea
+                          rows={2}
+                          value={item.subheading_hn}
+                          onChange={(e) => updateSection(index, 'subheading_hn', e.target.value)}
+                          className="w-full px-4 py-2.5 border border-[#171717]/15 rounded-lg focus:ring-2 focus:ring-[#631012] outline-none text-sm"
+                          placeholder="Section Subheading (Hindi)"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mt-4">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-[#171717]/50 mb-2">Bullet Points (One per line)</label>
+                      <textarea
+                        rows={6}
+                        value={item.small_text}
+                        onChange={(e) => updateSection(index, 'small_text', e.target.value)}
+                        className="w-full px-4 py-2.5 border border-[#171717]/15 rounded-lg focus:ring-2 focus:ring-[#631012] outline-none text-sm font-mono"
+                        placeholder="• Point 1&#10;• Point 2"
+                      />
+                      <p className="text-[10px] text-[#171717]/40 mt-1 italic">Note: Content will be split by new lines on the website.</p>
+                    </div>
+                  </div>
+                ))}
+
+                {subtexts.length === 0 && (
+                  <div className="text-center py-20 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+                    <Monitor className="mx-auto w-12 h-12 text-gray-300 mb-3" />
+                    <p className="text-gray-500 font-medium">No sections found. Add a new section to get started.</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
