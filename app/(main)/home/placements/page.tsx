@@ -1,419 +1,919 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Save,
   TrendingUp,
   Plus,
   Trash2,
-  FileText,
   Building2,
+  Loader,
 } from 'lucide-react';
 
 interface StatItem {
-  value: string;
-  label: string;
+  n_en: string;
+  n_hi: string;
+
+  d_en: string;
+  d_hi: string;
 }
 
 interface PlacementsData {
-  heading: string;
-  subtitle: string;
+  heading_en: string;
+  heading_hi: string;
+
   stats: StatItem[];
-  recruitersHeading: string;
-  recruitersDescription: string;
-  topRecruiters: string[];
+
+  recruitersHeading_en: string;
+  recruitersHeading_hi: string;
+
+  recruitersDescription_en: string;
+  recruitersDescription_hi: string;
+
+  topRecruiters_en: string[];
+  topRecruiters_hi: string[];
 }
 
-type TabType = 'stats' | 'recruiters';
+type TabType = 'content';
 
-export default function PlacementsPage() {
-  const [activeTab, setActiveTab] = useState<TabType>('stats');
+export default function PlacementsAdminPage() {
+  const [activeTab, setActiveTab] =
+    useState<TabType>('content');
 
-  const [placementsData, setPlacementsData] = useState<PlacementsData>({
-    heading: 'Placement Statistics',
-    subtitle: 'Our placement track record',
-    stats: [
-      { value: '95%', label: 'Placement Rate' },
-      { value: '₹12L', label: 'Avg Package' },
-    ],
-    recruitersHeading: 'Top Recruiters',
-    recruitersDescription:
-      'Leading companies from various sectors visit our campus for recruitment including technology giants, consulting firms, and core engineering companies.',
-    topRecruiters: [
-      'Google',
-      'Microsoft',
-      'Amazon',
-      'Adobe',
-      'Flipkart',
-      'Goldman Sachs',
-    ],
-  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  const [placementsData, setPlacementsData] =
+    useState<PlacementsData>({
+      heading_en: 'Placement Statistics',
+      heading_hi: 'प्लेसमेंट सांख्यिकी',
+
+      stats: [
+        {
+          n_en: '3.4 Cr',
+          n_hi: '3.4 करोड़',
+
+          d_en: 'Highest Package',
+          d_hi: 'उच्चतम पैकेज',
+        },
+      ],
+
+      recruitersHeading_en: 'Top Recruiters',
+      recruitersHeading_hi: 'शीर्ष भर्तीकर्ता',
+
+      recruitersDescription_en:
+        'Leading companies visit our campus.',
+
+      recruitersDescription_hi:
+        'प्रमुख कंपनियाँ हमारे परिसर में आती हैं।',
+
+      topRecruiters_en: [
+        'Google',
+        'Microsoft',
+      ],
+
+      topRecruiters_hi: [
+        'गूगल',
+        'माइक्रोसॉफ्ट',
+      ],
+    });
 
   const tabs = [
     {
-      id: 'stats' as TabType,
-      label: 'Statistics',
-      icon: <TrendingUp size={18} />,
-    },
-    {
-      id: 'recruiters' as TabType,
-      label: 'Top Recruiters',
+      id: 'content' as TabType,
+      label: 'Placements Content',
       icon: <Building2 size={18} />,
     },
   ];
 
-  const handleSave = () => {
-    alert('Changes saved successfully!');
-    console.log(placementsData);
+  // =========================
+  // FETCH DATA
+  // =========================
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadPlacementsData() {
+      try {
+        setLoading(true);
+        setError('');
+
+        const res = await fetch(
+          'http://localhost:4000/v1/homepage/placements'
+        );
+
+        const json = await res.json();
+
+        if (mounted && json.success) {
+          setPlacementsData({
+            heading_en:
+              json.data.heading_en || '',
+
+            heading_hi:
+              json.data.heading_hi || '',
+
+            stats:
+              json.data.stats || [],
+
+            recruitersHeading_en:
+              json.data.recruitersheading_en ||
+              '',
+
+            recruitersHeading_hi:
+              json.data.recruitersheading_hi ||
+              '',
+
+            recruitersDescription_en:
+              json.data
+                .recruitersdescription_en ||
+              '',
+
+            recruitersDescription_hi:
+              json.data
+                .recruitersdescription_hi ||
+              '',
+
+            topRecruiters_en:
+              json.data.toprecruiters_en ||
+              [],
+
+            topRecruiters_hi:
+              json.data.toprecruiters_hi ||
+              [],
+          });
+        }
+      } catch (err) {
+        console.error(err);
+        setError(
+          'Failed to fetch placements data'
+        );
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadPlacementsData();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // =========================
+  // SAVE
+  // =========================
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      setError('');
+      setSuccess('');
+
+      const res = await fetch(
+        'http://localhost:4000/v1/homepage/placements',
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type':
+              'application/json',
+          },
+
+          body: JSON.stringify(
+            placementsData
+          ),
+        }
+      );
+
+      const json = await res.json();
+
+      if (json.success) {
+        setSuccess(
+          'Changes saved successfully!'
+        );
+
+        setTimeout(() => {
+          setSuccess('');
+        }, 3000);
+      } else {
+        setError(
+          json.error ||
+            'Failed to save changes'
+        );
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Something went wrong');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const updateStat = (index: number, field: keyof StatItem, value: string) => {
+  // =========================
+  // STATS FUNCTIONS
+  // =========================
+
+  const updateStat = (
+    index: number,
+    field: keyof StatItem,
+    value: string
+  ) => {
     const updated = [...placementsData.stats];
-    updated[index] = { ...updated[index], [field]: value };
-    setPlacementsData({ ...placementsData, stats: updated });
+
+    updated[index] = {
+      ...updated[index],
+      [field]: value,
+    };
+
+    setPlacementsData({
+      ...placementsData,
+      stats: updated,
+    });
   };
 
   const addStat = () => {
     setPlacementsData({
       ...placementsData,
-      stats: [...placementsData.stats, { value: '', label: '' }],
+      stats: [
+        ...placementsData.stats,
+        {
+          n_en: '',
+          n_hi: '',
+
+          d_en: '',
+          d_hi: '',
+        },
+      ],
     });
   };
 
   const removeStat = (index: number) => {
     setPlacementsData({
       ...placementsData,
-      stats: placementsData.stats.filter((_, i) => i !== index),
+      stats: placementsData.stats.filter(
+        (_, i) => i !== index
+      ),
     });
   };
 
-  const updateRecruiter = (index: number, value: string) => {
-    const updated = [...placementsData.topRecruiters];
-    updated[index] = value;
-    setPlacementsData({ ...placementsData, topRecruiters: updated });
+  // =========================
+  // RECRUITERS FUNCTIONS
+  // =========================
+
+  const updateRecruiter = (
+    index: number,
+    language: 'en' | 'hi',
+    value: string
+  ) => {
+    if (language === 'en') {
+      const updated = [
+        ...placementsData.topRecruiters_en,
+      ];
+
+      updated[index] = value;
+
+      setPlacementsData({
+        ...placementsData,
+        topRecruiters_en: updated,
+      });
+    } else {
+      const updated = [
+        ...placementsData.topRecruiters_hi,
+      ];
+
+      updated[index] = value;
+
+      setPlacementsData({
+        ...placementsData,
+        topRecruiters_hi: updated,
+      });
+    }
   };
 
   const addRecruiter = () => {
     setPlacementsData({
       ...placementsData,
-      topRecruiters: [...placementsData.topRecruiters, ''],
+
+      topRecruiters_en: [
+        ...placementsData.topRecruiters_en,
+        '',
+      ],
+
+      topRecruiters_hi: [
+        ...placementsData.topRecruiters_hi,
+        '',
+      ],
     });
   };
 
-  const removeRecruiter = (index: number) => {
+  const removeRecruiter = (
+    index: number
+  ) => {
     setPlacementsData({
       ...placementsData,
-      topRecruiters: placementsData.topRecruiters.filter((_, i) => i !== index),
+
+      topRecruiters_en:
+        placementsData.topRecruiters_en.filter(
+          (_, i) => i !== index
+        ),
+
+      topRecruiters_hi:
+        placementsData.topRecruiters_hi.filter(
+          (_, i) => i !== index
+        ),
     });
   };
 
+  // =========================
+  // LOADING
+  // =========================
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Loader className="w-8 h-8 animate-spin text-[#631012] mx-auto mb-4" />
+
+          <p className="text-gray-600">
+            Loading placements data...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================
+  // UI
+  // =========================
+
   return (
-    <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 lg:p-6">
-      <div className="bg-gradient-to-r from-[#631012] to-[#7a1214] rounded-lg shadow-lg p-4 sm:p-6 lg:p-8 text-white">
-        <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-          <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8" />
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">
+    <div className="space-y-6 p-4 sm:p-6">
+
+      {/* HEADER */}
+      <div className="bg-gradient-to-r from-[#631012] to-[#7a1214] rounded-2xl shadow-lg p-6 sm:p-8 text-white">
+        <div className="flex items-center gap-3 mb-4">
+          <TrendingUp className="w-7 h-7" />
+
+          <h1 className="text-2xl sm:text-3xl font-bold">
             Placements
           </h1>
         </div>
-        <p className="text-sm sm:text-base text-white/90">
-          Manage placement statistics and recruiters
+
+        <p className="text-white/90">
+          Manage placement statistics and
+          recruiters
         </p>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="bg-[#631012]/10 p-2 sm:p-3 rounded-full text-[#631012] flex-shrink-0">
-              <TrendingUp className="w-6 h-6 sm:w-7 sm:h-7" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#171717] break-words">
-                Placements Editor
-              </h1>
-              <p className="text-sm sm:text-base text-[#171717]/60 mt-1">
-                Edit placement data
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={handleSave}
-            className="bg-[#631012] hover:bg-[#7a1214] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg flex items-center gap-2 transition-colors shadow-md w-full sm:w-auto justify-center text-sm sm:text-base"
-          >
-            <Save className="w-4 h-4 sm:w-5 sm:h-5" />
-            Save Changes
-          </button>
+      {/* SUCCESS */}
+      {success && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-green-700">
+          {success}
         </div>
+      )}
+
+      {/* ERROR */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+          {error}
+        </div>
+      )}
+
+      {/* TOP BAR */}
+      <div className="bg-white rounded-2xl shadow-md p-4 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+
+        <div className="flex items-center gap-3">
+          <div className="bg-[#631012]/10 p-3 rounded-full text-[#631012]">
+            <TrendingUp className="w-6 h-6" />
+          </div>
+
+          <div>
+            <h2 className="text-2xl font-bold text-[#171717]">
+              Placements Editor
+            </h2>
+
+            <p className="text-[#171717]/60">
+              Edit placement content
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="bg-[#631012] hover:bg-[#7a1214] text-white px-6 py-3 rounded-xl flex items-center gap-2 transition-colors"
+        >
+          {saving ? (
+            <>
+              <Loader className="w-5 h-5 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save className="w-5 h-5" />
+              Save Changes
+            </>
+          )}
+        </button>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      {/* TABS */}
+      <div className="bg-white rounded-2xl shadow-md overflow-hidden">
+
         <div className="border-b border-[#171717]/10">
-          <div className="flex overflow-x-auto scrollbar-thin scrollbar-thumb-[#631012]/30 scrollbar-track-gray-100">
+          <div className="flex">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() =>
+                  setActiveTab(tab.id)
+                }
                 className={`
-                  flex items-center gap-2 px-4 sm:px-6 py-3 sm:py-4 font-medium transition-colors whitespace-nowrap text-sm sm:text-base flex-shrink-0
+                  flex items-center gap-2 px-6 py-4 font-medium transition-colors
                   ${
                     activeTab === tab.id
-                      ? 'bg-[#631012] text-white border-b-2 border-[#631012]'
-                      : 'text-[#171717]/70 hover:bg-[#F9F9F9] hover:text-[#171717]'
+                      ? 'bg-[#631012] text-white'
+                      : 'text-[#171717]/70 hover:bg-[#F9F9F9]'
                   }
                 `}
               >
-                <span className="w-4 h-4 sm:w-5 sm:h-5">{tab.icon}</span>
-                <span>{tab.label}</span>
+                {tab.icon}
+                {tab.label}
               </button>
             ))}
           </div>
         </div>
 
-        <div className="p-4 sm:p-6">
-          {/* Statistics */}
-          {activeTab === 'stats' && (
-            <div className="space-y-4 sm:space-y-6">
-              <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                <TrendingUp className="text-[#631012] w-5 h-5 sm:w-6 sm:h-6" />
-                <h2 className="text-xl sm:text-2xl font-bold text-[#171717]">
-                  Placement Statistics
-                </h2>
-              </div>
+        {/* CONTENT */}
+        <div className="p-6 space-y-10">
 
-              <div className="grid grid-cols-1 gap-4 sm:gap-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-[#171717] mb-2">
-                      Heading
-                    </label>
-                    <input
-                      type="text"
-                      value={placementsData.heading}
-                      onChange={(e) =>
-                        setPlacementsData({
-                          ...placementsData,
-                          heading: e.target.value,
-                        })
+          {/* HEADING */}
+          <div className="space-y-4">
+
+            <h2 className="text-2xl font-bold">
+              Placement Heading
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              <input
+                type="text"
+                value={
+                  placementsData.heading_en
+                }
+                onChange={(e) =>
+                  setPlacementsData({
+                    ...placementsData,
+                    heading_en:
+                      e.target.value,
+                  })
+                }
+                placeholder="Heading English"
+                className="w-full px-4 py-3 border rounded-xl text-black"
+              />
+
+              <input
+                type="text"
+                value={
+                  placementsData.heading_hi
+                }
+                onChange={(e) =>
+                  setPlacementsData({
+                    ...placementsData,
+                    heading_hi:
+                      e.target.value,
+                  })
+                }
+                placeholder="Heading Hindi"
+                className="w-full px-4 py-3 border rounded-xl text-black"
+              />
+            </div>
+          </div>
+
+          {/* STATS */}
+          <div className="space-y-4">
+
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold">
+                Statistics
+              </h2>
+
+              <button
+                onClick={addStat}
+                className="flex items-center gap-2 text-[#631012]"
+              >
+                <Plus size={18} />
+                Add Stat
+              </button>
+            </div>
+
+            {placementsData.stats.map(
+              (stat, index) => (
+                <div
+                  key={index}
+                  className="border rounded-2xl p-5 space-y-4 bg-[#F9F9F9]"
+                >
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-semibold">
+                      Stat {index + 1}
+                    </h3>
+
+                    <button
+                      onClick={() =>
+                        removeStat(index)
                       }
-                      className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm sm:text-base"
-                      placeholder="Placement Statistics"
-                    />
+                      className="text-red-600"
+                    >
+                      <Trash2 size={18} />
+                    </button>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-[#171717] mb-2">
-                      Subtitle
-                    </label>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
                     <input
                       type="text"
-                      value={placementsData.subtitle}
+                      value={stat.n_en}
                       onChange={(e) =>
-                        setPlacementsData({
-                          ...placementsData,
-                          subtitle: e.target.value,
-                        })
+                        updateStat(
+                          index,
+                          'n_en',
+                          e.target.value
+                        )
                       }
-                      className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm sm:text-base"
-                      placeholder="Our placement track record"
+                      placeholder="Value English"
+                      className="px-4 py-3 border rounded-xl text-black"
+                    />
+
+                    <input
+                      type="text"
+                      value={stat.n_hi}
+                      onChange={(e) =>
+                        updateStat(
+                          index,
+                          'n_hi',
+                          e.target.value
+                        )
+                      }
+                      placeholder="Value Hindi"
+                      className="px-4 py-3 border rounded-xl text-black"
+                    />
+
+                    <input
+                      type="text"
+                      value={stat.d_en}
+                      onChange={(e) =>
+                        updateStat(
+                          index,
+                          'd_en',
+                          e.target.value
+                        )
+                      }
+                      placeholder="Description English"
+                      className="px-4 py-3 border rounded-xl text-black"
+                    />
+
+                    <input
+                      type="text"
+                      value={stat.d_hi}
+                      onChange={(e) =>
+                        updateStat(
+                          index,
+                          'd_hi',
+                          e.target.value
+                        )
+                      }
+                      placeholder="Description Hindi"
+                      className="px-4 py-3 border rounded-xl text-black"
                     />
                   </div>
                 </div>
+              )
+            )}
+          </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-[#171717] mb-2">
-                    Statistics
-                  </label>
-                  <div className="space-y-3">
-                    {placementsData.stats.map((stat, index) => (
-                      <div
-                        key={index}
-                        className="p-3 border border-[#171717]/20 rounded-lg bg-[#F9F9F9]"
+          {/* RECRUITERS */}
+          <div className="space-y-5">
+
+            <h2 className="text-2xl font-bold">
+              Recruiters Section
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              <input
+                type="text"
+                value={
+                  placementsData.recruitersHeading_en
+                }
+                onChange={(e) =>
+                  setPlacementsData({
+                    ...placementsData,
+                    recruitersHeading_en:
+                      e.target.value,
+                  })
+                }
+                placeholder="Recruiters Heading English"
+                className="px-4 py-3 border rounded-xl text-black"
+              />
+
+              <input
+                type="text"
+                value={
+                  placementsData.recruitersHeading_hi
+                }
+                onChange={(e) =>
+                  setPlacementsData({
+                    ...placementsData,
+                    recruitersHeading_hi:
+                      e.target.value,
+                  })
+                }
+                placeholder="Recruiters Heading Hindi"
+                className="px-4 py-3 border rounded-xl text-black"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              <textarea
+                rows={4}
+                value={
+                  placementsData.recruitersDescription_en
+                }
+                onChange={(e) =>
+                  setPlacementsData({
+                    ...placementsData,
+                    recruitersDescription_en:
+                      e.target.value,
+                  })
+                }
+                placeholder="Description English"
+                className="px-4 py-3 border rounded-xl text-black"
+              />
+
+              <textarea
+                rows={4}
+                value={
+                  placementsData.recruitersDescription_hi
+                }
+                onChange={(e) =>
+                  setPlacementsData({
+                    ...placementsData,
+                    recruitersDescription_hi:
+                      e.target.value,
+                  })
+                }
+                placeholder="Description Hindi"
+                className="px-4 py-3 border rounded-xl text-black"
+              />
+            </div>
+
+            {/* COMPANIES */}
+            <div className="space-y-4">
+
+              {placementsData.topRecruiters_en.map(
+                (_, index) => (
+                  <div
+                    key={index}
+                    className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                  >
+                    <input
+                      type="text"
+                      value={
+                        placementsData
+                          .topRecruiters_en[
+                          index
+                        ] || ''
+                      }
+                      onChange={(e) =>
+                        updateRecruiter(
+                          index,
+                          'en',
+                          e.target.value
+                        )
+                      }
+                      placeholder="Company English"
+                      className="px-4 py-3 border rounded-xl text-black"
+                    />
+
+                    <div className="flex gap-2">
+
+                      <input
+                        type="text"
+                        value={
+                          placementsData
+                            .topRecruiters_hi[
+                            index
+                          ] || ''
+                        }
+                        onChange={(e) =>
+                          updateRecruiter(
+                            index,
+                            'hi',
+                            e.target.value
+                          )
+                        }
+                        placeholder="Company Hindi"
+                        className="flex-1 px-4 py-3 border rounded-xl text-black"
+                      />
+
+                      <button
+                        onClick={() =>
+                          removeRecruiter(
+                            index
+                          )
+                        }
+                        className="px-4 text-red-600"
                       >
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm font-medium text-[#171717]/60">
-                            Stat {index + 1}
-                          </span>
-                          <button
-                            onClick={() => removeStat(index)}
-                            className="px-2 py-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                        <Trash2 size={18} />
+                      </button>
+
+                    </div>
+                  </div>
+                )
+              )}
+
+              <button
+                onClick={addRecruiter}
+                className="flex items-center gap-2 text-[#631012]"
+              >
+                <Plus size={18} />
+                Add Company
+              </button>
+            </div>
+          </div>
+
+          {/* PREVIEW */}
+          <div className="space-y-10">
+
+            {/* ENGLISH */}
+            <div className="p-6 bg-[#F9F9F9] rounded-2xl border-2 border-dashed">
+
+              <h2 className="text-2xl font-bold mb-5">
+                English Preview
+              </h2>
+
+              <div className="bg-black rounded-3xl p-8 relative overflow-hidden">
+
+                <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-10">
+
+                  <div>
+
+                    <h2 className="text-5xl font-black text-white mb-8">
+                      {
+                        placementsData.heading_en
+                      }
+                    </h2>
+
+                    <div className="grid grid-cols-2 gap-4">
+
+                      {placementsData.stats.map(
+                        (
+                          stat,
+                          index
+                        ) => (
+                          <div
+                            key={index}
+                            className="bg-white rounded-2xl p-5 text-center"
                           >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          <div>
-                            <label className="block text-xs text-[#171717]/60 mb-1">
-                              Value
-                            </label>
-                            <input
-                              type="text"
-                              value={stat.value}
-                              onChange={(e) =>
-                                updateStat(index, 'value', e.target.value)
-                              }
-                              className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm"
-                              placeholder="95%"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs text-[#171717]/60 mb-1">
-                              Label
-                            </label>
-                            <input
-                              type="text"
-                              value={stat.label}
-                              onChange={(e) =>
-                                updateStat(index, 'label', e.target.value)
-                              }
-                              className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm"
-                              placeholder="Placement Rate"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                    <button
-                      onClick={addStat}
-                      className="flex items-center gap-2 px-3 sm:px-4 py-2 text-[#631012] hover:bg-[#631012]/10 rounded-lg transition-colors text-sm sm:text-base"
-                    >
-                      <Plus size={18} />
-                      Add Stat
-                    </button>
-                  </div>
-                </div>
-              </div>
+                            <h3 className="text-3xl font-bold text-[#631012]">
+                              {stat.n_en}
+                            </h3>
 
-              <div className="mt-4 sm:mt-6 p-4 sm:p-6 bg-[#F9F9F9] rounded-lg border-2 border-dashed border-[#171717]/20">
-                <p className="text-xs sm:text-sm font-medium text-[#171717]/60 mb-3">
-                  Preview:
-                </p>
-                <div className="bg-white p-4 sm:p-6 rounded-lg">
-                  <h3 className="text-2xl font-bold text-[#171717] mb-4">
-                    {placementsData.heading}
-                  </h3>
-                  <div className="flex gap-6">
-                    {placementsData.stats.map((stat, index) => (
-                      <div key={index} className="text-center">
-                        <p className="text-3xl font-bold text-[#631012]">
-                          {stat.value}
-                        </p>
-                        <p className="text-sm text-[#171717]/60">
-                          {stat.label}
-                        </p>
-                      </div>
-                    ))}
+                            <p className="text-gray-600 mt-2 text-sm">
+                              {stat.d_en}
+                            </p>
+                          </div>
+                        )
+                      )}
+
+                    </div>
+                  </div>
+
+                  <div>
+
+                    <h3 className="text-4xl font-bold text-white mb-5">
+                      {
+                        placementsData.recruitersHeading_en
+                      }
+                    </h3>
+
+                    <p className="text-white/80 mb-8">
+                      {
+                        placementsData.recruitersDescription_en
+                      }
+                    </p>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+
+                      {placementsData.topRecruiters_en.map(
+                        (
+                          company,
+                          index
+                        ) => (
+                          <div
+                            key={index}
+                            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-center"
+                          >
+                            <p className="text-white text-sm">
+                              {company}
+                            </p>
+                          </div>
+                        )
+                      )}
+
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          )}
 
-          {/* Top Recruiters */}
-          {activeTab === 'recruiters' && (
-            <div className="space-y-4 sm:space-y-6">
-              <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                <Building2 className="text-[#631012] w-5 h-5 sm:w-6 sm:h-6" />
-                <h2 className="text-xl sm:text-2xl font-bold text-[#171717]">
-                  Top Recruiters
-                </h2>
-              </div>
+            {/* HINDI */}
+            <div className="p-6 bg-[#F9F9F9] rounded-2xl border-2 border-dashed">
 
-              <div className="grid grid-cols-1 gap-4 sm:gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-[#171717] mb-2">
-                    Heading
-                  </label>
-                  <input
-                    type="text"
-                    value={placementsData.recruitersHeading}
-                    onChange={(e) =>
-                      setPlacementsData({
-                        ...placementsData,
-                        recruitersHeading: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm sm:text-base"
-                    placeholder="Top Recruiters"
-                  />
-                </div>
+              <h2 className="text-2xl font-bold mb-5">
+                Hindi Preview
+              </h2>
 
-                <div>
-                  <label className="block text-sm font-medium text-[#171717] mb-2">
-                    Description
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={placementsData.recruitersDescription}
-                    onChange={(e) =>
-                      setPlacementsData({
-                        ...placementsData,
-                        recruitersDescription: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm sm:text-base"
-                    placeholder="Description"
-                  />
-                </div>
+              <div className="bg-black rounded-3xl p-8 relative overflow-hidden">
 
-                <div>
-                  <label className="block text-sm font-medium text-[#171717] mb-2">
-                    Company Names
-                  </label>
-                  <div className="space-y-2">
-                    {placementsData.topRecruiters.map((company, index) => (
-                      <div key={index} className="flex gap-2">
-                        <input
-                          type="text"
-                          value={company}
-                          onChange={(e) =>
-                            updateRecruiter(index, e.target.value)
-                          }
-                          className="flex-1 px-3 py-2 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm"
-                          placeholder="Company name"
-                        />
-                        <button
-                          onClick={() => removeRecruiter(index)}
-                          className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    ))}
-                    <button
-                      onClick={addRecruiter}
-                      className="flex items-center gap-2 px-3 sm:px-4 py-2 text-[#631012] hover:bg-[#631012]/10 rounded-lg transition-colors text-sm sm:text-base"
-                    >
-                      <Plus size={18} />
-                      Add Company
-                    </button>
+                <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-10">
+
+                  <div>
+
+                    <h2 className="text-5xl font-black text-white mb-8">
+                      {
+                        placementsData.heading_hi
+                      }
+                    </h2>
+
+                    <div className="grid grid-cols-2 gap-4">
+
+                      {placementsData.stats.map(
+                        (
+                          stat,
+                          index
+                        ) => (
+                          <div
+                            key={index}
+                            className="bg-white rounded-2xl p-5 text-center"
+                          >
+                            <h3 className="text-3xl font-bold text-[#631012]">
+                              {stat.n_hi}
+                            </h3>
+
+                            <p className="text-gray-600 mt-2 text-sm">
+                              {stat.d_hi}
+                            </p>
+                          </div>
+                        )
+                      )}
+
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              <div className="mt-4 sm:mt-6 p-4 sm:p-6 bg-[#F9F9F9] rounded-lg border-2 border-dashed border-[#171717]/20">
-                <p className="text-xs sm:text-sm font-medium text-[#171717]/60 mb-3">
-                  Preview:
-                </p>
-                <div className="bg-white p-4 sm:p-6 rounded-lg">
-                  <h3 className="text-xl font-bold text-[#171717] mb-2">
-                    {placementsData.recruitersHeading}
-                  </h3>
-                  <p className="text-sm text-[#171717]/70 mb-4">
-                    {placementsData.recruitersDescription}
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {placementsData.topRecruiters.map((company, index) => (
-                      <span
-                        key={index}
-                        className="px-3 py-1 bg-[#631012]/10 text-[#631012] rounded-full text-sm font-medium"
-                      >
-                        {company}
-                      </span>
-                    ))}
+                  <div>
+
+                    <h3 className="text-4xl font-bold text-white mb-5">
+                      {
+                        placementsData.recruitersHeading_hi
+                      }
+                    </h3>
+
+                    <p className="text-white/80 mb-8">
+                      {
+                        placementsData.recruitersDescription_hi
+                      }
+                    </p>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+
+                      {placementsData.topRecruiters_hi.map(
+                        (
+                          company,
+                          index
+                        ) => (
+                          <div
+                            key={index}
+                            className="bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-center"
+                          >
+                            <p className="text-white text-sm">
+                              {company}
+                            </p>
+                          </div>
+                        )
+                      )}
+
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          )}
+
+          </div>
+
         </div>
       </div>
     </div>

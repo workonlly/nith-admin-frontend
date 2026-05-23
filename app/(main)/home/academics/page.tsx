@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Save, Calendar, Plus, Trash2, Loader } from 'lucide-react';
 
-interface EventsItem {
+interface AcademicsItem {
   id?: number;
   title_en: string;
   title_hi: string;
@@ -14,8 +14,8 @@ interface EventsItem {
   category_hi: string;
 }
 
-interface EventsData {
-  events: EventsItem[];
+interface AcademicsData {
+  academics: AcademicsItem[];
 }
 
 type TabType = 'content';
@@ -29,10 +29,10 @@ interface LanguageStrings {
   savingButton: string;
   errorTitle: string;
   loadingText: string;
-  eventList: string;
-  noEvents: string;
-  addFirstEvents: string;
-  eventLabel: string;
+  academicList: string;
+  noAcademics: string;
+  addFirstAcademics: string;
+  academicLabel: string;
   titleLabelEn: string;
   titlePlaceholderEn: string;
   titleLabelHi: string;
@@ -46,7 +46,7 @@ interface LanguageStrings {
   descriptionPlaceholderEn: string;
   descriptionLabelHi: string;
   descriptionPlaceholderHi: string;
-  addEvents: string;
+  addAcademics: string;
   previewEn: string;
   previewHi: string;
   previewCategory: string;
@@ -63,41 +63,41 @@ interface LanguageStrings {
 
 const translations: { en: LanguageStrings; hi: LanguageStrings } = {
   en: {
-    header: 'Events',
-    headerSubtitle: 'Manage event section content',
-    editorTitle: 'Events Editor',
-    editorSubtitle: 'Edit event content',
+    header: 'Academics',
+    headerSubtitle: 'Manage academic section content',
+    editorTitle: 'Academics Editor',
+    editorSubtitle: 'Edit academic content',
     saveButton: 'Save Changes',
     savingButton: 'Saving...',
     errorTitle: '⚠️ Error',
-    loadingText: 'Loading event...',
-    eventList: 'Events List',
-    noEvents: 'No event found',
-    addFirstEvents: 'Add First Events',
-    eventLabel: 'Events',
+    loadingText: 'Loading academic...',
+    academicList: 'Academics List',
+    noAcademics: 'No academic found',
+    addFirstAcademics: 'Add First Academics',
+    academicLabel: 'Academics',
     titleLabelEn: 'Title (English)',
-    titlePlaceholderEn: 'Events title in English',
+    titlePlaceholderEn: 'Academics title in English',
     titleLabelHi: 'Title (Hindi)',
-    titlePlaceholderHi: 'Events title in Hindi',
+    titlePlaceholderHi: 'Academics title in Hindi',
     dateLabel: 'Date',
     categoryLabelEn: 'Category (English)',
     categoryPlaceholderEn: 'Technical, Cultural, etc.',
     categoryLabelHi: 'Category (Hindi)',
     categoryPlaceholderHi: 'तकनीकी, सांस्कृतिक, आदि।',
     descriptionLabelEn: 'Description (English)',
-    descriptionPlaceholderEn: 'Events description in English',
+    descriptionPlaceholderEn: 'Academics description in English',
     descriptionLabelHi: 'Description (Hindi)',
     descriptionPlaceholderHi: 'हिंदी में समाचार विवरण',
-    addEvents: 'Add Events',
+    addAcademics: 'Add Academics',
     previewEn: 'English Preview',
     previewHi: 'Hindi Preview',
     previewCategory: 'ACADEMIC',
-    previewTitle: 'Events Title',
-    previewDescription: 'Events description',
-    deleteSuccess: 'Events deleted successfully!',
+    previewTitle: 'Academics Title',
+    previewDescription: 'Academics description',
+    deleteSuccess: 'Academics deleted successfully!',
     saveSuccess: 'Changes saved successfully!',
-    contentTab: 'Events Content',
-    tabContent: 'Manage event items',
+    contentTab: 'Academics Content',
+    tabContent: 'Manage academic items',
     tryAgain: 'Try Again',
     englishSection: 'English Content',
     hindiSection: 'Hindi Content',
@@ -111,10 +111,10 @@ const translations: { en: LanguageStrings; hi: LanguageStrings } = {
     savingButton: 'सहेज रहे हैं...',
     errorTitle: '⚠️ त्रुटि',
     loadingText: 'समाचार लोड हो रहे हैं...',
-    eventList: 'समाचार सूची',
-    noEvents: 'कोई समाचार नहीं मिला',
-    addFirstEvents: 'पहला समाचार जोड़ें',
-    eventLabel: 'समाचार',
+    academicList: 'समाचार सूची',
+    noAcademics: 'कोई समाचार नहीं मिला',
+    addFirstAcademics: 'पहला समाचार जोड़ें',
+    academicLabel: 'समाचार',
     titleLabelEn: 'शीर्षक (अंग्रेजी)',
     titlePlaceholderEn: 'अंग्रेजी में समाचार शीर्षक',
     titleLabelHi: 'शीर्षक (हिंदी)',
@@ -128,7 +128,7 @@ const translations: { en: LanguageStrings; hi: LanguageStrings } = {
     descriptionPlaceholderEn: 'अंग्रेजी में समाचार विवरण',
     descriptionLabelHi: 'विवरण (हिंदी)',
     descriptionPlaceholderHi: 'हिंदी में समाचार विवरण',
-    addEvents: 'समाचार जोड़ें',
+    addAcademics: 'समाचार जोड़ें',
     previewEn: 'अंग्रेजी पूर्वावलोकन',
     previewHi: 'हिंदी पूर्वावलोकन',
     previewCategory: 'शैक्षणिक',
@@ -179,14 +179,14 @@ const convertToHindiNumerals = (str: string): string => {
   return str.split('').map((char) => hindiNumerals[char] || char).join('');
 };
 
-export default function EventsAdminPage() {
+export default function AcademicsAdminPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const [eventData, setEventsData] = useState<EventsData>({
-    events: [],
+  const [academicData, setAcademicsData] = useState<AcademicsData>({
+    academics: [],
   });
 
   const t = translations.en;
@@ -198,28 +198,28 @@ export default function EventsAdminPage() {
   useEffect(() => {
     let mounted = true;
 
-    async function loadEventsData() {
+    async function loadAcademicsData() {
       try {
         setLoading(true);
         setError('');
 
-        const res = await fetch('http://localhost:4000/v1/homepage/event');
+        const res = await fetch('http://localhost:4000/v1/homepage/academic');
         const json = await res.json();
 
         if (mounted && json.success) {
-          setEventsData({
-            events: json.data.events || [],
+          setAcademicsData({
+            academics: json.data.academics || [],
           });
         }
       } catch (err) {
         console.error(err);
-        setError('Failed to fetch event data');
+        setError('Failed to fetch academic data');
       } finally {
         setLoading(false);
       }
     }
 
-    loadEventsData();
+    loadAcademicsData();
 
     return () => {
       mounted = false;
@@ -237,13 +237,13 @@ export default function EventsAdminPage() {
       setSuccess('');
 
       const res = await fetch(
-        'http://localhost:4000/v1/homepage/event/bulk/save',
+        'http://localhost:4000/v1/homepage/academic/bulk/save',
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(eventData),
+          body: JSON.stringify(academicData),
         }
       );
 
@@ -269,24 +269,24 @@ export default function EventsAdminPage() {
   // NEWS FUNCTIONS
   // =========================
 
-  const updateEvents = (
+  const updateAcademics = (
     index: number,
-    field: keyof EventsItem,
+    field: keyof AcademicsItem,
     value: string
   ) => {
-    const updated = [...eventData.events];
+    const updated = [...academicData.academics];
     updated[index] = {
       ...updated[index],
       [field]: value,
     };
-    setEventsData({ ...eventData, events: updated });
+    setAcademicsData({ ...academicData, academics: updated });
   };
 
-  const addEvents = () => {
-    setEventsData({
-      ...eventData,
-      events: [
-        ...eventData.events,
+  const addAcademics = () => {
+    setAcademicsData({
+      ...academicData,
+      academics: [
+        ...academicData.academics,
         {
           title_en: '',
           title_hi: '',
@@ -300,13 +300,13 @@ export default function EventsAdminPage() {
     });
   };
 
-  const removeEvents = async (index: number) => {
-    const eventId = eventData.events[index].id;
+  const removeAcademics = async (index: number) => {
+    const academicId = academicData.academics[index].id;
 
-    if (eventId) {
+    if (academicId) {
       try {
         const response = await fetch(
-          `http://localhost:4000/v1/homepage/event/${eventId}`,
+          `http://localhost:4000/v1/homepage/academic/${academicId}`,
           {
             method: 'DELETE',
             headers: {
@@ -318,24 +318,24 @@ export default function EventsAdminPage() {
         const result = await response.json();
 
         if (result.success) {
-          setEventsData({
-            ...eventData,
-            events: eventData.events.filter((_, i) => i !== index),
+          setAcademicsData({
+            ...academicData,
+            academics: academicData.academics.filter((_, i) => i !== index),
           });
           alert(t.deleteSuccess);
         } else {
-          throw new Error(result.message || 'Failed to delete event');
+          throw new Error(result.message || 'Failed to delete academic');
         }
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : 'An error occurred while deleting';
         alert('Error: ' + errorMessage);
-        console.error('Error deleting event:', err);
+        console.error('Error deleting academic:', err);
       }
     } else {
-      setEventsData({
-        ...eventData,
-        events: eventData.events.filter((_, i) => i !== index),
+      setAcademicsData({
+        ...academicData,
+        academics: academicData.academics.filter((_, i) => i !== index),
       });
     }
   };
@@ -456,30 +456,30 @@ export default function EventsAdminPage() {
           {/* NEWS LIST SECTION */}
           <div className="space-y-5">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold">{t.eventList}</h2>
+              <h2 className="text-2xl font-bold">{t.academicList}</h2>
               <button
-                onClick={addEvents}
+                onClick={addAcademics}
                 className="flex items-center gap-2 text-[#631012] hover:bg-[#631012]/10 px-4 py-2 rounded-lg transition-colors"
               >
                 <Plus size={18} />
-                {t.addEvents}
+                {t.addAcademics}
               </button>
             </div>
 
-            {eventData.events.length === 0 ? (
+            {academicData.academics.length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-[#171717]/60 mb-4">{t.noEvents}</p>
+                <p className="text-[#171717]/60 mb-4">{t.noAcademics}</p>
                 <button
-                  onClick={addEvents}
+                  onClick={addAcademics}
                   className="flex items-center gap-2 px-4 py-2 text-[#631012] hover:bg-[#631012]/10 rounded-lg transition-colors mx-auto"
                 >
                   <Plus size={18} />
-                  {t.addFirstEvents}
+                  {t.addFirstAcademics}
                 </button>
               </div>
             ) : (
               <div className="space-y-6">
-                {eventData.events.map((event, index) => (
+                {academicData.academics.map((academic, index) => (
                   <div
                     key={index}
                     className="border rounded-2xl p-6 space-y-4 bg-[#F9F9F9]"
@@ -487,10 +487,10 @@ export default function EventsAdminPage() {
                     {/* Header with delete button */}
                     <div className="flex justify-between items-center pb-4 border-b border-[#171717]/10">
                       <h3 className="font-semibold text-lg">
-                        {t.eventLabel} {index + 1} {event.id && `(ID: ${event.id})`}
+                        {t.academicLabel} {index + 1} {academic.id && `(ID: ${academic.id})`}
                       </h3>
                       <button
-                        onClick={() => removeEvents(index)}
+                        onClick={() => removeAcademics(index)}
                         className="text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors"
                       >
                         <Trash2 size={18} />
@@ -504,9 +504,9 @@ export default function EventsAdminPage() {
                       </label>
                       <input
                         type="date"
-                        value={event.date}
+                        value={academic.date}
                         onChange={(e) =>
-                          updateEvents(index, 'date', e.target.value)
+                          updateAcademics(index, 'date', e.target.value)
                         }
                         className="w-full px-4 py-3 border border-[#171717]/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#631012] text-black"
                       />
@@ -526,9 +526,9 @@ export default function EventsAdminPage() {
                           </label>
                           <input
                             type="text"
-                            value={event.title_en}
+                            value={academic.title_en}
                             onChange={(e) =>
-                              updateEvents(index, 'title_en', e.target.value)
+                              updateAcademics(index, 'title_en', e.target.value)
                             }
                             placeholder={t.titlePlaceholderEn}
                             className="w-full px-4 py-3 border border-[#171717]/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#631012] text-black"
@@ -541,9 +541,9 @@ export default function EventsAdminPage() {
                           </label>
                           <input
                             type="text"
-                            value={event.category_en}
+                            value={academic.category_en}
                             onChange={(e) =>
-                              updateEvents(index, 'category_en', e.target.value)
+                              updateAcademics(index, 'category_en', e.target.value)
                             }
                             placeholder={t.categoryPlaceholderEn}
                             className="w-full px-4 py-3 border border-[#171717]/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#631012] text-black"
@@ -556,9 +556,9 @@ export default function EventsAdminPage() {
                           </label>
                           <textarea
                             rows={3}
-                            value={event.description_en}
+                            value={academic.description_en}
                             onChange={(e) =>
-                              updateEvents(index, 'description_en', e.target.value)
+                              updateAcademics(index, 'description_en', e.target.value)
                             }
                             placeholder={t.descriptionPlaceholderEn}
                             className="w-full px-4 py-3 border border-[#171717]/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#631012] text-black resize-none"
@@ -578,9 +578,9 @@ export default function EventsAdminPage() {
                           </label>
                           <input
                             type="text"
-                            value={event.title_hi}
+                            value={academic.title_hi}
                             onChange={(e) =>
-                              updateEvents(index, 'title_hi', e.target.value)
+                              updateAcademics(index, 'title_hi', e.target.value)
                             }
                             placeholder={t.titlePlaceholderHi}
                             className="w-full px-4 py-3 border border-[#171717]/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#631012] text-black"
@@ -593,9 +593,9 @@ export default function EventsAdminPage() {
                           </label>
                           <input
                             type="text"
-                            value={event.category_hi}
+                            value={academic.category_hi}
                             onChange={(e) =>
-                              updateEvents(index, 'category_hi', e.target.value)
+                              updateAcademics(index, 'category_hi', e.target.value)
                             }
                             placeholder={t.categoryPlaceholderHi}
                             className="w-full px-4 py-3 border border-[#171717]/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#631012] text-black"
@@ -608,9 +608,9 @@ export default function EventsAdminPage() {
                           </label>
                           <textarea
                             rows={3}
-                            value={event.description_hi}
+                            value={academic.description_hi}
                             onChange={(e) =>
-                              updateEvents(index, 'description_hi', e.target.value)
+                              updateAcademics(index, 'description_hi', e.target.value)
                             }
                             placeholder={t.descriptionPlaceholderHi}
                             className="w-full px-4 py-3 border border-[#171717]/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#631012] text-black resize-none"
@@ -625,7 +625,7 @@ export default function EventsAdminPage() {
           </div>
 
           {/* PREVIEW SECTION */}
-          {eventData.events.length > 0 && (
+          {academicData.academics.length > 0 && (
             <div className="space-y-8 mt-10 pt-10 border-t border-[#171717]/10">
               <h2 className="text-2xl font-bold">{t.previewEn}</h2>
 
@@ -637,8 +637,8 @@ export default function EventsAdminPage() {
                     {t.previewEn}
                   </h3>
                   <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {eventData.events.map((event, index) => {
-                      const { month, day } = getFormattedDate(event.date);
+                    {academicData.academics.map((academic, index) => {
+                      const { month, day } = getFormattedDate(academic.date);
                       return (
                         <div
                           key={index}
@@ -658,14 +658,14 @@ export default function EventsAdminPage() {
                           <div className="flex-1 min-w-0">
                             <div className="mb-2">
                               <span className="inline-block px-2.5 py-1 text-xs font-semibold rounded-md border border-gray-300 text-gray-700 uppercase">
-                                {event.category_en || t.previewCategory}
+                                {academic.category_en || t.previewCategory}
                               </span>
                             </div>
                             <h3 className="text-sm font-semibold text-[#171717] leading-snug">
-                              {event.title_en || t.previewTitle}
+                              {academic.title_en || t.previewTitle}
                             </h3>
                             <p className="text-xs text-[#171717]/70 mt-1.5 line-clamp-2">
-                              {event.description_en || t.previewDescription}
+                              {academic.description_en || t.previewDescription}
                             </p>
                           </div>
                         </div>
@@ -680,8 +680,8 @@ export default function EventsAdminPage() {
                     {t.previewHi}
                   </h3>
                   <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {eventData.events.map((event, index) => {
-                      const { month, day } = getFormattedDateHindi(event.date);
+                    {academicData.academics.map((academic, index) => {
+                      const { month, day } = getFormattedDateHindi(academic.date);
                       return (
                         <div
                           key={index}
@@ -701,14 +701,14 @@ export default function EventsAdminPage() {
                           <div className="flex-1 min-w-0">
                             <div className="mb-2">
                               <span className="inline-block px-2.5 py-1 text-xs font-semibold rounded-md border border-gray-300 text-gray-700 uppercase">
-                                {event.category_hi || t.previewCategory}
+                                {academic.category_hi || t.previewCategory}
                               </span>
                             </div>
                             <h3 className="text-sm font-semibold text-[#171717] leading-snug">
-                              {event.title_hi || t.previewTitle}
+                              {academic.title_hi || t.previewTitle}
                             </h3>
                             <p className="text-xs text-[#171717]/70 mt-1.5 line-clamp-2">
-                              {event.description_hi || t.previewDescription}
+                              {academic.description_hi || t.previewDescription}
                             </p>
                           </div>
                         </div>

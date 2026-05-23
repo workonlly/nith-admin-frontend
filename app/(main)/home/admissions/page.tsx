@@ -1,325 +1,315 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Save, GraduationCap, Plus, Trash2, FileText } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Save, Plus, Trash2 } from 'lucide-react';
 
-interface ProgramItem {
-  title: string;
-  subtitle: string;
-  description: string;
+interface AdmissionItem {
+  id?: number;
+
+  title_en: string;
+  title_hi: string;
+
+  description_en: string;
+  description_hi: string;
 }
 
 interface AdmissionsData {
-  heading: string;
-  subtitle: string;
-  programs: ProgramItem[];
+  heading_en: string;
+  heading_hi: string;
+  admissions: AdmissionItem[];
 }
 
-type TabType = 'content' | 'programs';
-
 export default function AdmissionsPage() {
-  const [activeTab, setActiveTab] = useState<TabType>('content');
-
   const [admissionsData, setAdmissionsData] = useState<AdmissionsData>({
-    heading: 'Admissions',
-    subtitle: 'Join our community of innovators',
-    programs: [
-      {
-        title: 'B.Tech',
-        subtitle: 'Undergraduate Program',
-        description: '4-year undergraduate engineering program',
-      },
-      {
-        title: 'M.Tech, M.Sc, MBA',
-        subtitle: 'Postgraduate Program',
-        description: '2-year postgraduate programs',
-      },
-      {
-        title: 'Ph.D',
-        subtitle: 'Doctorate Program',
-        description: 'Research and doctoral programs',
-      },
-    ],
+    heading_en: '',
+    heading_hi: '',
+    admissions: [],
   });
 
-  const tabs = [
-    {
-      id: 'content' as TabType,
-      label: 'Section Content',
-      icon: <FileText size={18} />,
-    },
-    {
-      id: 'programs' as TabType,
-      label: 'Programs',
-      icon: <GraduationCap size={18} />,
-    },
-  ];
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = () => {
-    alert('Changes saved successfully!');
-    console.log(admissionsData);
+  useEffect(() => {
+    fetchAdmissions();
+  }, []);
+
+  const fetchAdmissions = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(
+        'http://localhost:4000/v1/homepage/admission'
+      );
+
+      if (!response.ok) throw new Error('Failed to fetch admissions');
+
+      const result = await response.json();
+
+      if (result.success) {
+        setAdmissionsData({
+          heading_en: result.data.heading_en || '',
+          heading_hi: result.data.heading_hi || '',
+          admissions: result.data.admissions || [],
+        });
+      } else {
+        throw new Error(result.message);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error occurred');
+      setAdmissionsData({
+        heading_en: '',
+        heading_hi: '',
+        admissions: [],
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const updateProgram = (
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      setError(null);
+
+      if (!admissionsData.heading_en.trim() || !admissionsData.heading_hi.trim()) {
+        throw new Error('Heading EN/HI cannot be empty');
+      }
+
+      for (let a of admissionsData.admissions) {
+        if (!a.title_en.trim() || !a.title_hi.trim()) {
+          throw new Error('Title EN/HI cannot be empty');
+        }
+        if (!a.description_en.trim() || !a.description_hi.trim()) {
+          throw new Error('Description EN/HI cannot be empty');
+        }
+      }
+
+      const response = await fetch(
+        'http://localhost:4000/v1/homepage/admission/bulk/save',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(admissionsData),
+        }
+      );
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert('Saved successfully!');
+        await fetchAdmissions();
+      } else {
+        throw new Error(result.message);
+      }
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : 'Save error';
+      setError(msg);
+      alert(msg);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateAdmission = (
     index: number,
-    field: keyof ProgramItem,
+    field: keyof AdmissionItem,
     value: string
   ) => {
-    const updated = [...admissionsData.programs];
+    const updated = [...admissionsData.admissions];
     updated[index] = { ...updated[index], [field]: value };
-    setAdmissionsData({ ...admissionsData, programs: updated });
+    setAdmissionsData({ ...admissionsData, admissions: updated });
   };
 
-  const addProgram = () => {
+  const addAdmission = () => {
     setAdmissionsData({
       ...admissionsData,
-      programs: [
-        ...admissionsData.programs,
-        { title: '', subtitle: '', description: '' },
+      admissions: [
+        ...admissionsData.admissions,
+        {
+          title_en: '',
+          title_hi: '',
+          description_en: '',
+          description_hi: '',
+        },
       ],
     });
   };
 
-  const removeProgram = (index: number) => {
-    setAdmissionsData({
-      ...admissionsData,
-      programs: admissionsData.programs.filter((_, i) => i !== index),
-    });
+  const removeAdmission = async (index: number) => {
+    const item = admissionsData.admissions[index];
+
+    if (item.id) {
+      await fetch(
+        `http://localhost:4000/v1/homepage/admission/${item.id}`,
+        { method: 'DELETE' }
+      );
+      await fetchAdmissions();
+    } else {
+      setAdmissionsData({
+        ...admissionsData,
+        admissions: admissionsData.admissions.filter(
+          (_, i) => i !== index
+        ),
+      });
+    }
   };
 
+  if (loading) {
+    return <div className="p-6">Loading admissions...</div>;
+  }
+
   return (
-    <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 lg:p-6">
-      <div className="bg-gradient-to-r from-[#631012] to-[#7a1214] rounded-lg shadow-lg p-4 sm:p-6 lg:p-8 text-white">
-        <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-          <GraduationCap className="w-6 h-6 sm:w-8 sm:h-8" />
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">
-            Admissions
-          </h1>
-        </div>
-        <p className="text-sm sm:text-base text-white/90">
-          Manage admissions section content
-        </p>
+    <div className="space-y-6 p-4">
+
+      {/* HEADER */}
+      <div className="bg-white p-6 rounded shadow">
+        <h1 className="text-2xl font-bold">Admissions Editor</h1>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="bg-[#631012]/10 p-2 sm:p-3 rounded-full text-[#631012] flex-shrink-0">
-              <GraduationCap className="w-6 h-6 sm:w-7 sm:h-7" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#171717] break-words">
-                Admissions Editor
-              </h1>
-              <p className="text-sm sm:text-base text-[#171717]/60 mt-1">
-                Edit admissions content
-              </p>
-            </div>
+      {/* SAVE */}
+      <div className="flex justify-end">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="bg-[#631012] text-white px-4 py-2 rounded"
+        >
+          <Save className="inline w-4 h-4 mr-2" />
+          {saving ? 'Saving...' : 'Save Changes'}
+        </button>
+      </div>
+
+      {/* GLOBAL HEADING INPUT (FIXED) */}
+      <div className="bg-white p-4 rounded shadow space-y-3">
+        <input
+          value={admissionsData.heading_en}
+          onChange={(e) =>
+            setAdmissionsData({
+              ...admissionsData,
+              heading_en: e.target.value,
+            })
+          }
+          placeholder="Section Heading (English) - e.g. Admissions"
+          className="w-full border p-2 rounded"
+        />
+
+        <input
+          value={admissionsData.heading_hi}
+          onChange={(e) =>
+            setAdmissionsData({
+              ...admissionsData,
+              heading_hi: e.target.value,
+            })
+          }
+          placeholder="Section Heading (Hindi)"
+          className="w-full border p-2 rounded"
+        />
+      </div>
+
+      {/* LIST */}
+      <div className="space-y-4">
+
+        {admissionsData.admissions.map((a, index) => (
+          <div key={index} className="border p-4 rounded bg-white space-y-3">
+
+            <input
+              value={a.title_en}
+              onChange={(e) =>
+                updateAdmission(index, 'title_en', e.target.value)
+              }
+              placeholder="Title (English)"
+              className="w-full border p-2 rounded"
+            />
+
+            <input
+              value={a.title_hi}
+              onChange={(e) =>
+                updateAdmission(index, 'title_hi', e.target.value)
+              }
+              placeholder="Title (Hindi)"
+              className="w-full border p-2 rounded"
+            />
+
+            <textarea
+              value={a.description_en}
+              onChange={(e) =>
+                updateAdmission(index, 'description_en', e.target.value)
+              }
+              placeholder="Description (English)"
+              className="w-full border p-2 rounded"
+            />
+
+            <textarea
+              value={a.description_hi}
+              onChange={(e) =>
+                updateAdmission(index, 'description_hi', e.target.value)
+              }
+              placeholder="Description (Hindi)"
+              className="w-full border p-2 rounded"
+            />
+
+            <button
+              onClick={() => removeAdmission(index)}
+              className="text-red-600 flex items-center gap-1"
+            >
+              <Trash2 size={16} /> Delete
+            </button>
           </div>
-          <button
-            onClick={handleSave}
-            className="bg-[#631012] hover:bg-[#7a1214] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg flex items-center gap-2 transition-colors shadow-md w-full sm:w-auto justify-center text-sm sm:text-base"
-          >
-            <Save className="w-4 h-4 sm:w-5 sm:h-5" />
-            Save Changes
-          </button>
-        </div>
+        ))}
+
       </div>
 
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="border-b border-[#171717]/10">
-          <div className="flex overflow-x-auto scrollbar-thin scrollbar-thumb-[#631012]/30 scrollbar-track-gray-100">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`
-                  flex items-center gap-2 px-4 sm:px-6 py-3 sm:py-4 font-medium transition-colors whitespace-nowrap text-sm sm:text-base flex-shrink-0
-                  ${
-                    activeTab === tab.id
-                      ? 'bg-[#631012] text-white border-b-2 border-[#631012]'
-                      : 'text-[#171717]/70 hover:bg-[#F9F9F9] hover:text-[#171717]'
-                  }
-                `}
-              >
-                <span className="w-4 h-4 sm:w-5 sm:h-5">{tab.icon}</span>
-                <span>{tab.label}</span>
-              </button>
+      <button
+        onClick={addAdmission}
+        className="text-[#631012] flex items-center gap-2"
+      >
+        <Plus /> Add Admission
+      </button>
+
+      {/* PREVIEW */}
+      <div className="mt-8 bg-white p-6 rounded shadow">
+
+        {/* FIXED GLOBAL HEADING */}
+        <h2 className="text-2xl font-bold mb-6">
+          {admissionsData.heading_en || 'Admissions'}
+        </h2>
+
+        <div className="grid md:grid-cols-2 gap-6">
+
+          {/* EN */}
+          <div>
+            <h3 className="font-bold text-green-700 mb-3">
+              English
+            </h3>
+
+            {admissionsData.admissions.map((a, i) => (
+              <div key={i} className="p-4 border rounded mb-3">
+                <h3 className="font-semibold">{a.title_en}</h3>
+                <p className="text-sm text-gray-600">
+                  {a.description_en}
+                </p>
+              </div>
             ))}
           </div>
-        </div>
 
-        <div className="p-4 sm:p-6">
-          {/* Section Content */}
-          {activeTab === 'content' && (
-            <div className="space-y-4 sm:space-y-6">
-              <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                <FileText className="text-[#631012] w-5 h-5 sm:w-6 sm:h-6" />
-                <h2 className="text-xl sm:text-2xl font-bold text-[#171717]">
-                  Section Content
-                </h2>
-              </div>
+          {/* HI */}
+          <div>
+            <h3 className="font-bold text-orange-700 mb-3">
+              हिंदी
+            </h3>
 
-              <div className="grid grid-cols-1 gap-4 sm:gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-[#171717] mb-2">
-                    Heading
-                  </label>
-                  <input
-                    type="text"
-                    value={admissionsData.heading}
-                    onChange={(e) =>
-                      setAdmissionsData({
-                        ...admissionsData,
-                        heading: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm sm:text-base"
-                    placeholder="Admissions"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-[#171717] mb-2">
-                    Subtitle
-                  </label>
-                  <input
-                    type="text"
-                    value={admissionsData.subtitle}
-                    onChange={(e) =>
-                      setAdmissionsData({
-                        ...admissionsData,
-                        subtitle: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm sm:text-base"
-                    placeholder="Join our community"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-4 sm:mt-6 p-4 sm:p-6 bg-[#F9F9F9] rounded-lg border-2 border-dashed border-[#171717]/20">
-                <p className="text-xs sm:text-sm font-medium text-[#171717]/60 mb-3">
-                  Preview:
+            {admissionsData.admissions.map((a, i) => (
+              <div key={i} className="p-4 border rounded mb-3">
+                <h3 className="font-semibold">{a.title_hi}</h3>
+                <p className="text-sm text-gray-600">
+                  {a.description_hi}
                 </p>
-                <div className="bg-white p-4 sm:p-6 rounded-lg">
-                  <h3 className="text-2xl font-bold text-[#171717] mb-2">
-                    {admissionsData.heading}
-                  </h3>
-                  <p className="text-sm text-[#171717]/60">
-                    {admissionsData.subtitle}
-                  </p>
-                </div>
               </div>
-            </div>
-          )}
+            ))}
+          </div>
 
-          {/* Programs */}
-          {activeTab === 'programs' && (
-            <div className="space-y-4 sm:space-y-6">
-              <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                <GraduationCap className="text-[#631012] w-5 h-5 sm:w-6 sm:h-6" />
-                <h2 className="text-xl sm:text-2xl font-bold text-[#171717]">
-                  Programs
-                </h2>
-              </div>
-
-              <div className="space-y-3">
-                {admissionsData.programs.map((program, index) => (
-                  <div
-                    key={index}
-                    className="p-4 border border-[#171717]/20 rounded-lg bg-[#F9F9F9] space-y-3"
-                  >
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium text-[#171717]/60">
-                        Program {index + 1}
-                      </span>
-                      <button
-                        onClick={() => removeProgram(index)}
-                        className="px-2 py-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs text-[#171717]/60 mb-1">
-                          Title
-                        </label>
-                        <input
-                          type="text"
-                          value={program.title}
-                          onChange={(e) =>
-                            updateProgram(index, 'title', e.target.value)
-                          }
-                          className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm"
-                          placeholder="B.Tech"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs text-[#171717]/60 mb-1">
-                          Subtitle
-                        </label>
-                        <input
-                          type="text"
-                          value={program.subtitle}
-                          onChange={(e) =>
-                            updateProgram(index, 'subtitle', e.target.value)
-                          }
-                          className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm"
-                          placeholder="Undergraduate Program"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-xs text-[#171717]/60 mb-1">
-                        Description
-                      </label>
-                      <textarea
-                        rows={2}
-                        value={program.description}
-                        onChange={(e) =>
-                          updateProgram(index, 'description', e.target.value)
-                        }
-                        className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm"
-                        placeholder="Program description"
-                      />
-                    </div>
-                  </div>
-                ))}
-                <button
-                  onClick={addProgram}
-                  className="flex items-center gap-2 px-3 sm:px-4 py-2 text-[#631012] hover:bg-[#631012]/10 rounded-lg transition-colors text-sm sm:text-base"
-                >
-                  <Plus size={18} />
-                  Add Program
-                </button>
-              </div>
-
-              <div className="mt-4 sm:mt-6 p-4 sm:p-6 bg-[#F9F9F9] rounded-lg border-2 border-dashed border-[#171717]/20">
-                <p className="text-xs sm:text-sm font-medium text-[#171717]/60 mb-3">
-                  Preview:
-                </p>
-                <div className="bg-white p-4 sm:p-6 rounded-lg">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {admissionsData.programs.map((program, index) => (
-                      <div
-                        key={index}
-                        className="bg-[#F9F9F9] p-4 rounded-lg border border-[#171717]/10 hover:border-[#631012]/30 transition-colors text-center"
-                      >
-                        <h4 className="text-lg font-bold text-[#631012]">
-                          {program.title}
-                        </h4>
-                        <p className="text-sm text-[#171717]/60 mt-1">
-                          {program.subtitle}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
