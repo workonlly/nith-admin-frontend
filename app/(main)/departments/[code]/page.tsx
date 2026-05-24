@@ -100,7 +100,12 @@ export default function DeptEditorPage() {
     try {
       const res = await fetch(`http://localhost:4000/v1/departments/${code}`);
       const { json, text } = await safeParse(res);
-      if (!res.ok) throw new Error((json && json.message) || text || "Failed to load");
+      if (!res.ok) {
+        const msg = (json && json.message) || text || "Failed to load";
+        console.warn(msg);
+        setDept(null);
+        return;
+      }
       setDept((json && json.data) || null);
     } catch (err: any) {
       setError(err.message || String(err));
@@ -120,7 +125,12 @@ export default function DeptEditorPage() {
     try {
       const res = await fetch(`http://localhost:4000/v1/departments/${code}/programmes?language=en`);
       const { json, text } = await safeParse(res);
-      if (!res.ok) throw new Error((json && json.message) || text || 'Failed to load programmes');
+      if (!res.ok) {
+        const msg = (json && json.message) || text || 'Failed to load programmes';
+        console.warn(msg);
+        setProgrammes([]);
+        return;
+      }
       setProgrammes((json && json.data) || []);
     } catch (err: any) {
       console.error(err);
@@ -132,9 +142,14 @@ export default function DeptEditorPage() {
   const fetchVision = async () => {
     setVisionLoading(true);
     try {
-      const res = await fetch(`http://localhost:4000/v1/departments/${code}/vision?language=en`);
+      const res = await fetch(`http://localhost:4000/v1/departments/${code}/mission-vision?language=en`);
       const { json, text } = await safeParse(res);
-      if (!res.ok) throw new Error((json && json.message) || text || 'Failed to load vision');
+      if (!res.ok) {
+        const msg = (json && json.message) || text || 'Failed to load vision';
+        console.warn(msg);
+        setVisionData([]);
+        return;
+      }
       setVisionData((json && json.data) || []);
     } catch (err: any) {
       console.error(err);
@@ -148,7 +163,12 @@ export default function DeptEditorPage() {
     try {
       const res = await fetch(`http://localhost:4000/v1/departments/${code}/research-areas?language=en`);
       const { json, text } = await safeParse(res);
-      if (!res.ok) throw new Error((json && json.message) || text || 'Failed to load research areas');
+      if (!res.ok) {
+        const msg = (json && json.message) || text || 'Failed to load research areas';
+        console.warn(msg);
+        setResearchAreas([]);
+        return;
+      }
       setResearchAreas((json && json.data) || []);
     } catch (err: any) {
       console.error(err);
@@ -162,7 +182,12 @@ export default function DeptEditorPage() {
     try {
       const res = await fetch(`http://localhost:4000/v1/departments/${code}/publications?language=en`);
       const { json, text } = await safeParse(res);
-      if (!res.ok) throw new Error((json && json.message) || text || 'Failed to load publications');
+      if (!res.ok) {
+        const msg = (json && json.message) || text || 'Failed to load publications';
+        console.warn(msg);
+        setPublications([]);
+        return;
+      }
       setPublications((json && json.data) || []);
     } catch (err: any) {
       console.error(err);
@@ -176,7 +201,12 @@ export default function DeptEditorPage() {
     try {
       const res = await fetch(`http://localhost:4000/v1/departments/${code}/faculty?language=en`);
       const { json, text } = await safeParse(res);
-      if (!res.ok) throw new Error((json && json.message) || text || 'Failed to load faculty');
+      if (!res.ok) {
+        const msg = (json && json.message) || text || 'Failed to load faculty';
+        console.warn(msg);
+        setFacultyList([]);
+        return;
+      }
       setFacultyList((json && json.data) || []);
     } catch (err: any) {
       console.error(err);
@@ -190,7 +220,12 @@ export default function DeptEditorPage() {
     try {
       const res = await fetch(`http://localhost:4000/v1/departments/${code}/labs?language=en`);
       const { json, text } = await safeParse(res);
-      if (!res.ok) throw new Error((json && json.message) || text || 'Failed to load labs');
+      if (!res.ok) {
+        const msg = (json && json.message) || text || 'Failed to load labs';
+        console.warn(msg);
+        setLabsList([]);
+        return;
+      }
       setLabsList((json && json.data) || []);
     } catch (err: any) {
       console.error(err);
@@ -204,7 +239,12 @@ export default function DeptEditorPage() {
     try {
       const res = await fetch(`http://localhost:4000/v1/departments/${code}/contact?language=en`);
       const { json, text } = await safeParse(res);
-      if (!res.ok) throw new Error((json && json.message) || text || 'Failed to load contact');
+      if (!res.ok) {
+        const msg = (json && json.message) || text || 'Failed to load contact';
+        console.warn(msg);
+        setContactInfo(null);
+        return;
+      }
       setContactInfo((json && json.data) || null);
     } catch (err: any) {
       console.error(err);
@@ -218,7 +258,12 @@ export default function DeptEditorPage() {
     try {
       const res = await fetch(`http://localhost:4000/v1/departments/${code}/media?language=en`);
       const { json, text } = await safeParse(res);
-      if (!res.ok) throw new Error((json && json.message) || text || 'Failed to load media');
+      if (!res.ok) {
+        const msg = (json && json.message) || text || 'Failed to load media';
+        console.warn(msg);
+        setMediaList([]);
+        return;
+      }
       setMediaList((json && json.data) || []);
     } catch (err: any) {
       console.error(err);
@@ -439,7 +484,7 @@ export default function DeptEditorPage() {
           <div>
             <div style={{ fontSize: 12, opacity: 0.8 }}>NITH ADMIN</div>
             <h1 style={{ margin: '6px 0 0', fontSize: 32 }}>Department of {dept.name_en}</h1>
-            <div style={{ marginTop: 8, opacity: 0.85 }}>Edit the backend records for this department. The public frontend reads from these APIs, so changes will be reflected when the pages reload.</div>
+            <div style={{ marginTop: 8, opacity: 0.85 }}>Edit the backend records for this department.</div>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
                 <button onClick={() => { fetchDeptRefresh(code); }} style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.06)', color: '#fff', border: '1px solid rgba(255,255,255,0.06)' }}>⟳ Refresh</button>
@@ -643,7 +688,7 @@ export default function DeptEditorPage() {
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={async () => { await handleAddResource('vision', addVisionData, fetchVision); setAddVisionData({ title_en: '', title_hi: '', description_en: '', description_hi: '' }); }} style={maroonBtn}>Save</button>
+                    <button onClick={async () => { await handleAddResource('mission-vision', addVisionData, fetchVision); setAddVisionData({ title_en: '', title_hi: '', description_en: '', description_hi: '' }); }} style={maroonBtn}>Save</button>
                     <button onClick={() => { setAddVisionData({ title_en: '', title_hi: '', description_en: '', description_hi: '' }); }} style={{ padding: '10px 14px', borderRadius: 8 }}>Reset</button>
                   </div>
                 </div>
@@ -663,7 +708,7 @@ export default function DeptEditorPage() {
                         <textarea value={editVisionData.description_hi || ''} onChange={(e) => setEditVisionData({ ...editVisionData, description_hi: e.target.value })} style={{ padding: 8, width: '100%' }} />
                       </div>
                       <div style={{ marginTop: 8 }}>
-                        <button onClick={() => { handleUpdateResource('vision', v.id, editVisionData, fetchVision); setEditingVisionId(null); }} style={{ padding: '8px 10px' }}>Save</button>
+                        <button onClick={() => { handleUpdateResource('mission-vision', v.id, editVisionData, fetchVision); setEditingVisionId(null); }} style={{ padding: '8px 10px' }}>Save</button>
                         <button onClick={() => setEditingVisionId(null)} style={{ padding: '8px 10px', marginLeft: 8 }}>Cancel</button>
                       </div>
                     </div>
@@ -675,13 +720,13 @@ export default function DeptEditorPage() {
                       {v.description_hi ? <div style={{ marginTop: 6, color: '#6b7280' }}>{v.description_hi}</div> : null}
                       <div style={{ marginTop: 6 }}>
                         <button style={actionBtn} onClick={() => { setEditingVisionId(v.id); setEditVisionData(v); }}>Edit</button>
-                        {pendingDelete.resource === 'vision' && pendingDelete.id === v.id ? (
+                        {pendingDelete.resource === 'mission-vision' && pendingDelete.id === v.id ? (
                           <span style={{ marginLeft: 8 }}>
                             <button onClick={performPendingDelete} style={{ background: '#b91c1c', color: '#fff', padding: '6px 10px', borderRadius: 6 }}>Confirm</button>
                             <button onClick={cancelPendingDelete} style={{ marginLeft: 8, ...actionBtn }}>Cancel</button>
                           </span>
                         ) : (
-                          <button onClick={() => openDeleteConfirmation('vision', v.id, fetchVision)} style={{ marginLeft: 8, ...actionDangerBtn }}>Delete</button>
+                          <button onClick={() => openDeleteConfirmation('mission-vision', v.id, fetchVision)} style={{ marginLeft: 8, ...actionDangerBtn }}>Delete</button>
                         )}
                       </div>
                     </>

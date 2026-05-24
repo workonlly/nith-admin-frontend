@@ -12,6 +12,7 @@ type Dept = {
 };
 
 export default function Page() {
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
   const [depts, setDepts] = useState<Dept[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,13 +25,14 @@ export default function Page() {
     const fetchDepts = async () => {
       setLoading(true);
       try {
-        const res = await fetch("http://localhost:4000/v1/departments");
+        const res = await fetch(`${API_BASE}/v1/departments`);
         let json = null;
         let text = null;
         try { json = await res.json(); } catch { text = await res.text(); }
-        if (!res.ok) throw new Error((json && json.message) || text || "Failed to load");
+        if (!res.ok) throw new Error((json && json.message) || text || `${res.status} ${res.statusText}`);
         setDepts((json && json.data) || []);
       } catch (err: any) {
+        console.error('Failed fetching departments:', err);
         setError(err.message || String(err));
       } finally {
         setLoading(false);
@@ -42,13 +44,14 @@ export default function Page() {
   const refresh = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:4000/v1/departments");
+      const res = await fetch(`${API_BASE}/v1/departments`);
       let json = null;
       let text = null;
       try { json = await res.json(); } catch { text = await res.text(); }
-      if (!res.ok) throw new Error((json && json.message) || text || "Failed to load");
+      if (!res.ok) throw new Error((json && json.message) || text || `${res.status} ${res.statusText}`);
       setDepts((json && json.data) || []);
     } catch (err: any) {
+      console.error('Failed refreshing departments:', err);
       setError(err.message || String(err));
     } finally {
       setLoading(false);
@@ -61,11 +64,11 @@ export default function Page() {
       return;
     }
     try {
-      const res = await fetch('http://localhost:4000/v1/departments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newDept) });
+      const res = await fetch(`${API_BASE}/v1/departments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newDept) });
       let json = null;
       let text = null;
       try { json = await res.json(); } catch { text = await res.text(); }
-      if (!res.ok) throw new Error((json && json.message) || text || 'Create failed');
+      if (!res.ok) throw new Error((json && json.message) || text || `${res.status} ${res.statusText}`);
       setNewDept({ code: '', name_en: '', description_short_en: '' });
       setShowAdd(false);
       await refresh();
@@ -78,11 +81,11 @@ export default function Page() {
   const handleDeleteDepartment = async (code: string) => {
     if (!confirm('Delete this department and all associated records?')) return;
     try {
-      const res = await fetch(`http://localhost:4000/v1/departments/${code}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE}/v1/departments/${code}`, { method: 'DELETE' });
       let json = null;
       let text = null;
       try { json = await res.json(); } catch { text = await res.text(); }
-      if (!res.ok) throw new Error((json && json.message) || text || 'Delete failed');
+      if (!res.ok) throw new Error((json && json.message) || text || `${res.status} ${res.statusText}`);
       await refresh();
     } catch (err: any) {
       alert(err.message || String(err));
