@@ -7,6 +7,7 @@ import {
   Plus,
   Trash2,
   FileText,
+  Upload,
 } from 'lucide-react';
 
 interface ForwardingRule {
@@ -54,6 +55,49 @@ export default function ForwardingRulesPage() {
     heroDescriptionHn: 'आवेदनों को अग्रेषित करने के लिए व्यापक दिशानिर्देश और प्रक्रियाएं।',
     rules: INITIAL_RULES,
   });
+  const [uploadingState, setUploadingState] = useState<{ [key: number]: boolean }>({});
+
+  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>, id: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf') {
+      alert('Only PDF files are allowed!');
+      return;
+    }
+
+    setUploadingState((prev) => ({ ...prev, [id]: true }));
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('http://localhost:4000/api/upload', {
+        method: 'POST',
+        headers: {
+          'x-bucket-name': 'faculty-section',
+        },
+        body: formData,
+      });
+
+      const result = await res.json();
+      if (result.success && result.url) {
+        setForwardingData((prev) => ({
+          ...prev,
+          rules: prev.rules.map((r) =>
+            r.id === id ? { ...r, download_url: result.url } : r
+          ),
+        }));
+        alert('PDF uploaded successfully!');
+      } else {
+        alert('Failed to upload PDF: ' + (result.error || 'Unknown error'));
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error uploading PDF to server');
+    } finally {
+      setUploadingState((prev) => ({ ...prev, [id]: false }));
+    }
+  };
 
   const tabs = [
     { id: 'hero' as TabType, label: 'Hero Section', icon: <FileText size={18} /> },
@@ -236,9 +280,50 @@ export default function ForwardingRulesPage() {
                         <textarea value={rule.description_hn} onChange={(e) => updateRule(rule.id, 'description_hn', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm h-20" placeholder="विवरण" />
                         <input value={rule.date_hn} onChange={(e) => updateRule(rule.id, 'date_hn', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="प्रभावी तिथि" />
                       </div>
-                      <div className="col-span-2 grid grid-cols-2 gap-4 border-t pt-4">
-                        <input type="text" value={rule.download_url} onChange={(e) => updateRule(rule.id, 'download_url', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Download URL" />
-                        <input type="text" value={rule.read_more_url} onChange={(e) => updateRule(rule.id, 'read_more_url', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Read More URL" />
+                      <div className="col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-4">
+                        {/* PDF Upload and URL */}
+                        <div className="space-y-3 p-3 bg-white rounded-lg border border-gray-200">
+                          <label className="text-[10px] font-bold text-[#631012] uppercase block">Download PDF Document</label>
+                          <input 
+                            type="text" 
+                            value={rule.download_url} 
+                            onChange={(e) => updateRule(rule.id, 'download_url', e.target.value)} 
+                            className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50" 
+                            placeholder="Download PDF URL" 
+                          />
+                          <div className="flex items-center gap-3">
+                            <label className={`px-3 py-1.5 rounded-lg text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm ${uploadingState[rule.id] ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#631012] hover:bg-[#7a1214]'}`}>
+                              <Upload size={12} />
+                              {uploadingState[rule.id] ? 'Uploading...' : 'Upload PDF'}
+                              <input 
+                                type="file" 
+                                accept="application/pdf" 
+                                disabled={!!uploadingState[rule.id]}
+                                onChange={(e) => handlePdfUpload(e, rule.id)} 
+                                className="hidden" 
+                              />
+                            </label>
+                            {rule.download_url && (
+                              <span className="text-[11px] text-green-600 font-semibold flex items-center gap-1 truncate max-w-[180px]">
+                                ✓ Active PDF
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Read More URL */}
+                        <div className="space-y-3 p-3 bg-white rounded-lg border border-gray-200 flex flex-col justify-between">
+                          <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Read More URL</label>
+                            <input 
+                              type="text" 
+                              value={rule.read_more_url} 
+                              onChange={(e) => updateRule(rule.id, 'read_more_url', e.target.value)} 
+                              className="w-full px-3 py-2 border rounded-lg text-sm" 
+                              placeholder="Read More URL" 
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>

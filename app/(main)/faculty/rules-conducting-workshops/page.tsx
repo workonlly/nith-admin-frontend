@@ -8,6 +8,7 @@ import {
   Trash2,
   FileText,
   Bell,
+  Upload,
 } from 'lucide-react';
 
 interface WorkshopRule {
@@ -79,7 +80,7 @@ export default function WorkshopRulesPage() {
     heroHeadingEn: 'Rules for Conducting Workshops',
     heroHeadingHn: 'कार्यशाला आयोजित करने के नियम',
     heroDescriptionEn: 'Comprehensive guidelines and regulations for organizing workshops and training programs.',
-    heroDescriptionHn: 'कार्यशालाओं और प्रशिक्षण कार्यक्रमों के आयोजन के लिए व्यापक दिशानिर्देश और नियम।',
+    heroDescriptionHn: 'कार्यशालाओं and प्रशिक्षण कार्यक्रमों के आयोजन के लिए व्यापक दिशानिर्देश और नियम।',
     tab1NameEn: 'Conference/Workshop/FDP/STC Rules Formats',
     tab1NameHn: 'सम्मेलन/कार्यशाला/एफडीपी/एसटीसी नियम प्रारूप',
     tab2NameEn: 'Notices/Office Orders/Notifications',
@@ -87,6 +88,66 @@ export default function WorkshopRulesPage() {
     rules: INITIAL_RULES,
     notices: INITIAL_NOTICES,
   });
+  const [uploadingState, setUploadingState] = useState<{ [key: string]: boolean }>({});
+
+  const handleFileUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    id: number,
+    type: 'pdf' | 'word',
+    listType: 'rules' | 'notices'
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (type === 'pdf' && file.type !== 'application/pdf') {
+      alert('Only PDF files are allowed!');
+      return;
+    }
+    
+    if (
+      type === 'word' &&
+      !file.name.endsWith('.doc') &&
+      !file.name.endsWith('.docx') &&
+      file.type !== 'application/msword' &&
+      file.type !== 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ) {
+      alert('Only Word documents (.doc, .docx) are allowed!');
+      return;
+    }
+
+    const uploadKey = `${listType}-${id}-${type}`;
+    setUploadingState((prev) => ({ ...prev, [uploadKey]: true }));
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('http://localhost:4000/api/upload', {
+        method: 'POST',
+        headers: {
+          'x-bucket-name': 'faculty-section',
+        },
+        body: formData,
+      });
+
+      const result = await res.json();
+      if (result.success && result.url) {
+        setWorkshopData((prev) => ({
+          ...prev,
+          [listType]: prev[listType].map((item) =>
+            item.id === id ? { ...item, [type === 'pdf' ? 'pdf_url' : 'word_url']: result.url } : item
+          ),
+        }));
+        alert(`${type.toUpperCase()} uploaded successfully!`);
+      } else {
+        alert(`Failed to upload ${type.toUpperCase()}: ` + (result.error || 'Unknown error'));
+      }
+    } catch (err) {
+      console.error(err);
+      alert(`Error uploading ${type.toUpperCase()} to server`);
+    } finally {
+      setUploadingState((prev) => ({ ...prev, [uploadKey]: false }));
+    }
+  };
 
   const tabs = [
     { id: 'hero' as TabType, label: 'Hero Section', icon: <FileText size={18} /> },
@@ -348,9 +409,66 @@ export default function WorkshopRulesPage() {
                         <input value={rule.title_hn} onChange={(e) => updateRule(rule.id, 'title_hn', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm font-bold" placeholder="शीर्षक" />
                         <textarea value={rule.description_hn} onChange={(e) => updateRule(rule.id, 'description_hn', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm h-20" placeholder="विवरण" />
                       </div>
-                      <div className="col-span-2 grid grid-cols-2 gap-4 border-t pt-4">
-                        <input type="text" value={rule.pdf_url} onChange={(e) => updateRule(rule.id, 'pdf_url', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="PDF URL" />
-                        <input type="text" value={rule.word_url} onChange={(e) => updateRule(rule.id, 'word_url', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Word URL" />
+                      <div className="col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-4">
+                        {/* PDF Upload and URL */}
+                        <div className="space-y-3 p-3 bg-white rounded-lg border border-gray-200">
+                          <label className="text-[10px] font-bold text-[#631012] uppercase block">PDF Document</label>
+                          <input 
+                            type="text" 
+                            value={rule.pdf_url} 
+                            onChange={(e) => updateRule(rule.id, 'pdf_url', e.target.value)} 
+                            className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50" 
+                            placeholder="PDF URL" 
+                          />
+                          <div className="flex items-center gap-3">
+                            <label className={`px-3 py-1.5 rounded-lg text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm ${uploadingState[`rules-${rule.id}-pdf`] ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#631012] hover:bg-[#7a1214]'}`}>
+                              <Upload size={12} />
+                              {uploadingState[`rules-${rule.id}-pdf`] ? 'Uploading...' : 'Upload PDF'}
+                              <input 
+                                type="file" 
+                                accept="application/pdf" 
+                                disabled={!!uploadingState[`rules-${rule.id}-pdf`]}
+                                onChange={(e) => handleFileUpload(e, rule.id, 'pdf', 'rules')} 
+                                className="hidden" 
+                              />
+                            </label>
+                            {rule.pdf_url && (
+                              <span className="text-[11px] text-green-600 font-semibold flex items-center gap-1 truncate max-w-[180px]">
+                                ✓ Active PDF
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Word Upload and URL */}
+                        <div className="space-y-3 p-3 bg-white rounded-lg border border-gray-200">
+                          <label className="text-[10px] font-bold text-[#631012] uppercase block">Word Document</label>
+                          <input 
+                            type="text" 
+                            value={rule.word_url} 
+                            onChange={(e) => updateRule(rule.id, 'word_url', e.target.value)} 
+                            className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50" 
+                            placeholder="Word Document URL" 
+                          />
+                          <div className="flex items-center gap-3">
+                            <label className={`px-3 py-1.5 rounded-lg text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm ${uploadingState[`rules-${rule.id}-word`] ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#631012] hover:bg-[#7a1214]'}`}>
+                              <Upload size={12} />
+                              {uploadingState[`rules-${rule.id}-word`] ? 'Uploading...' : 'Upload Word'}
+                              <input 
+                                type="file" 
+                                accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
+                                disabled={!!uploadingState[`rules-${rule.id}-word`]}
+                                onChange={(e) => handleFileUpload(e, rule.id, 'word', 'rules')} 
+                                className="hidden" 
+                              />
+                            </label>
+                            {rule.word_url && (
+                              <span className="text-[11px] text-green-600 font-semibold flex items-center gap-1 truncate max-w-[180px]">
+                                ✓ Active Word Doc
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -388,9 +506,66 @@ export default function WorkshopRulesPage() {
                         <textarea value={notice.description_hn} onChange={(e) => updateNotice(notice.id, 'description_hn', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm h-20" placeholder="विवरण" />
                         <input value={notice.date_hn} onChange={(e) => updateNotice(notice.id, 'date_hn', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="तिथि" />
                       </div>
-                      <div className="col-span-2 grid grid-cols-2 gap-4 border-t pt-4">
-                        <input type="text" value={notice.pdf_url} onChange={(e) => updateNotice(notice.id, 'pdf_url', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="PDF URL" />
-                        <input type="text" value={notice.word_url} onChange={(e) => updateNotice(notice.id, 'word_url', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Word URL" />
+                      <div className="col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-4">
+                        {/* PDF Upload and URL */}
+                        <div className="space-y-3 p-3 bg-white rounded-lg border border-gray-200">
+                          <label className="text-[10px] font-bold text-[#631012] uppercase block">PDF Document</label>
+                          <input 
+                            type="text" 
+                            value={notice.pdf_url} 
+                            onChange={(e) => updateNotice(notice.id, 'pdf_url', e.target.value)} 
+                            className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50" 
+                            placeholder="PDF URL" 
+                          />
+                          <div className="flex items-center gap-3">
+                            <label className={`px-3 py-1.5 rounded-lg text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm ${uploadingState[`notices-${notice.id}-pdf`] ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#631012] hover:bg-[#7a1214]'}`}>
+                              <Upload size={12} />
+                              {uploadingState[`notices-${notice.id}-pdf`] ? 'Uploading...' : 'Upload PDF'}
+                              <input 
+                                type="file" 
+                                accept="application/pdf" 
+                                disabled={!!uploadingState[`notices-${notice.id}-pdf`]}
+                                onChange={(e) => handleFileUpload(e, notice.id, 'pdf', 'notices')} 
+                                className="hidden" 
+                              />
+                            </label>
+                            {notice.pdf_url && (
+                              <span className="text-[11px] text-green-600 font-semibold flex items-center gap-1 truncate max-w-[180px]">
+                                ✓ Active PDF
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Word Upload and URL */}
+                        <div className="space-y-3 p-3 bg-white rounded-lg border border-gray-200">
+                          <label className="text-[10px] font-bold text-[#631012] uppercase block">Word Document</label>
+                          <input 
+                            type="text" 
+                            value={notice.word_url} 
+                            onChange={(e) => updateNotice(notice.id, 'word_url', e.target.value)} 
+                            className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50" 
+                            placeholder="Word Document URL" 
+                          />
+                          <div className="flex items-center gap-3">
+                            <label className={`px-3 py-1.5 rounded-lg text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm ${uploadingState[`notices-${notice.id}-word`] ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#631012] hover:bg-[#7a1214]'}`}>
+                              <Upload size={12} />
+                              {uploadingState[`notices-${notice.id}-word`] ? 'Uploading...' : 'Upload Word'}
+                              <input 
+                                type="file" 
+                                accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
+                                disabled={!!uploadingState[`notices-${notice.id}-word`]}
+                                onChange={(e) => handleFileUpload(e, notice.id, 'word', 'notices')} 
+                                className="hidden" 
+                              />
+                            </label>
+                            {notice.word_url && (
+                              <span className="text-[11px] text-green-600 font-semibold flex items-center gap-1 truncate max-w-[180px]">
+                                ✓ Active Word Doc
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>

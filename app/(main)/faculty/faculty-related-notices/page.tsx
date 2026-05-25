@@ -12,6 +12,7 @@ import {
   Download,
   Eye,
   AlertCircle,
+  Upload,
 } from 'lucide-react';
 
 interface Notice {
@@ -79,6 +80,49 @@ type TabType = 'hero' | 'notices';
 export default function FacultyRelatedNoticesPage() {
   const [activeTab, setActiveTab] = useState<TabType>('hero');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [uploadingIds, setUploadingIds] = useState<{ [key: number]: boolean }>({});
+
+  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>, id: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf') {
+      alert('Only PDF files are allowed!');
+      return;
+    }
+
+    setUploadingIds((prev) => ({ ...prev, [id]: true }));
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('http://localhost:4000/api/upload', {
+        method: 'POST',
+        headers: {
+          'x-bucket-name': 'faculty-section',
+        },
+        body: formData,
+      });
+
+      const result = await res.json();
+      if (result.success && result.url) {
+        setNoticesData((prev) => ({
+          ...prev,
+          notices: prev.notices.map((n) =>
+            n.id === id ? { ...n, view_url: result.url, download_url: result.url } : n
+          ),
+        }));
+        alert('PDF uploaded successfully!');
+      } else {
+        alert('Failed to upload PDF: ' + (result.error || 'Unknown error'));
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error uploading PDF to server');
+    } finally {
+      setUploadingIds((prev) => ({ ...prev, [id]: false }));
+    }
+  };
 
   const [noticesData, setNoticesData] = useState<NoticesData>({
     heroHeadingEn: 'Faculty Related Notices',
@@ -305,14 +349,48 @@ export default function FacultyRelatedNoticesPage() {
                         </div>
                       </div>
 
-                      <div className="col-span-2 grid grid-cols-3 gap-4 border-t pt-4">
-                        <input type="text" value={notice.view_url} onChange={(e) => updateNotice(notice.id, 'view_url', e.target.value)} className="px-3 py-2 border rounded-lg text-sm" placeholder="View URL" />
-                        <input type="text" value={notice.download_url} onChange={(e) => updateNotice(notice.id, 'download_url', e.target.value)} className="px-3 py-2 border rounded-lg text-sm" placeholder="Download URL" />
-                        <select value={notice.priority_en} onChange={(e) => updateNotice(notice.id, 'priority_en', e.target.value)} className="px-3 py-2 border rounded-lg text-sm">
-                            <option value="High">High</option>
-                            <option value="Medium">Medium</option>
-                            <option value="Low">Low</option>
-                        </select>
+                      <div className="col-span-2 border-t pt-4 space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] uppercase text-gray-400 font-bold">View URL</label>
+                            <input type="text" value={notice.view_url} onChange={(e) => updateNotice(notice.id, 'view_url', e.target.value)} className="px-3 py-2 border rounded-lg text-sm" placeholder="View URL" />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] uppercase text-gray-400 font-bold">Download URL</label>
+                            <input type="text" value={notice.download_url} onChange={(e) => updateNotice(notice.id, 'download_url', e.target.value)} className="px-3 py-2 border rounded-lg text-sm" placeholder="Download URL" />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] uppercase text-gray-400 font-bold">Priority</label>
+                            <select value={notice.priority_en} onChange={(e) => updateNotice(notice.id, 'priority_en', e.target.value)} className="px-3 py-2 border rounded-lg text-sm bg-white">
+                                <option value="High">High</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Low">Low</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-4 bg-white p-3 rounded-lg border border-dashed border-[#631012]/30">
+                          <label className={`px-4 py-2 rounded-lg text-white text-xs font-semibold flex items-center gap-2 cursor-pointer transition-colors shadow-sm ${uploadingIds[notice.id] ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#631012] hover:bg-[#7a1214]'}`}>
+                            <Upload size={14} />
+                            {uploadingIds[notice.id] ? 'Uploading PDF...' : 'Upload PDF Document'}
+                            <input 
+                              type="file" 
+                              accept="application/pdf" 
+                              disabled={!!uploadingIds[notice.id]}
+                              onChange={(e) => handlePdfUpload(e, notice.id)} 
+                              className="hidden" 
+                            />
+                          </label>
+                          <div className="text-xs text-gray-500">
+                            {notice.view_url ? (
+                              <span className="text-[#631012] font-semibold flex items-center gap-1">
+                                <FileText size={14} /> Active PDF: {notice.view_url.split('/').pop()}
+                              </span>
+                            ) : (
+                              <span>No PDF uploaded yet. Click to select a file.</span>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>

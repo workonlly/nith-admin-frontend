@@ -7,6 +7,7 @@ import {
   Plus,
   Trash2,
   Calendar,
+  Upload,
 } from 'lucide-react';
 
 interface MouItem {
@@ -26,17 +27,6 @@ interface MouData {
   mous: MouItem[];
 }
 
-const INITIAL_MOUS: MouItem[] = [
-  {
-    id: -1,
-    title_en: 'MoU between NITH Alumni Association and XYZ Corporation',
-    title_hn: 'एनआईटीएच पूर्व छात्र संघ और एक्सवाईजेड कॉर्पोरेशन के बीच समझौता ज्ञापन',
-    drafted_date: '2025-01-10',
-    document_url: '/documents/mou/mou-xyz-corp.pdf',
-    file_type: 'pdf'
-  }
-];
-
 type TabType = 'hero' | 'list';
 
 export default function AlumniMouAdmin() {
@@ -46,8 +36,55 @@ export default function AlumniMouAdmin() {
     heroHeadingHn: 'पूर्व छात्र संबंधित समझौता ज्ञापन',
     heroDescriptionEn: 'Official Memorandums of Understanding associated with NITH Alumni initiatives.',
     heroDescriptionHn: 'एनआईटीएच पूर्व छात्र पहलों से जुड़े आधिकारिक समझौता ज्ञापन।',
-    mous: INITIAL_MOUS,
+    mous: [],
   });
+  const [uploadingState, setUploadingState] = useState<{ [key: number]: boolean }>({});
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, id: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const isPdf = file.type === 'application/pdf';
+    const isWord = file.name.endsWith('.doc') || file.name.endsWith('.docx') || file.type === 'application/msword' || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+    if (!isPdf && !isWord) {
+      alert('Only PDF and Word documents are allowed!');
+      return;
+    }
+
+    setUploadingState((prev) => ({ ...prev, [id]: true }));
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('http://localhost:4000/api/upload', {
+        method: 'POST',
+        headers: {
+          'x-bucket-name': 'alumni-section',
+        },
+        body: formData,
+      });
+
+      const result = await res.json();
+      if (result.success && result.url) {
+        const ext = file.name.split('.').pop()?.toLowerCase() || 'pdf';
+        setData((prev) => ({
+          ...prev,
+          mous: prev.mous.map((m) =>
+            m.id === id ? { ...m, document_url: result.url, file_type: ext } : m
+          ),
+        }));
+        alert('File uploaded successfully!');
+      } else {
+        alert('Failed to upload file: ' + (result.error || 'Unknown error'));
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error uploading file to server');
+    } finally {
+      setUploadingState((prev) => ({ ...prev, [id]: false }));
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -66,16 +103,8 @@ export default function AlumniMouAdmin() {
 
         const lRes = await fetch('http://localhost:4000/api/alumni-mou/list');
         const lData = await lRes.json();
-        if (Array.isArray(lData) && lData.length > 0) {
-          setData(prev => {
-            const merged = [...lData];
-            INITIAL_MOUS.forEach(def => {
-              if (!merged.find(m => m.title_en === def.title_en || String(m.id) === String(def.id))) {
-                merged.push(def);
-              }
-            });
-            return { ...prev, mous: merged };
-          });
+        if (Array.isArray(lData)) {
+          setData(prev => ({ ...prev, mous: lData }));
         }
       } catch (err) {
         console.error('Fetch failed:', err);
@@ -224,18 +253,44 @@ export default function AlumniMouAdmin() {
                         <label className="text-xs font-bold text-[#631012] uppercase tracking-widest">Hindi Title</label>
                         <textarea value={item.title_hn} onChange={(e) => updateMou(item.id, 'title_hn', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm font-bold" placeholder="शीर्षक" />
                       </div>
-                      <div className="col-span-2 grid grid-cols-3 gap-4 border-t pt-4">
+                      <div className="col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6 border-t pt-4">
                         <div className="space-y-1">
                             <label className="text-[10px] font-bold text-gray-400 uppercase">Drafted Date</label>
-                            <input type="date" value={item.drafted_date} onChange={(e) => updateMou(item.id, 'drafted_date', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" />
+                            <input type="date" value={item.drafted_date} onChange={(e) => updateMou(item.id, 'drafted_date', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm bg-white" />
                         </div>
-                        <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-gray-400 uppercase">Document URL</label>
-                            <input type="text" value={item.document_url} onChange={(e) => updateMou(item.id, 'document_url', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="/documents/..." />
+                        
+                        <div className="space-y-3 p-3 bg-white rounded-lg border border-gray-200">
+                          <label className="text-[10px] font-bold text-[#631012] uppercase block">Document Link</label>
+                          <input 
+                            type="text" 
+                            value={item.document_url} 
+                            onChange={(e) => updateMou(item.id, 'document_url', e.target.value)} 
+                            className="w-full px-3 py-1.5 border rounded-lg text-xs bg-gray-50 font-mono" 
+                            placeholder="File URL" 
+                          />
+                          <div className="flex items-center gap-3">
+                            <label className={`px-3 py-1 rounded-lg text-white text-[10px] font-semibold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm ${uploadingState[item.id] ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#631012] hover:bg-[#7a1214]'}`}>
+                              <Upload size={10} />
+                              {uploadingState[item.id] ? 'Uploading...' : 'Upload File'}
+                              <input 
+                                type="file" 
+                                accept="application/pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
+                                disabled={!!uploadingState[item.id]}
+                                onChange={(e) => handleFileUpload(e, item.id)} 
+                                className="hidden" 
+                              />
+                            </label>
+                            {item.document_url && (
+                              <span className="text-[10px] text-green-600 font-semibold truncate max-w-[120px]">
+                                ✓ Active File
+                              </span>
+                            )}
+                          </div>
                         </div>
+
                         <div className="space-y-1">
                             <label className="text-[10px] font-bold text-gray-400 uppercase">File Type</label>
-                            <select value={item.file_type} onChange={(e) => updateMou(item.id, 'file_type', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm">
+                            <select value={item.file_type} onChange={(e) => updateMou(item.id, 'file_type', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm bg-white">
                                 <option value="pdf">PDF</option>
                                 <option value="doc">DOC</option>
                                 <option value="docx">DOCX</option>

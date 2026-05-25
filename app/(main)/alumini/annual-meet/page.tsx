@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Save, Plus, Trash2, Settings, Calendar, Award, Image as ImageIcon, Mail, FileText } from 'lucide-react';
+import { Save, Plus, Trash2, Settings, Calendar, Award, Image as ImageIcon, Mail, FileText, Upload } from 'lucide-react';
 
 interface HeadingData {
   title_en: string;
@@ -29,6 +29,7 @@ interface HeadingData {
   upcoming_desc_en: string;
   upcoming_desc_hn: string;
   upcoming_reg_open: boolean;
+  upcoming_image?: string;
 
   // Get involved and contacts
   involve_title_en: string;
@@ -121,6 +122,7 @@ const INITIAL_HEADING: HeadingData = {
   upcoming_desc_en: 'Join us for three days of reconnection, celebration, and inspiration as we bring together alumni from across generations to celebrate our shared legacy and strengthen our bonds.',
   upcoming_desc_hn: 'हमारी साझा विरासत का जश्न मनाने और हमारे बंधनों को मजबूत करने के लिए विभिन्न पीढ़ियों के पूर्व छात्रों को एक साथ लाने के साथ पुनर्मिलन, उत्सव और प्रेरणा के तीन दिनों के लिए हमारे साथ जुड़ें।',
   upcoming_reg_open: true,
+  upcoming_image: '',
   involve_title_en: 'Get Involved',
   involve_title_hn: 'शामिल हों',
   involve_desc_en: 'Have questions or want to participate? Reach out to us',
@@ -163,6 +165,120 @@ export default function AnnualAlumniMeetAdmin() {
 
   const [activeTab, setActiveTab] = useState<'hero' | 'upcoming' | 'schedule' | 'past' | 'gallery'>('hero');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Upload States
+  const [uploadingGalleryIds, setUploadingGalleryIds] = useState<{ [key: number]: boolean }>({});
+  const [uploadingPastIds, setUploadingPastIds] = useState<{ [key: number]: boolean }>({});
+  const [uploadingUpcomingImage, setUploadingUpcomingImage] = useState(false);
+
+  // Upcoming promotional image upload handler
+  const handleUpcomingImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Only image files are allowed!');
+      return;
+    }
+
+    setUploadingUpcomingImage(true);
+    try {
+      const url = await handleImageUpload(file);
+      setHeading(prev => ({ ...prev, upcoming_image: url }));
+      alert('Upcoming promotional image uploaded successfully!');
+    } catch (err: any) {
+      console.error(err);
+      alert('Error uploading image: ' + err.message);
+    } finally {
+      setUploadingUpcomingImage(false);
+    }
+  };
+
+  // Core image upload helper
+  const handleImageUpload = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await fetch('http://localhost:4000/api/upload', {
+      method: 'POST',
+      headers: {
+        'x-bucket-name': 'alumni-section'
+      },
+      body: formData
+    });
+    
+    const result = await res.json();
+    if (result.success && result.url) {
+      return result.url;
+    } else {
+      throw new Error(result.error || 'Upload failed');
+    }
+  };
+
+  // Gallery photo upload handler
+  const handlePhotoUploadForGallery = async (e: React.ChangeEvent<HTMLInputElement>, id: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Only image files are allowed!');
+      return;
+    }
+
+    setUploadingGalleryIds(prev => ({ ...prev, [id]: true }));
+    try {
+      const url = await handleImageUpload(file);
+      setGallery(prev => prev.map(item => item.id === id ? { ...item, url } : item));
+      alert('Image uploaded successfully!');
+    } catch (err: any) {
+      console.error(err);
+      alert('Error uploading image: ' + err.message);
+    } finally {
+      setUploadingGalleryIds(prev => ({ ...prev, [id]: false }));
+    }
+  };
+
+  // Past Reunion photo upload and append handler
+  const handlePhotoUploadForPastMeet = async (e: React.ChangeEvent<HTMLInputElement>, id: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Only image files are allowed!');
+      return;
+    }
+
+    setUploadingPastIds(prev => ({ ...prev, [id]: true }));
+    try {
+      const url = await handleImageUpload(file);
+      setPastMeets(prev => prev.map(meet => {
+        if (meet.id === id) {
+          const currentImages = meet.images ? meet.images.split(',').map(s => s.trim()).filter(Boolean) : [];
+          currentImages.push(url);
+          return { ...meet, images: currentImages.join(',') };
+        }
+        return meet;
+      }));
+      alert('Image uploaded and appended successfully!');
+    } catch (err: any) {
+      console.error(err);
+      alert('Error uploading image: ' + err.message);
+    } finally {
+      setUploadingPastIds(prev => ({ ...prev, [id]: false }));
+    }
+  };
+
+  // Remove individual photo from past meet reunion list
+  const handleRemoveImageFromPastMeet = (meetId: number, imgUrlToRemove: string) => {
+    setPastMeets(prev => prev.map(meet => {
+      if (meet.id === meetId) {
+        const currentImages = meet.images ? meet.images.split(',').map(s => s.trim()).filter(Boolean) : [];
+        const filtered = currentImages.filter(url => url !== imgUrlToRemove);
+        return { ...meet, images: filtered.join(',') };
+      }
+      return meet;
+    }));
+  };
 
   // Fetch initial database records
   useEffect(() => {
@@ -643,6 +759,53 @@ export default function AnnualAlumniMeetAdmin() {
                 <option value="true">Open (Shows Register Button)</option>
                 <option value="false">Closed / Tentative</option>
               </select>
+            </div>
+
+            <div className="md:col-span-2 border-t border-gray-150 pt-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Event Promotional Image</label>
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center bg-gray-50 p-4 rounded-xl border border-gray-200">
+                {/* Image preview */}
+                <div className="md:col-span-3 flex flex-col items-center gap-2">
+                  <div className="relative aspect-video w-full rounded-lg overflow-hidden border border-gray-200 bg-white flex items-center justify-center shadow-inner">
+                    {heading.upcoming_image ? (
+                      <img src={heading.upcoming_image} alt="Promotional Banner Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <ImageIcon className="w-8 h-8 text-gray-300" />
+                    )}
+                    {uploadingUpcomingImage && (
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-xs text-white">
+                        Uploading...
+                      </div>
+                    )}
+                  </div>
+                  
+                  <label className="bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 text-xs px-3 py-2 rounded-lg shadow-sm flex items-center gap-1.5 cursor-pointer font-medium">
+                    <Upload size={12} />
+                    Upload Image
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleUpcomingImageUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                {/* Direct image input */}
+                <div className="md:col-span-9 space-y-2">
+                  <label className="block text-xs font-bold text-gray-500 uppercase">Image URL Link</label>
+                  <input
+                    type="text"
+                    value={heading.upcoming_image || ''}
+                    onChange={e => setHeading(prev => ({ ...prev, upcoming_image: e.target.value }))}
+                    placeholder="e.g. http://localhost:9000/alumni-section/promo.jpg"
+                    className="w-full border border-gray-300 bg-white rounded-lg px-3 py-2.5 outline-none text-xs focus:ring-2 focus:ring-[#631012]"
+                  />
+                  <p className="text-[10px] text-gray-400 font-medium">
+                    Upload an upcoming reunion promotional banner here. It will display on the home card of the annual meet page.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1352,15 +1515,58 @@ export default function AnnualAlumniMeetAdmin() {
                         className="w-full border border-gray-300 bg-white rounded-lg px-3 py-2 outline-none"
                       />
                     </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Gallery Images (Comma-separated URLs)</label>
-                      <input
-                        type="text"
-                        value={item.images}
-                        onChange={e => handleUpdatePastMeetField(item.id, 'images', e.target.value)}
-                        placeholder="/alumni/meet2024-1.jpg,/alumni/meet2024-2.jpg"
-                        className="w-full border border-gray-300 bg-white rounded-lg px-3 py-2 outline-none"
-                      />
+                    <div className="md:col-span-2 space-y-4">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Gallery Images Manager</label>
+                        <p className="text-xs text-gray-400 mb-2">Upload images to the reunion gallery or edit direct image links.</p>
+                      </div>
+
+                      {/* Visual Grid of Attached Images */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                        {item.images && item.images.split(',').map(s => s.trim()).filter(Boolean).map((imgUrl, i) => (
+                          <div key={i} className="relative aspect-video rounded-lg overflow-hidden border border-gray-200 bg-white group shadow-sm">
+                            <img src={imgUrl} alt={`Thumbnail ${i+1}`} className="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveImageFromPastMeet(item.id, imgUrl)}
+                              className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-full p-1 shadow-md hover:scale-110 transition-all text-[10px] w-5 h-5 flex items-center justify-center font-bold"
+                              title="Remove image"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+
+                        {/* Upload trigger card */}
+                        <label className="border-2 border-dashed border-gray-300 rounded-lg aspect-video flex flex-col items-center justify-center cursor-pointer hover:border-[#631012] hover:bg-gray-50 transition-colors p-2 text-center text-xs font-medium text-gray-500">
+                          {uploadingPastIds[item.id] ? (
+                            <span className="text-[10px] text-[#631012] animate-pulse">Uploading...</span>
+                          ) : (
+                            <>
+                              <Upload className="w-5 h-5 text-gray-400 mb-1" />
+                              <span>Upload Photo</span>
+                            </>
+                          )}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={e => handlePhotoUploadForPastMeet(e, item.id)}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+
+                      {/* Legacy URL Textarea for advanced overrides */}
+                      <div>
+                        <label className="block text-[10px] uppercase text-gray-400 font-bold mb-1">Raw Comma-separated Image URLs (Advanced)</label>
+                        <textarea
+                          rows={2}
+                          value={item.images}
+                          onChange={e => handleUpdatePastMeetField(item.id, 'images', e.target.value)}
+                          placeholder="e.g. http://url1.jpg,http://url2.jpg"
+                          className="w-full border border-gray-300 bg-white rounded-lg px-3 py-2 outline-none text-xs font-mono"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1414,15 +1620,48 @@ export default function AnnualAlumniMeetAdmin() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Image URL</label>
-                      <input
-                        type="text"
-                        value={item.url}
-                        onChange={e => handleUpdateGalleryField(item.id, 'url', e.target.value)}
-                        placeholder="e.g. /alumni/gallery1.jpg"
-                        className="w-full border border-gray-300 bg-white rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-[#631012]"
-                      />
+                    <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-12 gap-4 items-center bg-white p-4 rounded-xl border border-gray-200">
+                      {/* Photo preview container */}
+                      <div className="md:col-span-3 flex flex-col items-center gap-2">
+                        <div className="relative aspect-video w-full rounded-lg overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center shadow-inner">
+                          {item.url ? (
+                            <img src={item.url} alt="Gallery Preview" className="w-full h-full object-cover" />
+                          ) : (
+                            <ImageIcon className="w-8 h-8 text-gray-300" />
+                          )}
+                          {uploadingGalleryIds[item.id] && (
+                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-xs text-white">
+                              Uploading...
+                            </div>
+                          )}
+                        </div>
+
+                        <label className="bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 text-xs px-3 py-2 rounded-lg shadow-sm flex items-center gap-1.5 cursor-pointer font-medium">
+                          <Upload size={12} />
+                          Upload Image
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={e => handlePhotoUploadForGallery(e, item.id)}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+
+                      {/* Manual Image URL text input */}
+                      <div className="md:col-span-9 space-y-2">
+                        <label className="block text-xs font-bold text-gray-500 uppercase">Image Destination URL</label>
+                        <input
+                          type="text"
+                          value={item.url}
+                          onChange={e => handleUpdateGalleryField(item.id, 'url', e.target.value)}
+                          placeholder="e.g. http://localhost:9000/alumni-section/image.jpg"
+                          className="w-full border border-gray-300 bg-white rounded-lg px-3 py-2 outline-none text-xs focus:ring-2 focus:ring-[#631012]"
+                        />
+                        <p className="text-[10px] text-gray-400 font-medium">
+                          Upload an image using the button, or paste an external URL directly in the input box above.
+                        </p>
+                      </div>
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Year Tag</label>
