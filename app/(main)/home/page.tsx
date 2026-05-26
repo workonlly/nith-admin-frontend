@@ -1,61 +1,137 @@
 'use client';
 
-import React from 'react';
+import Link from 'next/link';
 import { Home } from 'lucide-react';
+
+interface SectionItem {
+  id: number;
+  title: string;
+  description: string;
+  href: string;
+}
+
+const sections: SectionItem[] = [
+  {
+    id: 1,
+    title: 'Hero Section',
+    description: 'Main banner and hero content',
+    href: '/home/hero',
+  },
+  {
+    id: 2,
+    title: 'About Us',
+    description: 'Institution overview and information',
+    href: '/home/about',
+  },
+  {
+    id: 3,
+    title: 'Academics',
+    description: 'Courses, curriculum and academic structure',
+    href: '/home/academics',
+  },
+  {
+    id: 4,
+    title: 'Admissions',
+    description: 'Admission process and eligibility details',
+    href: '/home/admissions',
+  },
+  {
+    id: 5,
+    title: 'Achievements',
+    description: 'School achievements and awards',
+    href: '/home/achievements',
+  },
+  {
+    id: 6,
+    title: 'Director Message',
+    description: 'Message from the director',
+    href: '/home/director',
+  },
+  {
+    id: 7,
+    title: 'Events',
+    description: 'Upcoming and past events',
+    href: '/home/events',
+  },
+  {
+    id: 8,
+    title: 'Gallery',
+    description: 'Photo and media gallery',
+    href: '/home/gallery',
+  },
+  {
+    id: 9,
+    title: 'News',
+    description: 'Latest news and updates',
+    href: '/home/news',
+  },
+  {
+    id: 10,
+    title: 'Placements',
+    description: 'Placement records and statistics',
+    href: '/home/placements',
+  },
+];
 
 export default function HomePage() {
   return (
-    <div className="space-y-4 sm:space-y-6 p-4 sm:p-6 lg:p-8">
-      <div className="bg-gradient-to-r from-[#631012] to-[#7a1214] rounded-lg shadow-lg p-4 sm:p-6 lg:p-8 text-white">
-        <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-          <Home className="w-6 h-6 sm:w-8 sm:h-8" />
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">
-            Home Page Editor
+    <div className="p-6 space-y-6">
+      {/* HEADER */}
+      <div className="bg-gradient-to-r from-[#631012] to-[#7a1214] rounded-2xl p-6 text-white">
+        <div className="flex items-center gap-3 mb-3">
+          <Home className="w-7 h-7" />
+
+          <h1 className="text-3xl font-bold">
+            Homepage Sections
           </h1>
         </div>
-        <p className="text-sm sm:text-base text-white/90">
-          Start editing by selecting a sidebar option to manage different
-          sections of the home page.
+
+        <p className="text-white/80">
+          Static overview of all homepage CMS sections.
         </p>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-bold text-[#171717] mb-4">
-          Available Sections
+      {/* SECTIONS LIST */}
+      <div className="space-y-4">
+        {sections.map((section, index) => (
+          <div
+            key={section.id}
+            className="bg-white rounded-2xl border p-5 shadow-sm"
+          >
+            <h2 className="font-bold text-lg mb-1">
+              {index + 1}. {section.title}
+            </h2>
+
+            <p className="text-gray-500">
+              {section.description}
+            </p>
+
+            <Link
+              href={section.href}
+              className="inline-block mt-3 text-[#631012] font-medium hover:underline"
+            >
+              Open Section →
+            </Link>
+          </div>
+        ))}
+      </div>
+
+      {/* PREVIEW SIDEBAR */}
+      <div className="bg-white rounded-2xl p-6 border">
+        <h2 className="text-2xl font-bold mb-6">
+          Sidebar Preview
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="p-4 border border-[#171717]/20 rounded-lg hover:border-[#631012] transition-colors">
-            <h3 className="font-semibold text-[#171717]">Hero Section</h3>
-            <p className="text-sm text-[#171717]/60">Main header and tagline</p>
-          </div>
-          <div className="p-4 border border-[#171717]/20 rounded-lg hover:border-[#631012] transition-colors">
-            <h3 className="font-semibold text-[#171717]">About Us</h3>
-            <p className="text-sm text-[#171717]/60">About content and stats</p>
-          </div>
-          <div className="p-4 border border-[#171717]/20 rounded-lg hover:border-[#631012] transition-colors">
-            <h3 className="font-semibold text-[#171717]">Events</h3>
-            <p className="text-sm text-[#171717]/60">Latest events listings</p>
-          </div>
-          <div className="p-4 border border-[#171717]/20 rounded-lg hover:border-[#631012] transition-colors">
-            <h3 className="font-semibold text-[#171717]">Placements</h3>
-            <p className="text-sm text-[#171717]/60">Placement statistics</p>
-          </div>
-          <div className="p-4 border border-[#171717]/20 rounded-lg hover:border-[#631012] transition-colors">
-            <h3 className="font-semibold text-[#171717]">Admissions</h3>
-            <p className="text-sm text-[#171717]/60">Admission programs</p>
-          </div>
-          <div className="p-4 border border-[#171717]/20 rounded-lg hover:border-[#631012] transition-colors">
-            <h3 className="font-semibold text-[#171717]">News</h3>
-            <p className="text-sm text-[#171717]/60">Latest news items</p>
-          </div>
-          <div className="p-4 border border-[#171717]/20 rounded-lg hover:border-[#631012] transition-colors">
-            <h3 className="font-semibold text-[#171717]">Achievements</h3>
-            <p className="text-sm text-[#171717]/60">Milestones and awards</p>
-          </div>
-          <div className="p-4 border border-[#171717]/20 rounded-lg hover:border-[#631012] transition-colors">
-            <h3 className="font-semibold text-[#171717]">Gallery</h3>
-            <p className="text-sm text-[#171717]/60">Image gallery content</p>
-          </div>
+
+        <div className="space-y-2">
+          {sections.map((section) => (
+            <Link
+              key={section.id}
+              href={section.href}
+              className="block px-4 py-3 rounded-xl bg-[#F9F9F9] hover:bg-[#631012] hover:text-white transition-all"
+            >
+              {section.title}
+            </Link>
+          ))}
         </div>
       </div>
     </div>

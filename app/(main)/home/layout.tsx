@@ -4,28 +4,39 @@ import { usePathname } from 'next/navigation';
 import { Sidebar } from '@/app/sidebar/page';
 
 const homeLinks = [
+  { label: 'Dashboard', href: '/home' },
   { label: 'Hero Section', href: '/home/hero' },
   { label: 'About Us', href: '/home/about' },
-  { label: 'Events', href: '/home/events' },
+  { label: 'Academics', href: '/home/academics' },
   { label: 'Admissions', href: '/home/admissions' },
-  { label: 'News', href: '/home/news' },
   { label: 'Achievements', href: '/home/achievements' },
+  { label: 'Director', href: '/home/director' },
+  { label: 'Events', href: '/home/events' },
   { label: 'Gallery', href: '/home/gallery' },
+  { label: 'News', href: '/home/news' },
+  { label: 'Placements', href: '/home/placements' },
 ];
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+export default function Layout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const pathname = usePathname();
 
   return (
-    <div className="w-full min-h-screen flex flex-row">
+    <div className="w-full min-h-screen flex">
       <Sidebar
-        heading="Home"
+        heading="Home CMS"
         links={homeLinks}
-        downlink="Back to Home"
+        downlink="Back to Admin"
         downlinkHref="/admin"
         activeLink={pathname}
       />
-      <div className="w-[80%] bg-[#F9F9F9]">{children}</div>
+
+      <div className="flex-1 bg-[#F9F9F9] overflow-y-auto">
+        {children}
+      </div>
     </div>
   );
 }
