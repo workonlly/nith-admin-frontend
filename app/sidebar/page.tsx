@@ -2,10 +2,9 @@ import { Url } from 'next/dist/shared/lib/router/router';
 import React from 'react';
 import Link from 'next/link';
 
-interface SidebarLink {
-  label: string;
-  href: string;
-}
+type SidebarLink = 
+  | { label: string; href: string }
+  | { header: string };
 
 interface SidebarProps {
   heading: string;
@@ -31,8 +30,17 @@ export function Sidebar({
         <p className="text-sm text-[#F9F9F9]/60 mt-1">NIT Hamirpur</p>
       </div>
       <div className="flex-1 py-4 px-3 overflow-y-auto">
-        <ul className="space-y-1 overflow-y-auto">
-          {links.map((link) => {
+        <ul className="space-y-1 pb-24">
+          {links.map((link, index) => {
+            if ('header' in link) {
+              return (
+                <li key={`header-${index}`} className="pt-4 pb-2 px-4">
+                  <span className="text-[10px] font-black text-[#F9F9F9]/40 uppercase tracking-[0.2em]">
+                    {link.header}
+                  </span>
+                </li>
+              );
+            }
             const isActive = activeLink === link.href;
             return (
               <li key={link.href}>
