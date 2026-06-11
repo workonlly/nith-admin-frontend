@@ -12,6 +12,7 @@ const homeLinks = [
   },
   { label: 'Alumni Related Mou', href: '/alumini/alumni-related-mou' },
   { label: 'Alumni Assist', href: '/alumini/alumni-assist' },
+  { label: 'Distinguished Alumni', href: '/alumini/distinguished' },
   {
     label: 'Alumni Affair Activites',
     href: '/alumini/alumni-affair-activites',
@@ -21,6 +22,10 @@ const homeLinks = [
     href: '/alumini/resource-generation-activities',
   },
   { label: 'Portal', href: '/alumini/portal' },
+  { label: 'Alumni Registration', href: '/alumini/registration' },
+  { label: 'Endowment Fund', href: '/alumini/endowment-fund' },
+  { label: 'Award Initiatives', href: '/alumini/award-initiatives' },
+  { label: 'Annual Meet', href: '/alumini/annual-meet' },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
