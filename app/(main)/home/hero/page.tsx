@@ -24,7 +24,7 @@ export default function HeroPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const API_BASE = 'http://localhost:4000/hero';
+  const API_BASE = `http://${process.env.NEXT_PUBLIC_URL || 'localhost:4000'}/hero`;
 
   // 1) Load initial data
   useEffect(() => {

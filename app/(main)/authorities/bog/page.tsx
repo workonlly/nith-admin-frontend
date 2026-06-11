@@ -42,7 +42,7 @@ interface Toast {
   message: string;
 }
 
-const API_BASE_URL = 'http://localhost:4000/bog';
+const API_BASE_URL = `http://${process.env.NEXT_PUBLIC_URL || 'localhost:4000'}/bog`;
 
 export default function BOGPage() {
   const [activeTab, setActiveTab] = useState<TabType>('members');

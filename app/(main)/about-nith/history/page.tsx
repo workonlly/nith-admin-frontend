@@ -59,7 +59,7 @@ interface HistoryData {
 
 type TabType = 'hero' | 'intro' | 'timeline' | 'legacy';
 
-const API_BASE = 'http://localhost:4000/history';
+const API_BASE = `http://${process.env.NEXT_PUBLIC_URL || 'localhost:4000'}/history`;
 
 const FALLBACK_HISTORY_DATA: HistoryData = {
   heading: 'About NIT Hamirpur',

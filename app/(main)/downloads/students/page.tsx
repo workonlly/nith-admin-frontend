@@ -66,7 +66,7 @@ const FALLBACK_DOCUMENTS: StudentDocument[] = [
 type TabType = 'ug' | 'pg' | 'doctoral';
 
 export default function StudentDownloadPage() {
-  const API_BASE = 'http://localhost:4000/downloads';
+  const API_BASE = `http://${process.env.NEXT_PUBLIC_URL || 'localhost:4000'}/downloads`;
 
   // 2. State Management
   const [activeTab, setActiveTab] = useState<TabType>('ug');

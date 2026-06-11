@@ -59,7 +59,7 @@ interface ConnectivityData {
 
 type TabType = 'hero' | 'travel';
 
-const API_BASE = 'http://localhost:4000/connectivity';
+const API_BASE = `http://${process.env.NEXT_PUBLIC_URL || 'localhost:4000'}/connectivity`;
 
 // Robust bilingual offline fallbacks in case the server is down
 const FALLBACK_CONNECTIVITY_DATA: ConnectivityData = {

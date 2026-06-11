@@ -32,7 +32,7 @@ export default function AboutPage() {
   // State specifically for the About Description editor
   const [aboutDescription, setAboutDescription] = useState('');
 
-  const API_BASE = 'http://localhost:4000/hero';
+  const API_BASE = `http://${process.env.NEXT_PUBLIC_URL || 'localhost:4000'}/hero`;
 
   // 1. Fetch Data on Mount
   useEffect(() => {

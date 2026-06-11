@@ -83,7 +83,7 @@ const tabs: TabDef[] = [
 ];
 
 export default function FacultyDownloadPage() {
-  const API_BASE = 'http://localhost:4000/downloads';
+  const API_BASE = `http://${process.env.NEXT_PUBLIC_URL || 'localhost:4000'}/downloads`;
 
   // 2. State Management
   const [activeTab, setActiveTab] = useState<TabType>('general');

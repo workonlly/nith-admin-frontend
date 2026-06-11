@@ -51,7 +51,7 @@ const FALLBACK_DOCUMENTS: UgTableItem[] = [
 ];
 
 export default function MiscDownloadPage() {
-  const API_BASE = 'http://localhost:4000/downloads';
+  const API_BASE = `http://${process.env.NEXT_PUBLIC_URL || 'localhost:4000'}/downloads`;
   const CATEGORY = 'misc';
   const FIXED_TITLE = 'miscellaneous'; // The mandatory title
 

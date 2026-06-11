@@ -57,7 +57,7 @@ interface CoreValuesData {
 
 type TabType = 'hero' | 'values' | 'practice';
 
-const API_BASE = 'http://localhost:4000/core-values';
+const API_BASE = `http://${process.env.NEXT_PUBLIC_URL || 'localhost:4000'}/core-values`;
 
 // Predefined, robust fallbacks if the database is unreachable
 const FALLBACK_CORE_VALUES_DATA: CoreValuesData = {

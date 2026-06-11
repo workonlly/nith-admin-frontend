@@ -86,7 +86,7 @@ interface GoalsData {
 
 type TabType = 'hero' | 'goals' | 'strategy' | 'cta';
 
-const API_BASE = 'http://localhost:4000/goals';
+const API_BASE = `http://${process.env.NEXT_PUBLIC_URL || 'localhost:4000'}/goals`;
 
 // High-fidelity fallback data in case backend fails
 const FALLBACK_DATA: GoalsData = {

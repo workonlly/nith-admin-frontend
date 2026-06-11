@@ -51,7 +51,7 @@ interface CityData {
 
 type TabType = 'hero' | 'overview' | 'descriptions';
 
-const API_BASE = 'http://localhost:4000/about-city';
+const API_BASE = `http://${process.env.NEXT_PUBLIC_URL || 'localhost:4000'}/about-city`;
 
 // High-fidelity fallback database values in case the server is unreachable
 const FALLBACK_CITY_DATA: CityData = {

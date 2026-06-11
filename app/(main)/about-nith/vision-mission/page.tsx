@@ -77,7 +77,7 @@ interface VisionMissionData {
 
 type TabType = 'vision' | 'mission' | 'legacy';
 
-const API_BASE = 'http://localhost:4000/vision-mission';
+const API_BASE = `http://${process.env.NEXT_PUBLIC_URL || 'localhost:4000'}/vision-mission`;
 
 // High-fidelity fallback database values in case the server is unreachable
 const FALLBACK_VISION_MISSION_DATA: VisionMissionData = {
