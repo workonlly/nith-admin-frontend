@@ -1,165 +1,111 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from "react";
 
-import {
-  Save,
-  Image,
-  Plus,
-  Trash2,
-  FileText,
-  Languages,
-} from 'lucide-react';
+import { Save, Image, Plus, Trash2, FileText, Languages } from "lucide-react";
 
 interface GalleryImage {
   title_en: string;
+
   title_hi: string;
 
   category_en: string;
+
   category_hi: string;
 
   altText_en: string;
+
   altText_hi: string;
 
   imageUrl: string;
-
-  imageFile?: File | null;
 }
 
 interface GalleryData {
   heading_en: string;
+
   heading_hi: string;
 
   description_en: string;
+
   description_hi: string;
 
   images: GalleryImage[];
 }
 
 export default function GalleryPage() {
+  useEffect(() => {
+    const fetchGallery = async () => {
+      try {
+        const res = await fetch("http://localhost:4000/v1/homepage/gallery");
 
-  const [galleryData, setGalleryData] =
-    useState<GalleryData>({
-      heading_en: 'Gallery',
-      heading_hi: 'गैलरी',
+        const data = await res.json();
 
-      description_en:
-        'Explore moments from our campus events, achievements, and vibrant community.',
+        setGalleryData(data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
 
-      description_hi:
-        'हमारे कैंपस कार्यक्रमों, उपलब्धियों और जीवंत समुदाय के क्षणों का अन्वेषण करें।',
+    fetchGallery();
+  }, []);
 
-      images: [
-        {
-          title_en: '',
-          title_hi: '',
+  const [galleryData, setGalleryData] = useState<GalleryData>({
+    heading_en: "Gallery",
 
-          category_en: '',
-          category_hi: '',
+    heading_hi: "गैलरी",
 
-          altText_en: '',
-          altText_hi: '',
+    description_en:
+      "Explore moments from our campus events, achievements, and vibrant community.",
 
-          imageUrl: '',
+    description_hi:
+      "हमारे कैंपस कार्यक्रमों, उपलब्धियों और जीवंत समुदाय के क्षणों का अन्वेषण करें।",
 
-          imageFile: null,
-        },
-      ],
-    });
+    images: [
+      {
+        title_en: "Gallery Image 1",
 
-  // =====================================================
-  // SAVE
-  // =====================================================
+        title_hi: "गैलरी इमेज 1",
+
+        category_en: "Event",
+
+        category_hi: "कार्यक्रम",
+
+        altText_en: "Gallery Image 1",
+
+        altText_hi: "गैलरी इमेज 1",
+
+        imageUrl: "/images/gallery/1.jpg",
+      },
+    ],
+  });
 
   const handleSave = async () => {
-
     try {
-
-      const formData = new FormData();
-
-      formData.append(
-        'heading_en',
-        galleryData.heading_en
-      );
-
-      formData.append(
-        'heading_hi',
-        galleryData.heading_hi
-      );
-
-      formData.append(
-        'description_en',
-        galleryData.description_en
-      );
-
-      formData.append(
-        'description_hi',
-        galleryData.description_hi
-      );
-
-      // =========================================
-      // IMAGE DATA
-      // =========================================
-
-      const imageData =
-        galleryData.images.map((img) => ({
-
-          title_en: img.title_en,
-          title_hi: img.title_hi,
-
-          category_en: img.category_en,
-          category_hi: img.category_hi,
-
-          altText_en: img.altText_en,
-          altText_hi: img.altText_hi,
-        }));
-
-      formData.append(
-        'images',
-        JSON.stringify(imageData)
-      );
-
-      // =========================================
-      // FILES
-      // =========================================
-
-      galleryData.images.forEach((img) => {
-
-        if (img.imageFile) {
-
-          formData.append(
-            'images',
-            img.imageFile
-          );
-        }
-      });
-
       const res = await fetch(
-        'http://localhost:4000/v1/homepage/gallery',
+        "http://localhost:4000/v1/homepage/gallery",
+
         {
-          method: 'PUT',
-          body: formData,
-        }
+          method: "PUT",
+
+          headers: {
+            "Content-Type": "application/json",
+          },
+
+          body: JSON.stringify(galleryData),
+        },
       );
 
       const data = await res.json();
 
       if (data.success) {
-
-        alert(
-          'Changes saved successfully!'
-        );
-
+        alert("Changes saved successfully!");
       } else {
-
-        alert(data.error || 'Failed');
+        alert(data.error || "Failed");
       }
-
     } catch (err) {
-
       console.error(err);
 
-      alert('Server error');
+      alert("Server error");
     }
   };
 
@@ -169,19 +115,22 @@ export default function GalleryPage() {
 
   const updateImage = (
     index: number,
-    field: keyof GalleryImage,
-    value: string
-  ) => {
 
+    field: keyof GalleryImage,
+
+    value: string,
+  ) => {
     const updated = [...galleryData.images];
 
     updated[index] = {
       ...updated[index],
+
       [field]: value,
     };
 
     setGalleryData({
       ...galleryData,
+
       images: updated,
     });
   };
@@ -191,7 +140,6 @@ export default function GalleryPage() {
   // =====================================================
 
   const addImage = () => {
-
     setGalleryData({
       ...galleryData,
 
@@ -199,18 +147,19 @@ export default function GalleryPage() {
         ...galleryData.images,
 
         {
-          title_en: '',
-          title_hi: '',
+          title_en: "",
 
-          category_en: '',
-          category_hi: '',
+          title_hi: "",
 
-          altText_en: '',
-          altText_hi: '',
+          category_en: "",
 
-          imageUrl: '',
+          category_hi: "",
 
-          imageFile: null,
+          altText_en: "",
+
+          altText_hi: "",
+
+          imageUrl: "",
         },
       ],
     });
@@ -221,50 +170,37 @@ export default function GalleryPage() {
   // =====================================================
 
   const removeImage = (index: number) => {
-
     setGalleryData({
       ...galleryData,
 
-      images: galleryData.images.filter(
-        (_, i) => i !== index
-      ),
+      images: galleryData.images.filter((_, i) => i !== index),
     });
   };
 
   return (
-
     <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 lg:p-6">
-
       {/* HEADER */}
+
       <div className="bg-gradient-to-r from-[#631012] to-[#7a1214] rounded-lg shadow-lg p-4 sm:p-6 lg:p-8 text-white">
-
         <div className="flex items-center gap-3 mb-4">
-
           <Image className="w-7 h-7" />
 
-          <h1 className="text-2xl lg:text-3xl font-bold">
-            Gallery
-          </h1>
+          <h1 className="text-2xl lg:text-3xl font-bold">Gallery</h1>
         </div>
 
-        <p className="text-white/90">
-          Manage bilingual gallery section
-        </p>
+        <p className="text-white/90">Manage bilingual gallery section</p>
       </div>
 
       {/* TOP BAR */}
+
       <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-
           <div className="flex items-center gap-3">
-
             <div className="bg-[#631012]/10 p-3 rounded-full text-[#631012]">
               <Languages className="w-6 h-6" />
             </div>
 
             <div>
-
               <h2 className="text-2xl font-bold text-[#171717]">
                 Gallery Editor
               </h2>
@@ -279,22 +215,19 @@ export default function GalleryPage() {
             onClick={handleSave}
             className="bg-[#631012] hover:bg-[#7a1214] text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
           >
-
             <Save className="w-5 h-5" />
-
             Save Changes
           </button>
         </div>
       </div>
 
-      {/* MAIN */}
+      {/* MAIN CONTENT */}
+
       <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 space-y-8">
-
         {/* CONTENT */}
+
         <div className="space-y-5">
-
           <div className="flex items-center gap-2">
-
             <FileText className="text-[#631012]" />
 
             <h2 className="text-2xl font-bold text-[#171717]">
@@ -302,72 +235,99 @@ export default function GalleryPage() {
             </h2>
           </div>
 
-          {/* HEADINGS */}
+          {/* HEADING */}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Heading (English)
+              </label>
 
-            <input
-              type="text"
-              value={galleryData.heading_en}
-              onChange={(e) =>
-                setGalleryData({
-                  ...galleryData,
-                  heading_en: e.target.value,
-                })
-              }
-              placeholder="Heading (English)"
-              className="px-4 py-3 border border-[#171717]/20 rounded-xl"
-            />
+              <input
+                type="text"
+                title="Heading (English)"
+                value={galleryData.heading_en}
+                onChange={(e) =>
+                  setGalleryData({
+                    ...galleryData,
 
-            <input
-              type="text"
-              value={galleryData.heading_hi}
-              onChange={(e) =>
-                setGalleryData({
-                  ...galleryData,
-                  heading_hi: e.target.value,
-                })
-              }
-              placeholder="Heading (Hindi)"
-              className="px-4 py-3 border border-[#171717]/20 rounded-xl"
-            />
+                    heading_en: e.target.value,
+                  })
+                }
+                className="w-full px-4 py-3 border border-[#171717]/20 rounded-xl"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Heading (Hindi)
+              </label>
+
+              <input
+                title="Heading (Hindi)"
+                type="text"
+                value={galleryData.heading_hi}
+                onChange={(e) =>
+                  setGalleryData({
+                    ...galleryData,
+
+                    heading_hi: e.target.value,
+                  })
+                }
+                className="w-full px-4 py-3 border border-[#171717]/20 rounded-xl"
+              />
+            </div>
           </div>
 
-          {/* DESCRIPTIONS */}
+          {/* DESCRIPTION */}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Description (English)
+              </label>
 
-            <textarea
-              rows={4}
-              value={galleryData.description_en}
-              onChange={(e) =>
-                setGalleryData({
-                  ...galleryData,
-                  description_en: e.target.value,
-                })
-              }
-              placeholder="Description (English)"
-              className="px-4 py-3 border border-[#171717]/20 rounded-xl"
-            />
+              <textarea
+                title="Description (English)"
+                rows={4}
+                value={galleryData.description_en}
+                onChange={(e) =>
+                  setGalleryData({
+                    ...galleryData,
 
-            <textarea
-              rows={4}
-              value={galleryData.description_hi}
-              onChange={(e) =>
-                setGalleryData({
-                  ...galleryData,
-                  description_hi: e.target.value,
-                })
-              }
-              placeholder="Description (Hindi)"
-              className="px-4 py-3 border border-[#171717]/20 rounded-xl"
-            />
+                    description_en: e.target.value,
+                  })
+                }
+                className="w-full px-4 py-3 border border-[#171717]/20 rounded-xl"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Description (Hindi)
+              </label>
+
+              <textarea
+                title="Description (Hindi)"
+                rows={4}
+                value={galleryData.description_hi}
+                onChange={(e) =>
+                  setGalleryData({
+                    ...galleryData,
+
+                    description_hi: e.target.value,
+                  })
+                }
+                className="w-full px-4 py-3 border border-[#171717]/20 rounded-xl"
+              />
+            </div>
           </div>
         </div>
 
         {/* IMAGES */}
-        <div className="space-y-6">
 
+        <div className="space-y-5">
           <div className="flex items-center gap-2">
-
             <Image className="text-[#631012]" />
 
             <h2 className="text-2xl font-bold text-[#171717]">
@@ -375,182 +335,268 @@ export default function GalleryPage() {
             </h2>
           </div>
 
-          {galleryData.images.map((image, index) => (
+          <div className="space-y-6">
+            {galleryData.images.map((image, index) => (
+              <div
+                key={index}
+                className="p-5 border border-[#171717]/10 rounded-2xl bg-[#F9F9F9]"
+              >
+                <div className="flex justify-between items-center mb-5">
+                  <p className="font-medium text-sm">Image {index + 1}</p>
 
-            <div
-              key={index}
-              className="p-5 border border-[#171717]/10 rounded-2xl bg-[#F9F9F9]"
-            >
+                  <button
+                    title="Remove Image"
+                    onClick={() => removeImage(index)}
+                    className="text-red-600"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
 
-              <div className="flex justify-between items-center mb-5">
-
-                <p className="font-medium text-sm">
-                  Image {index + 1}
-                </p>
-
-                <button
-                  onClick={() =>
-                    removeImage(index)
-                  }
-                  className="text-red-600"
-                >
-
-                  <Trash2 size={18} />
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                {/* TITLE */}
-                <input
-                  type="text"
-                  value={image.title_en}
-                  onChange={(e) =>
-                    updateImage(
-                      index,
-                      'title_en',
-                      e.target.value
-                    )
-                  }
-                  placeholder="Title (English)"
-                  className="px-4 py-3 border border-[#171717]/20 rounded-xl"
-                />
-
-                <input
-                  type="text"
-                  value={image.title_hi}
-                  onChange={(e) =>
-                    updateImage(
-                      index,
-                      'title_hi',
-                      e.target.value
-                    )
-                  }
-                  placeholder="Title (Hindi)"
-                  className="px-4 py-3 border border-[#171717]/20 rounded-xl"
-                />
-
-                {/* CATEGORY */}
-                <input
-                  type="text"
-                  value={image.category_en}
-                  onChange={(e) =>
-                    updateImage(
-                      index,
-                      'category_en',
-                      e.target.value
-                    )
-                  }
-                  placeholder="Category (English)"
-                  className="px-4 py-3 border border-[#171717]/20 rounded-xl"
-                />
-
-                <input
-                  type="text"
-                  value={image.category_hi}
-                  onChange={(e) =>
-                    updateImage(
-                      index,
-                      'category_hi',
-                      e.target.value
-                    )
-                  }
-                  placeholder="Category (Hindi)"
-                  className="px-4 py-3 border border-[#171717]/20 rounded-xl"
-                />
-
-                {/* ALT */}
-                <input
-                  type="text"
-                  value={image.altText_en}
-                  onChange={(e) =>
-                    updateImage(
-                      index,
-                      'altText_en',
-                      e.target.value
-                    )
-                  }
-                  placeholder="Alt Text (English)"
-                  className="px-4 py-3 border border-[#171717]/20 rounded-xl"
-                />
-
-                <input
-                  type="text"
-                  value={image.altText_hi}
-                  onChange={(e) =>
-                    updateImage(
-                      index,
-                      'altText_hi',
-                      e.target.value
-                    )
-                  }
-                  placeholder="Alt Text (Hindi)"
-                  className="px-4 py-3 border border-[#171717]/20 rounded-xl"
-                />
-
-                {/* FILE */}
-                <div className="md:col-span-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* TITLE */}
 
                   <input
+                    type="text"
+                    value={image.title_en}
+                    onChange={(e) =>
+                      updateImage(
+                        index,
+
+                        "title_en",
+
+                        e.target.value,
+                      )
+                    }
+                    placeholder="Title (English)"
+                    className="px-4 py-3 border border-[#171717]/20 rounded-xl"
+                  />
+
+                  <input
+                    type="text"
+                    value={image.title_hi}
+                    onChange={(e) =>
+                      updateImage(
+                        index,
+
+                        "title_hi",
+
+                        e.target.value,
+                      )
+                    }
+                    placeholder="Title (Hindi)"
+                    className="px-4 py-3 border border-[#171717]/20 rounded-xl"
+                  />
+
+                  {/* CATEGORY */}
+
+                  <input
+                    type="text"
+                    value={image.category_en}
+                    onChange={(e) =>
+                      updateImage(
+                        index,
+
+                        "category_en",
+
+                        e.target.value,
+                      )
+                    }
+                    placeholder="Category (English)"
+                    className="px-4 py-3 border border-[#171717]/20 rounded-xl"
+                  />
+
+                  <input
+                    type="text"
+                    value={image.category_hi}
+                    onChange={(e) =>
+                      updateImage(
+                        index,
+
+                        "category_hi",
+
+                        e.target.value,
+                      )
+                    }
+                    placeholder="Category (Hindi)"
+                    className="px-4 py-3 border border-[#171717]/20 rounded-xl"
+                  />
+
+                  {/* ALT TEXT */}
+
+                  <input
+                    type="text"
+                    value={image.altText_en}
+                    onChange={(e) =>
+                      updateImage(
+                        index,
+
+                        "altText_en",
+
+                        e.target.value,
+                      )
+                    }
+                    placeholder="Alt Text (English)"
+                    className="px-4 py-3 border border-[#171717]/20 rounded-xl"
+                  />
+
+                  <input
+                    type="text"
+                    value={image.altText_hi}
+                    onChange={(e) =>
+                      updateImage(
+                        index,
+
+                        "altText_hi",
+
+                        e.target.value,
+                      )
+                    }
+                    placeholder="Alt Text (Hindi)"
+                    className="px-4 py-3 border border-[#171717]/20 rounded-xl"
+                  />
+
+                  {/* IMAGE URL */}
+
+                  <input
+                    title="Image URL"
                     type="file"
                     accept="image/*"
-
-                    onChange={(e) => {
-
-                      const file =
-                        e.target.files?.[0];
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
 
                       if (!file) return;
 
-                      const updated = [
-                        ...galleryData.images,
-                      ];
+                      const formData = new FormData();
 
-                      updated[index] = {
+                      formData.append("file", file);
 
-                        ...updated[index],
+                      const res = await fetch(
+                        "http://localhost:4000/v1/homepage/gallery/upload",
+                        {
+                          method: "POST",
 
-                        imageFile: file,
+                          body: formData,
+                        },
+                      );
 
-                        imageUrl:
-                          URL.createObjectURL(file),
-                      };
+                      const data = await res.json();
 
-                      setGalleryData({
-                        ...galleryData,
-                        images: updated,
-                      });
+                      if (data.url) {
+                        updateImage(index, "imageUrl", data.url);
+                      }
                     }}
-
-                    className="w-full px-4 py-3 border border-[#171717]/20 rounded-xl bg-white"
+                    className="md:col-span-2 px-4 py-3 border rounded-xl"
                   />
                 </div>
+              </div>
+            ))}
 
-                {/* PREVIEW */}
-                {image.imageUrl && (
+            <button
+              onClick={addImage}
+              className="flex items-center gap-2 text-[#631012]"
+            >
+              <Plus size={18} />
+              Add Image
+            </button>
+          </div>
+        </div>
 
-                  <div className="md:col-span-2">
+        {/* PREVIEW */}
 
-                    <img
-                      src={image.imageUrl}
-                      alt="Preview"
-                      className="w-full h-60 object-cover rounded-xl border"
-                    />
+        <div className="p-6 bg-[#F9F9F9] rounded-2xl border-2 border-dashed border-[#171717]/10">
+          <p className="text-sm font-medium text-[#171717]/60 mb-5">
+            Live Preview
+          </p>
+
+          <div className="bg-white rounded-3xl p-8 border border-[#171717]/10">
+            {/* ENGLISH PREVIEW */}
+
+            <div className="mb-12">
+              <h2 className="text-4xl font-bold text-[#631012] mb-4">
+                {galleryData.heading_en || "Gallery"}
+              </h2>
+
+              <p className="text-gray-600 mb-10">
+                {galleryData.description_en ||
+                  "Explore moments from our campus events, achievements, and vibrant community."}
+              </p>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {galleryData.images.map((image, index) => (
+                  <div
+                    key={index}
+                    className="bg-[#F9F9F9] rounded-xl overflow-hidden border border-[#171717]/10"
+                  >
+                    <div className="h-40 bg-gray-200 overflow-hidden">
+                      {image.imageUrl ? (
+                        <img
+                          src={image.imageUrl}
+                          alt={image.altText_en}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-500">
+                          No Image
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-4">
+                      <p className="text-xs text-[#631012] font-semibold mb-1">
+                        {image.category_en}
+                      </p>
+
+                      <h3 className="font-bold text-sm">{image.title_en}</h3>
+                    </div>
                   </div>
-                )}
+                ))}
               </div>
             </div>
-          ))}
 
-          <button
-            onClick={addImage}
-            className="flex items-center gap-2 text-[#631012]"
-          >
+            {/* HINDI PREVIEW */}
 
-            <Plus size={18} />
+            <div className="border-t pt-12">
+              <h2 className="text-4xl font-bold text-[#631012] mb-4">
+                {galleryData.heading_hi || "गैलरी"}
+              </h2>
 
-            Add Image
-          </button>
+              <p className="text-gray-600 mb-10">
+                {galleryData.description_hi}
+              </p>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {galleryData.images.map((image, index) => (
+                  <div
+                    key={index}
+                    className="bg-[#F9F9F9] rounded-xl overflow-hidden border border-[#171717]/10"
+                  >
+                    <div className="h-40 bg-gray-200 overflow-hidden">
+                      {image.imageUrl ? (
+                        <img
+                          src={image.imageUrl}
+                          alt={image.altText_hi}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-500">
+                          No Image
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-4">
+                      <p className="text-xs text-[#631012] font-semibold mb-1">
+                        {image.category_hi}
+                      </p>
+
+                      <h3 className="font-bold text-sm">{image.title_hi}</h3>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

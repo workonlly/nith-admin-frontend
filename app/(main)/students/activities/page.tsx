@@ -1,574 +1,538 @@
 'use client';
 
-import React, { useState } from 'react';
-import {
-  Save,
-  Calendar,
-  Plus,
-  Trash2,
-  FileText,
-  Users,
-  MapPin,
-  Clock,
-} from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Save, Plus, Trash2, FileText, List, AlertCircle, Loader } from 'lucide-react';
 
-interface Activity {
+interface Responsibility {
   id: number;
-  title: string;
-  date: string;
-  time: string;
-  venue: string;
-  category: string;
-  description: string;
-  organizer: string;
-  participants: string;
+  activity_en: string;
+  activity_hn: string;
 }
 
-interface ActivitiesData {
-  heroHeading: string;
-  heroDescription: string;
-  activitiesHeading: string;
-  activitiesSubtitle: string;
-  activities: Activity[];
-  upcomingHeading: string;
-  upcomingDescription: string;
+interface HeadingData {
+  title_en: string;
+  title_hn: string;
+  sub_title_en: string;
+  sub_title_hn: string;
+  role_title_en: string;
+  role_title_hn: string;
+  role_desc_en: string;
+  role_desc_hn: string;
 }
 
-type TabType = 'hero' | 'activities' | 'upcoming';
+type TabType = 'general' | 'list';
 
 export default function ActivitiesPage() {
-  const [activeTab, setActiveTab] = useState<TabType>('hero');
+  const [activeTab, setActiveTab] = useState<TabType>('general');
+  const [loading, setLoading] = useState(true);
+  const [savingHeading, setSavingHeading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [activitiesData, setActivitiesData] = useState<ActivitiesData>({
-    heroHeading: 'Student Activities',
-    heroDescription:
-      'Explore the vibrant co-curricular and extra-curricular activities that shape the holistic development of students at NIT Hamirpur.',
-    activitiesHeading: 'Recent Activities',
-    activitiesSubtitle:
-      'A glimpse into the dynamic student life and events organized throughout the year',
-    activities: [
-      {
-        id: 1,
-        title: 'Annual Technical Symposium',
-        date: '2025-03-15',
-        time: '09:00 AM - 05:00 PM',
-        venue: 'Main Auditorium',
-        category: 'Technical',
-        description:
-          'A day-long symposium featuring talks by industry experts, research presentations, and technical demonstrations.',
-        organizer: 'Technical Council',
-        participants: '500+',
-      },
-      {
-        id: 2,
-        title: 'Cultural Night - Expressions',
-        date: '2025-02-20',
-        time: '06:00 PM - 10:00 PM',
-        venue: 'Open Air Theatre',
-        category: 'Cultural',
-        description:
-          'An evening of music, dance, drama, and artistic performances showcasing student talents.',
-        organizer: 'Cultural Council',
-        participants: '1000+',
-      },
-      {
-        id: 3,
-        title: 'Inter-Hostel Sports Tournament',
-        date: '2025-01-25',
-        time: '08:00 AM - 06:00 PM',
-        venue: 'Sports Complex',
-        category: 'Sports',
-        description:
-          'Multi-sport tournament including cricket, football, basketball, and athletics competitions.',
-        organizer: 'Sports Council',
-        participants: '800+',
-      },
-      {
-        id: 4,
-        title: 'Entrepreneurship Workshop',
-        date: '2025-04-10',
-        time: '10:00 AM - 04:00 PM',
-        venue: 'Seminar Hall - Block A',
-        category: 'Workshop',
-        description:
-          'Interactive workshop on startup ecosystem, business planning, and funding strategies.',
-        organizer: 'E-Cell NITH',
-        participants: '200+',
-      },
-    ],
-    upcomingHeading: 'Upcoming Events',
-    upcomingDescription:
-      'Stay tuned for exciting events and activities planned for the upcoming semester.',
+  // Form State
+  const [headingData, setHeadingData] = useState<HeadingData>({
+    title_en: '',
+    title_hn: '',
+    sub_title_en: '',
+    sub_title_hn: '',
+    role_title_en: '',
+    role_title_hn: '',
+    role_desc_en: '',
+    role_desc_hn: '',
   });
+
+  const [responsibilities, setResponsibilities] = useState<Responsibility[]>([]);
+  const [newItem, setNewItem] = useState({ activity_en: '', activity_hn: '' });
+  const [addingItem, setAddingItem] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingData, setEditingData] = useState({ activity_en: '', activity_hn: '' });
+
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
+  // Fetch initial data
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // 1. Fetch Headings
+      const headRes = await fetch(`${API_URL}/api/student-activities`);
+      if (headRes.ok) {
+        const hData = await headRes.json();
+        setHeadingData({
+          title_en: hData.title_en || '',
+          title_hn: hData.title_hn || '',
+          sub_title_en: hData.sub_title_en || '',
+          sub_title_hn: hData.sub_title_hn || '',
+          role_title_en: hData.role_title_en || '',
+          role_title_hn: hData.role_title_hn || '',
+          role_desc_en: hData.role_desc_en || '',
+          role_desc_hn: hData.role_desc_hn || '',
+        });
+      }
+
+      // 2. Fetch list items
+      const listRes = await fetch(`${API_URL}/api/student-activities/list`);
+      if (listRes.ok) {
+        const lData = await listRes.json();
+        setResponsibilities(lData);
+      }
+    } catch (err: any) {
+      console.error('Error fetching student activities data:', err);
+      setError('Failed to load data from server. Please make sure the backend is running.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Save Heading Singleton
+  const handleSaveHeading = async () => {
+    setSavingHeading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_URL}/api/student-activities`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(headingData),
+      });
+
+      if (!res.ok) throw new Error('Failed to update headings');
+      const updated = await res.json();
+      
+      setHeadingData(updated);
+      alert('Page settings updated successfully!');
+    } catch (err: any) {
+      console.error(err);
+      setError('Error saving settings: ' + err.message);
+    } finally {
+      setSavingHeading(false);
+    }
+  };
+
+  // Add a new responsibility item
+  const handleAddItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newItem.activity_en.trim() || !newItem.activity_hn.trim()) {
+      alert('Please fill in both English and Hindi content for the responsibility.');
+      return;
+    }
+    setAddingItem(true);
+    try {
+      const res = await fetch(`${API_URL}/api/student-activities/list`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newItem),
+      });
+
+      if (!res.ok) throw new Error('Failed to add item');
+      const savedItem = await res.json();
+      
+      setResponsibilities([...responsibilities, savedItem]);
+      setNewItem({ activity_en: '', activity_hn: '' });
+      alert('Responsibility added successfully!');
+    } catch (err: any) {
+      console.error(err);
+      alert('Error adding responsibility: ' + err.message);
+    } finally {
+      setAddingItem(false);
+    }
+  };
+
+  // Start editing in-place
+  const startEditing = (item: Responsibility) => {
+    setEditingId(item.id);
+    setEditingData({
+      activity_en: item.activity_en,
+      activity_hn: item.activity_hn,
+    });
+  };
+
+  // Save in-place edit
+  const handleSaveEdit = async (id: number) => {
+    if (!editingData.activity_en.trim() || !editingData.activity_hn.trim()) {
+      alert('Fields cannot be empty.');
+      return;
+    }
+    try {
+      const res = await fetch(`${API_URL}/api/student-activities/list/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editingData),
+      });
+
+      if (!res.ok) throw new Error('Failed to update item');
+      const updated = await res.json();
+
+      setResponsibilities(responsibilities.map(r => r.id === id ? updated : r));
+      setEditingId(null);
+      alert('Updated successfully!');
+    } catch (err: any) {
+      console.error(err);
+      alert('Error updating item: ' + err.message);
+    }
+  };
+
+  // Delete an item
+  const handleDeleteItem = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this responsibility? This action is permanent.')) return;
+    try {
+      const res = await fetch(`${API_URL}/api/student-activities/list/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) throw new Error('Failed to delete item');
+      
+      setResponsibilities(responsibilities.filter(r => r.id !== id));
+      alert('Deleted successfully!');
+    } catch (err: any) {
+      console.error(err);
+      alert('Error deleting item: ' + err.message);
+    }
+  };
 
   const tabs = [
     {
-      id: 'hero' as TabType,
-      label: 'Hero Section',
+      id: 'general' as TabType,
+      label: 'Page Headings & Info',
       icon: <FileText size={18} />,
     },
     {
-      id: 'activities' as TabType,
-      label: 'Activities List',
-      icon: <Calendar size={18} />,
-    },
-    {
-      id: 'upcoming' as TabType,
-      label: 'Upcoming Events',
-      icon: <Clock size={18} />,
+      id: 'list' as TabType,
+      label: 'Dean Responsibilities',
+      icon: <List size={18} />,
     },
   ];
 
-  const handleSave = () => {
-    alert('Changes saved successfully!');
-    console.log(activitiesData);
-  };
-
-  const addActivity = () => {
-    const newActivity: Activity = {
-      id: Date.now(),
-      title: '',
-      date: '',
-      time: '',
-      venue: '',
-      category: 'Technical',
-      description: '',
-      organizer: '',
-      participants: '',
-    };
-    setActivitiesData({
-      ...activitiesData,
-      activities: [...activitiesData.activities, newActivity],
-    });
-  };
-
-  const removeActivity = (id: number) => {
-    setActivitiesData({
-      ...activitiesData,
-      activities: activitiesData.activities.filter((a) => a.id !== id),
-    });
-  };
-
-  const updateActivity = (id: number, field: keyof Activity, value: string) => {
-    setActivitiesData({
-      ...activitiesData,
-      activities: activitiesData.activities.map((a) =>
-        a.id === id ? { ...a, [field]: value } : a
-      ),
-    });
-  };
-
-  const getCategoryColor = (category: string) => {
-    const colors: Record<string, string> = {
-      Technical: 'bg-blue-100 text-blue-800',
-      Cultural: 'bg-purple-100 text-purple-800',
-      Sports: 'bg-green-100 text-green-800',
-      Workshop: 'bg-amber-100 text-amber-800',
-      Social: 'bg-pink-100 text-pink-800',
-    };
-    return colors[category] || 'bg-gray-100 text-gray-800';
-  };
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
+        <Loader className="w-10 h-10 text-[#631012] animate-spin" />
+        <p className="text-gray-500 font-medium">Loading Student Activities data...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 lg:p-6">
-      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+    <div className="space-y-6 p-4 sm:p-6 lg:p-8">
+      {/* Upper header block */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-150 p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="bg-[#631012]/10 p-2 sm:p-3 rounded-full text-[#631012] flex-shrink-0">
-              <Calendar className="w-6 h-6 sm:w-7 sm:h-7" />
+          <div className="flex items-center gap-3">
+            <div className="bg-[#631012]/10 p-3 rounded-xl text-[#631012]">
+              <List className="w-7 h-7" />
             </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#171717] break-words">
-                Activities Editor
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
+                Student Activities Editor
               </h1>
-              <p className="text-sm sm:text-base text-[#171717]/60 mt-1">
-                Manage student activities and events
+              <p className="text-sm text-gray-500 mt-1">
+                Manage the headings, text, and role responsibilities of the Dean (Student Welfare)
               </p>
             </div>
           </div>
           <button
-            onClick={handleSave}
-            className="bg-[#631012] hover:bg-[#7a1214] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg flex items-center gap-2 transition-colors shadow-md w-full sm:w-auto justify-center text-sm sm:text-base"
+            onClick={handleSaveHeading}
+            disabled={savingHeading}
+            className="bg-[#631012] hover:bg-[#7a1214] text-white px-5 py-2.5 rounded-lg flex items-center gap-2 transition-all font-semibold shadow-sm hover:shadow active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
           >
-            <Save className="w-4 h-4 sm:w-5 sm:h-5" />
-            Save Changes
+            {savingHeading ? (
+              <>
+                <Loader className="w-4 h-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                Save Changes
+              </>
+            )}
           </button>
         </div>
+
+        {error && (
+          <div className="mt-4 p-4 bg-red-50 rounded-lg flex items-center gap-3 text-red-700 border border-red-100">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <p className="text-sm font-medium">{error}</p>
+          </div>
+        )}
       </div>
 
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="border-b border-[#171717]/10">
+      {/* Tabs list */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-150 overflow-hidden">
+        <div className="border-b border-gray-200 bg-gray-50/50">
           <div className="flex overflow-x-auto">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 sm:px-6 py-3 sm:py-4 font-medium transition-colors whitespace-nowrap text-sm sm:text-base flex-shrink-0 ${
+                className={`flex items-center gap-2 px-6 py-4 font-semibold transition-all border-b-2 text-sm sm:text-base whitespace-nowrap ${
                   activeTab === tab.id
-                    ? 'bg-[#631012] text-white border-b-2 border-[#631012]'
-                    : 'text-[#171717]/70 hover:bg-[#F9F9F9] hover:text-[#171717]'
+                    ? 'border-[#631012] text-[#631012] bg-white font-bold'
+                    : 'border-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-100/50'
                 }`}
               >
-                <span className="w-4 h-4 sm:w-5 sm:h-5">{tab.icon}</span>
+                {tab.icon}
                 <span>{tab.label}</span>
               </button>
             ))}
           </div>
         </div>
 
-        <div className="p-4 sm:p-6">
-          {activeTab === 'hero' && (
+        <div className="p-6">
+          {/* TAB 1: GENERAL PAGE HEADINGS AND DEAN DEETS */}
+          {activeTab === 'general' && (
             <div className="space-y-6">
-              <div className="flex items-center gap-2 mb-4">
-                <FileText className="text-[#631012] w-5 h-5 sm:w-6 sm:h-6" />
-                <h2 className="text-xl sm:text-2xl font-bold text-[#171717]">
-                  Hero Section Content
-                </h2>
+              <div className="pb-4 border-b border-gray-100">
+                <h2 className="text-lg font-bold text-gray-900">1. Hero Section Content</h2>
+                <p className="text-xs text-gray-500">Configure page headings appearing in the red top banner.</p>
               </div>
-              <div className="grid grid-cols-1 gap-6">
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-[#171717] mb-2">
-                    Main Heading
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                    Main Banner Title (English)
                   </label>
                   <input
                     type="text"
-                    value={activitiesData.heroHeading}
-                    onChange={(e) =>
-                      setActivitiesData({
-                        ...activitiesData,
-                        heroHeading: e.target.value,
-                      })
-                    }
-                    className="w-full px-4 py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] text-black"
+                    value={headingData.title_en}
+                    onChange={(e) => setHeadingData({ ...headingData, title_en: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#631012]/30 focus:border-[#631012] text-black font-medium"
+                    placeholder="e.g. ACTIVITIES"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#171717] mb-2">
-                    Hero Description
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                    Main Banner Title (Hindi)
+                  </label>
+                  <input
+                    type="text"
+                    value={headingData.title_hn}
+                    onChange={(e) => setHeadingData({ ...headingData, title_hn: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#631012]/30 focus:border-[#631012] text-black font-medium"
+                    placeholder="जैसे: गतिविधियां"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                    Banner Subtitle / Description (English)
                   </label>
                   <textarea
-                    value={activitiesData.heroDescription}
-                    onChange={(e) =>
-                      setActivitiesData({
-                        ...activitiesData,
-                        heroDescription: e.target.value,
-                      })
-                    }
-                    rows={3}
-                    className="w-full px-4 py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] text-black"
+                    rows={2}
+                    value={headingData.sub_title_en}
+                    onChange={(e) => setHeadingData({ ...headingData, sub_title_en: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#631012]/30 focus:border-[#631012] text-black"
+                    placeholder="e.g. Duties and responsibilities of the Dean (Student Welfare)"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                    Banner Subtitle / Description (Hindi)
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={headingData.sub_title_hn}
+                    onChange={(e) => setHeadingData({ ...headingData, sub_title_hn: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#631012]/30 focus:border-[#631012] text-black"
+                    placeholder="जैसे: डीन (छात्र कल्याण) के कर्तव्य और जिम्मेदारियाँ"
                   />
                 </div>
               </div>
 
-              <div className="mt-8 p-6 bg-gradient-to-r from-[#631012] to-[#8B1538] rounded-xl text-white">
-                <h3 className="text-2xl font-bold mb-2">
-                  {activitiesData.heroHeading}
-                </h3>
-                <p className="text-white/80">
-                  {activitiesData.heroDescription}
-                </p>
+              <div className="pt-6 pb-4 border-t border-b border-gray-100">
+                <h2 className="text-lg font-bold text-gray-900">2. Dean Role Card Headings</h2>
+                <p className="text-xs text-gray-500">Configure text appearing inside the white card on the page.</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                    Card Title (English)
+                  </label>
+                  <input
+                    type="text"
+                    value={headingData.role_title_en}
+                    onChange={(e) => setHeadingData({ ...headingData, role_title_en: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#631012]/30 focus:border-[#631012] text-black font-medium"
+                    placeholder="e.g. Dean (Student Welfare) — Role & Responsibilities"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                    Card Title (Hindi)
+                  </label>
+                  <input
+                    type="text"
+                    value={headingData.role_title_hn}
+                    onChange={(e) => setHeadingData({ ...headingData, role_title_hn: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#631012]/30 focus:border-[#631012] text-black font-medium"
+                    placeholder="जैसे: डीन (छात्र कल्याण) — भूमिका और जिम्मेदारियां"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                    Card Paragraph Description (English)
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={headingData.role_desc_en}
+                    onChange={(e) => setHeadingData({ ...headingData, role_desc_en: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#631012]/30 focus:border-[#631012] text-black"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                    Card Paragraph Description (Hindi)
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={headingData.role_desc_hn}
+                    onChange={(e) => setHeadingData({ ...headingData, role_desc_hn: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#631012]/30 focus:border-[#631012] text-black"
+                  />
+                </div>
               </div>
             </div>
           )}
 
-          {activeTab === 'activities' && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Calendar className="text-[#631012] w-5 h-5 sm:w-6 sm:h-6" />
-                  <h2 className="text-xl sm:text-2xl font-bold text-[#171717]">
-                    Activities List
-                  </h2>
-                </div>
-                <button
-                  onClick={addActivity}
-                  className="bg-[#631012] hover:bg-[#7a1214] text-white px-4 py-2 rounded-lg flex items-center gap-2"
-                >
-                  <Plus size={18} /> Add Activity
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-[#171717] mb-2">
-                    Section Heading
-                  </label>
-                  <input
-                    type="text"
-                    value={activitiesData.activitiesHeading}
-                    onChange={(e) =>
-                      setActivitiesData({
-                        ...activitiesData,
-                        activitiesHeading: e.target.value,
-                      })
-                    }
-                    className="w-full px-4 py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] text-black"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#171717] mb-2">
-                    Section Subtitle
-                  </label>
-                  <input
-                    type="text"
-                    value={activitiesData.activitiesSubtitle}
-                    onChange={(e) =>
-                      setActivitiesData({
-                        ...activitiesData,
-                        activitiesSubtitle: e.target.value,
-                      })
-                    }
-                    className="w-full px-4 py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] text-black"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                {activitiesData.activities.map((activity, index) => (
-                  <div
-                    key={activity.id}
-                    className="border border-[#171717]/20 rounded-lg p-4 bg-[#F9F9F9]"
-                  >
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="font-semibold text-[#631012]">
-                        Activity #{index + 1}
-                      </span>
-                      <button
-                        onClick={() => removeActivity(activity.id)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <Trash2 size={18} />
-                      </button>
+          {/* TAB 2: RESPONSIBILITIES LIST */}
+          {activeTab === 'list' && (
+            <div className="space-y-8">
+              {/* Form to add item */}
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-5">
+                <h3 className="text-md font-bold text-gray-900 flex items-center gap-2 mb-4">
+                  <Plus className="w-5 h-5 text-[#631012]" />
+                  Add New Responsibility
+                </h3>
+                <form onSubmit={handleAddItem} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-600 mb-1">
+                        Responsibility Text (English)
+                      </label>
+                      <input
+                        type="text"
+                        value={newItem.activity_en}
+                        onChange={(e) => setNewItem({ ...newItem, activity_en: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-[#631012]/30"
+                        placeholder="e.g. Conduct the enquiries of students indulged in indiscipline."
+                      />
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-[#171717] mb-1">
-                          Title
-                        </label>
-                        <input
-                          type="text"
-                          value={activity.title}
-                          onChange={(e) =>
-                            updateActivity(activity.id, 'title', e.target.value)
-                          }
-                          className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg text-black"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-[#171717] mb-1">
-                          Category
-                        </label>
-                        <select
-                          value={activity.category}
-                          onChange={(e) =>
-                            updateActivity(
-                              activity.id,
-                              'category',
-                              e.target.value
-                            )
-                          }
-                          className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg text-black"
-                        >
-                          <option value="Technical">Technical</option>
-                          <option value="Cultural">Cultural</option>
-                          <option value="Sports">Sports</option>
-                          <option value="Workshop">Workshop</option>
-                          <option value="Social">Social</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-[#171717] mb-1">
-                          Date
-                        </label>
-                        <input
-                          type="date"
-                          value={activity.date}
-                          onChange={(e) =>
-                            updateActivity(activity.id, 'date', e.target.value)
-                          }
-                          className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg text-black"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-[#171717] mb-1">
-                          Time
-                        </label>
-                        <input
-                          type="text"
-                          value={activity.time}
-                          onChange={(e) =>
-                            updateActivity(activity.id, 'time', e.target.value)
-                          }
-                          className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg text-black"
-                          placeholder="e.g., 09:00 AM - 05:00 PM"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-[#171717] mb-1">
-                          Venue
-                        </label>
-                        <input
-                          type="text"
-                          value={activity.venue}
-                          onChange={(e) =>
-                            updateActivity(activity.id, 'venue', e.target.value)
-                          }
-                          className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg text-black"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-[#171717] mb-1">
-                          Organizer
-                        </label>
-                        <input
-                          type="text"
-                          value={activity.organizer}
-                          onChange={(e) =>
-                            updateActivity(
-                              activity.id,
-                              'organizer',
-                              e.target.value
-                            )
-                          }
-                          className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg text-black"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-[#171717] mb-1">
-                          Participants
-                        </label>
-                        <input
-                          type="text"
-                          value={activity.participants}
-                          onChange={(e) =>
-                            updateActivity(
-                              activity.id,
-                              'participants',
-                              e.target.value
-                            )
-                          }
-                          className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg text-black"
-                        />
-                      </div>
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-[#171717] mb-1">
-                          Description
-                        </label>
-                        <textarea
-                          value={activity.description}
-                          onChange={(e) =>
-                            updateActivity(
-                              activity.id,
-                              'description',
-                              e.target.value
-                            )
-                          }
-                          rows={2}
-                          className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg text-black"
-                        />
-                      </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-600 mb-1">
+                        Responsibility Text (Hindi)
+                      </label>
+                      <input
+                        type="text"
+                        value={newItem.activity_hn}
+                        onChange={(e) => setNewItem({ ...newItem, activity_hn: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-[#631012]/30"
+                        placeholder="जैसे: अनुशासनहीनता में लिप्त छात्रों की जांच करना।"
+                      />
                     </div>
                   </div>
-                ))}
-              </div>
-
-              <div className="mt-8">
-                <h3 className="text-lg font-semibold text-[#171717] mb-4">
-                  Preview
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {activitiesData.activities.map((activity) => (
-                    <div
-                      key={activity.id}
-                      className="bg-white border border-[#171717]/10 rounded-lg p-4 shadow-sm"
+                  <div className="flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={addingItem}
+                      className="bg-[#631012] hover:bg-[#7a1214] text-white px-5 py-2 rounded-lg font-bold transition-all shadow-sm active:scale-95 disabled:opacity-50"
                     >
-                      <div className="flex items-center justify-between mb-2">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(activity.category)}`}
-                        >
-                          {activity.category}
-                        </span>
-                        <span className="text-sm text-[#171717]/60">
-                          {activity.date}
-                        </span>
-                      </div>
-                      <h4 className="font-semibold text-[#171717] mb-2">
-                        {activity.title}
-                      </h4>
-                      <p className="text-sm text-[#171717]/70 mb-3">
-                        {activity.description}
-                      </p>
-                      <div className="flex flex-wrap gap-3 text-xs text-[#171717]/60">
-                        <span className="flex items-center gap-1">
-                          <MapPin size={12} />
-                          {activity.venue}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock size={12} />
-                          {activity.time}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Users size={12} />
-                          {activity.participants}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'upcoming' && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Clock className="text-[#631012] w-5 h-5 sm:w-6 sm:h-6" />
-                <h2 className="text-xl sm:text-2xl font-bold text-[#171717]">
-                  Upcoming Events Section
-                </h2>
-              </div>
-              <div className="grid grid-cols-1 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-[#171717] mb-2">
-                    Section Heading
-                  </label>
-                  <input
-                    type="text"
-                    value={activitiesData.upcomingHeading}
-                    onChange={(e) =>
-                      setActivitiesData({
-                        ...activitiesData,
-                        upcomingHeading: e.target.value,
-                      })
-                    }
-                    className="w-full px-4 py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] text-black"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#171717] mb-2">
-                    Section Description
-                  </label>
-                  <textarea
-                    value={activitiesData.upcomingDescription}
-                    onChange={(e) =>
-                      setActivitiesData({
-                        ...activitiesData,
-                        upcomingDescription: e.target.value,
-                      })
-                    }
-                    rows={3}
-                    className="w-full px-4 py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] text-black"
-                  />
-                </div>
+                      {addingItem ? 'Adding...' : 'Add to List'}
+                    </button>
+                  </div>
+                </form>
               </div>
 
-              <div className="mt-8 p-6 bg-[#F9F9F9] rounded-xl border border-[#171717]/10">
-                <h3 className="text-xl font-bold text-[#171717] mb-2">
-                  {activitiesData.upcomingHeading}
-                </h3>
-                <p className="text-[#171717]/70">
-                  {activitiesData.upcomingDescription}
-                </p>
+              {/* Responsibilities list table */}
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Current Responsibilities List</h3>
+                {responsibilities.length === 0 ? (
+                  <p className="text-gray-500 text-center py-6 border border-dashed rounded-lg bg-gray-50/50">
+                    No responsibilities uploaded yet. Add some above.
+                  </p>
+                ) : (
+                  <div className="space-y-4">
+                    {responsibilities.map((item, index) => (
+                      <div
+                        key={item.id}
+                        className="p-5 border border-gray-200 rounded-xl bg-white hover:border-[#631012]/30 transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm"
+                      >
+                        {editingId === item.id ? (
+                          /* Edit mode */
+                          <div className="flex-1 w-full space-y-3">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs font-bold text-gray-500 mb-1">English</label>
+                                <input
+                                  type="text"
+                                  value={editingData.activity_en}
+                                  onChange={(e) => setEditingData({ ...editingData, activity_en: e.target.value })}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black focus:ring-2 focus:ring-[#631012]/30"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-bold text-gray-500 mb-1">Hindi</label>
+                                <input
+                                  type="text"
+                                  value={editingData.activity_hn}
+                                  onChange={(e) => setEditingData({ ...editingData, activity_hn: e.target.value })}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black focus:ring-2 focus:ring-[#631012]/30"
+                                />
+                              </div>
+                            </div>
+                            <div className="flex gap-2 justify-end">
+                              <button
+                                onClick={() => handleSaveEdit(item.id)}
+                                className="px-4 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded font-bold text-sm"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={() => setEditingId(null)}
+                                className="px-4 py-1.5 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded font-bold text-sm"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          /* Display mode */
+                          <>
+                            <div className="flex-1 space-y-1">
+                              <div className="flex items-start gap-2.5">
+                                <span className="font-extrabold text-sm text-[#631012] bg-[#631012]/10 w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                  {index + 1}
+                                </span>
+                                <div>
+                                  <p className="text-gray-900 font-semibold leading-relaxed">{item.activity_en}</p>
+                                  <p className="text-gray-500 text-sm mt-1 leading-relaxed font-medium">{item.activity_hn}</p>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex gap-2.5 w-full md:w-auto justify-end border-t md:border-t-0 pt-3 md:pt-0 border-gray-100 flex-shrink-0">
+                              <button
+                                onClick={() => startEditing(item)}
+                                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-bold text-sm transition-colors"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteItem(item.id)}
+                                className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Delete"
+                              >
+                                <Trash2 size={18} />
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}

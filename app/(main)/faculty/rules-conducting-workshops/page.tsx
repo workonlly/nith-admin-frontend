@@ -1,670 +1,575 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Save,
   Presentation,
   Plus,
   Trash2,
   FileText,
-  Filter,
-  Calendar,
-  Download,
-  Eye,
-  Users,
+  Bell,
+  Upload,
 } from 'lucide-react';
 
 interface WorkshopRule {
   id: number;
-  title: string;
-  description: string;
-  category: string;
-  duration: string;
-  participantLimit: string;
-  viewUrl: string;
-  downloadUrl: string;
+  title_en: string;
+  title_hn: string;
+  description_en: string;
+  description_hn: string;
+  pdf_url: string;
+  word_url: string;
+}
+
+interface WorkshopNotice {
+  id: number;
+  title_en: string;
+  title_hn: string;
+  description_en: string;
+  description_hn: string;
+  pdf_url: string;
+  word_url: string;
+  date_en: string;
+  date_hn: string;
 }
 
 interface WorkshopData {
-  heroHeading: string;
-  heroDescription: string;
-  filterHeading: string;
-  categories: string[];
-  rulesTableHeading: string;
+  heroHeadingEn: string;
+  heroHeadingHn: string;
+  heroDescriptionEn: string;
+  heroDescriptionHn: string;
+  tab1NameEn: string;
+  tab1NameHn: string;
+  tab2NameEn: string;
+  tab2NameHn: string;
   rules: WorkshopRule[];
+  notices: WorkshopNotice[];
 }
 
-type TabType = 'hero' | 'rules';
+const INITIAL_RULES: WorkshopRule[] = [
+  {
+    id: -1,
+    title_en: 'Technical Workshop Organization Guidelines',
+    title_hn: 'तकनीकी कार्यशाला आयोजन दिशानिर्देश',
+    description_en: 'Guidelines for organizing technical workshops including venue booking and participant registration.',
+    description_hn: 'स्थान बुकिंग और प्रतिभागी पंजीकरण सहित तकनीकी कार्यशालाओं के आयोजन के लिए दिशानिर्देश।',
+    pdf_url: '/documents/technical-workshop-guidelines.pdf',
+    word_url: '/documents/technical-workshop-guidelines.docx'
+  }
+];
 
-export default function RulesConductingWorkshopsPage() {
+const INITIAL_NOTICES: WorkshopNotice[] = [
+  {
+    id: -1,
+    title_en: 'Notice regarding Upcoming FDP 2025',
+    title_hn: 'आगामी एफडीपी 2025 के संबंध में सूचना',
+    description_en: 'Official notification for the Faculty Development Program scheduled for March 2025.',
+    description_hn: 'मार्च 2025 के लिए निर्धारित संकाय विकास कार्यक्रम के लिए आधिकारिक अधिसूचना।',
+    pdf_url: '/documents/fdp-notice.pdf',
+    word_url: '',
+    date_en: 'Feb 10, 2025',
+    date_hn: '10 फरवरी, 2025'
+  }
+];
+
+type TabType = 'hero' | 'rules' | 'notices';
+
+export default function WorkshopRulesPage() {
   const [activeTab, setActiveTab] = useState<TabType>('hero');
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
-
   const [workshopData, setWorkshopData] = useState<WorkshopData>({
-    heroHeading: 'Rules for Conducting Workshops',
-    heroDescription:
-      'Comprehensive guidelines and regulations for organizing and conducting workshops, seminars, and training programs at the Institute.',
-    filterHeading: 'Filter by Category:',
-    categories: [
-      'All',
-      'Technical Workshops',
-      'Faculty Development Programs',
-      'Student Training',
-      'Industry Collaboration',
-      'International Workshops',
-    ],
-    rulesTableHeading: 'Workshop Conducting Rules',
-    rules: [
-      {
-        id: 1,
-        title: 'Technical Workshop Organization Guidelines',
-        description:
-          'Guidelines for organizing technical workshops including venue booking, equipment requirements, and participant registration procedures.',
-        category: 'Technical Workshops',
-        duration: '1-5 days',
-        participantLimit: '30-50 participants',
-        viewUrl: '/documents/technical-workshop-guidelines',
-        downloadUrl: '/documents/technical-workshop-guidelines.pdf',
-      },
-      {
-        id: 2,
-        title: 'Faculty Development Program Framework',
-        description:
-          'Framework for conducting FDPs including resource person selection, content planning, and certificate issuance protocols.',
-        category: 'Faculty Development Programs',
-        duration: '1-2 weeks',
-        participantLimit: '20-40 faculty members',
-        viewUrl: '/documents/fdp-framework',
-        downloadUrl: '/documents/fdp-framework.pdf',
-      },
-      {
-        id: 3,
-        title: 'Student Training Workshop Procedures',
-        description:
-          'Procedures for student-focused training workshops covering soft skills, technical training, and career development programs.',
-        category: 'Student Training',
-        duration: '2-7 days',
-        participantLimit: '50-100 students',
-        viewUrl: '/documents/student-training-procedures',
-        downloadUrl: '/documents/student-training-procedures.pdf',
-      },
-      {
-        id: 4,
-        title: 'Industry Collaboration Workshop Guidelines',
-        description:
-          'Guidelines for workshops conducted in collaboration with industry partners including MoU requirements and sponsorship protocols.',
-        category: 'Industry Collaboration',
-        duration: '1-3 days',
-        participantLimit: '25-60 participants',
-        viewUrl: '/documents/industry-workshop-guidelines',
-        downloadUrl: '/documents/industry-workshop-guidelines.pdf',
-      },
-      {
-        id: 5,
-        title: 'International Workshop Hosting Rules',
-        description:
-          'Rules and procedures for hosting international workshops including visa facilitation, accommodation, and foreign expert invitations.',
-        category: 'International Workshops',
-        duration: '3-10 days',
-        participantLimit: '30-80 participants',
-        viewUrl: '/documents/international-workshop-rules',
-        downloadUrl: '/documents/international-workshop-rules.pdf',
-      },
-      {
-        id: 6,
-        title: 'Budget and Financial Guidelines',
-        description:
-          'Financial guidelines for workshop budgeting, fund allocation, registration fees, and expense reimbursement procedures.',
-        category: 'Technical Workshops',
-        duration: 'Applicable to all workshops',
-        participantLimit: 'Variable',
-        viewUrl: '/documents/workshop-budget-guidelines',
-        downloadUrl: '/documents/workshop-budget-guidelines.pdf',
-      },
-    ],
+    heroHeadingEn: 'Rules for Conducting Workshops',
+    heroHeadingHn: 'कार्यशाला आयोजित करने के नियम',
+    heroDescriptionEn: 'Comprehensive guidelines and regulations for organizing workshops and training programs.',
+    heroDescriptionHn: 'कार्यशालाओं and प्रशिक्षण कार्यक्रमों के आयोजन के लिए व्यापक दिशानिर्देश और नियम।',
+    tab1NameEn: 'Conference/Workshop/FDP/STC Rules Formats',
+    tab1NameHn: 'सम्मेलन/कार्यशाला/एफडीपी/एसटीसी नियम प्रारूप',
+    tab2NameEn: 'Notices/Office Orders/Notifications',
+    tab2NameHn: 'सूचनाएं/कार्यालय आदेश/अधिसूचनाएं',
+    rules: INITIAL_RULES,
+    notices: INITIAL_NOTICES,
   });
+  const [uploadingState, setUploadingState] = useState<{ [key: string]: boolean }>({});
 
-  const tabs = [
-    {
-      id: 'hero' as TabType,
-      label: 'Hero Section',
-      icon: <FileText size={18} />,
-    },
-    {
-      id: 'rules' as TabType,
-      label: 'Workshop Rules',
-      icon: <Presentation size={18} />,
-    },
-  ];
+  const handleFileUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    id: number,
+    type: 'pdf' | 'word',
+    listType: 'rules' | 'notices'
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  const handleSave = () => {
-    alert('Changes saved successfully!');
-    console.log(workshopData);
+    if (type === 'pdf' && file.type !== 'application/pdf') {
+      alert('Only PDF files are allowed!');
+      return;
+    }
+    
+    if (
+      type === 'word' &&
+      !file.name.endsWith('.doc') &&
+      !file.name.endsWith('.docx') &&
+      file.type !== 'application/msword' &&
+      file.type !== 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ) {
+      alert('Only Word documents (.doc, .docx) are allowed!');
+      return;
+    }
+
+    const uploadKey = `${listType}-${id}-${type}`;
+    setUploadingState((prev) => ({ ...prev, [uploadKey]: true }));
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('http://localhost:4000/api/upload', {
+        method: 'POST',
+        headers: {
+          'x-bucket-name': 'faculty-section',
+        },
+        body: formData,
+      });
+
+      const result = await res.json();
+      if (result.success && result.url) {
+        setWorkshopData((prev) => ({
+          ...prev,
+          [listType]: prev[listType].map((item) =>
+            item.id === id ? { ...item, [type === 'pdf' ? 'pdf_url' : 'word_url']: result.url } : item
+          ),
+        }));
+        alert(`${type.toUpperCase()} uploaded successfully!`);
+      } else {
+        alert(`Failed to upload ${type.toUpperCase()}: ` + (result.error || 'Unknown error'));
+      }
+    } catch (err) {
+      console.error(err);
+      alert(`Error uploading ${type.toUpperCase()} to server`);
+    } finally {
+      setUploadingState((prev) => ({ ...prev, [uploadKey]: false }));
+    }
   };
 
-  // Rules
+  const tabs = [
+    { id: 'hero' as TabType, label: 'Hero Section', icon: <FileText size={18} /> },
+    { id: 'rules' as TabType, label: 'Rules Formats', icon: <Presentation size={18} /> },
+    { id: 'notices' as TabType, label: 'Notices/Orders', icon: <Bell size={18} /> },
+  ];
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const hRes = await fetch('http://localhost:4000/api/faculty-workshop');
+        const hData = await hRes.json();
+        if (hData && hData.title_en) {
+          setWorkshopData(prev => ({
+            ...prev,
+            heroHeadingEn: hData.title_en,
+            heroHeadingHn: hData.title_hn,
+            heroDescriptionEn: hData.sub_title_en,
+            heroDescriptionHn: hData.sub_title_hn,
+            tab1NameEn: hData.tab1_name_en || prev.tab1NameEn,
+            tab1NameHn: hData.tab1_name_hn || prev.tab1NameHn,
+            tab2NameEn: hData.tab2_name_en || prev.tab2NameEn,
+            tab2NameHn: hData.tab2_name_hn || prev.tab2NameHn,
+          }));
+        }
+
+        // Rules
+        const lRes = await fetch('http://localhost:4000/api/faculty-workshop/list');
+        const lData = await lRes.json();
+        if (Array.isArray(lData) && lData.length > 0) {
+          setWorkshopData(prev => {
+            const merged = [...lData];
+            INITIAL_RULES.forEach(def => {
+              if (!merged.find(m => m.title_en === def.title_en || String(m.id) === String(def.id))) {
+                merged.push(def);
+              }
+            });
+            return { ...prev, rules: merged };
+          });
+        }
+
+        // Notices
+        const nRes = await fetch('http://localhost:4000/api/faculty-workshop/notices');
+        const nData = await nRes.json();
+        if (Array.isArray(nData) && nData.length > 0) {
+          setWorkshopData(prev => {
+            const merged = [...nData];
+            INITIAL_NOTICES.forEach(def => {
+              if (!merged.find(m => m.title_en === def.title_en || String(m.id) === String(def.id))) {
+                merged.push(def);
+              }
+            });
+            return { ...prev, notices: merged };
+          });
+        }
+      } catch (err) {
+        console.error('Fetch failed:', err);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const handleSave = async () => {
+    try {
+      // Header
+      await fetch('http://localhost:4000/api/faculty-workshop', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title_en: workshopData.heroHeadingEn,
+          title_hn: workshopData.heroHeadingHn,
+          sub_title_en: workshopData.heroDescriptionEn,
+          sub_title_hn: workshopData.heroDescriptionHn,
+          tab1_name_en: workshopData.tab1NameEn,
+          tab1_name_hn: workshopData.tab1NameHn,
+          tab2_name_en: workshopData.tab2NameEn,
+          tab2_name_hn: workshopData.tab2NameHn,
+        }),
+      });
+
+      // Rules
+      for (const rule of workshopData.rules) {
+        if (rule.id > 0 && rule.id < 1000000) {
+          await fetch(`http://localhost:4000/api/faculty-workshop/list/${rule.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(rule),
+          });
+        } else {
+          await fetch('http://localhost:4000/api/faculty-workshop/list', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(rule),
+          });
+        }
+      }
+
+      // Notices
+      for (const notice of workshopData.notices) {
+        if (notice.id > 0 && notice.id < 1000000) {
+          await fetch(`http://localhost:4000/api/faculty-workshop/notices/${notice.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(notice),
+          });
+        } else {
+          await fetch('http://localhost:4000/api/faculty-workshop/notices', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(notice),
+          });
+        }
+      }
+
+      alert('Changes saved successfully!');
+      window.location.reload();
+    } catch (err) {
+      console.error('Save failed:', err);
+      alert('Failed to save changes');
+    }
+  };
+
   const updateRule = (id: number, field: keyof WorkshopRule, value: string) => {
     setWorkshopData({
       ...workshopData,
-      rules: workshopData.rules.map((rule) =>
-        rule.id === id ? { ...rule, [field]: value } : rule
-      ),
+      rules: workshopData.rules.map((r) => r.id === id ? { ...r, [field]: value } : r),
     });
   };
 
   const addRule = () => {
-    const newId =
-      workshopData.rules.length > 0
-        ? Math.max(...workshopData.rules.map((r) => r.id)) + 1
-        : 1;
     setWorkshopData({
       ...workshopData,
       rules: [
         ...workshopData.rules,
-        {
-          id: newId,
-          title: '',
-          description: '',
-          category: 'Technical Workshops',
-          duration: '',
-          participantLimit: '',
-          viewUrl: '',
-          downloadUrl: '',
-        },
+        { id: Date.now() + Math.floor(Math.random() * 1000), title_en: '', title_hn: '', description_en: '', description_hn: '', pdf_url: '', word_url: '' },
       ],
     });
   };
 
-  const removeRule = (id: number) => {
+  const removeRule = async (id: number) => {
+    if (id > 0 && id < 1000000) {
+      if (!confirm('Delete from database?')) return;
+      await fetch(`http://localhost:4000/api/faculty-workshop/list/${id}`, { method: 'DELETE' });
+    }
     setWorkshopData({
       ...workshopData,
       rules: workshopData.rules.filter((r) => r.id !== id),
     });
   };
 
-  // Categories
-  const updateCategory = (index: number, value: string) => {
-    const updated = [...workshopData.categories];
-    updated[index] = value;
-    setWorkshopData({ ...workshopData, categories: updated });
-  };
-
-  const addCategory = () => {
+  const updateNotice = (id: number, field: keyof WorkshopNotice, value: string) => {
     setWorkshopData({
       ...workshopData,
-      categories: [...workshopData.categories, ''],
+      notices: workshopData.notices.map((n) => n.id === id ? { ...n, [field]: value } : n),
     });
   };
 
-  const removeCategory = (index: number) => {
+  const addNotice = () => {
     setWorkshopData({
       ...workshopData,
-      categories: workshopData.categories.filter((_, i) => i !== index),
+      notices: [
+        ...workshopData.notices,
+        { id: Date.now() + Math.floor(Math.random() * 1000), title_en: '', title_hn: '', description_en: '', description_hn: '', pdf_url: '', word_url: '', date_en: '', date_hn: '' },
+      ],
     });
   };
 
-  // Filter rules
-  const filteredRules =
-    selectedCategory === 'All'
-      ? workshopData.rules
-      : workshopData.rules.filter((rule) => rule.category === selectedCategory);
+  const removeNotice = async (id: number) => {
+    if (id > 0 && id < 1000000) {
+      if (!confirm('Delete notice from database?')) return;
+      await fetch(`http://localhost:4000/api/faculty-workshop/notices/${id}`, { method: 'DELETE' });
+    }
+    setWorkshopData({
+      ...workshopData,
+      notices: workshopData.notices.filter((n) => n.id !== id),
+    });
+  };
 
   return (
-    <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 lg:p-6">
-      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="bg-[#631012]/10 p-2 sm:p-3 rounded-full text-[#631012] flex-shrink-0">
-              <Presentation className="w-6 h-6 sm:w-7 sm:h-7" />
+    <div className="space-y-6 p-6">
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="bg-[#631012]/10 p-3 rounded-full text-[#631012]">
+              <Presentation size={28} />
             </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#171717] break-words">
-                Workshop Rules Editor
-              </h1>
-              <p className="text-sm sm:text-base text-[#171717]/60 mt-1">
-                Manage workshop conducting guidelines and regulations
-              </p>
+            <div>
+              <h1 className="text-3xl font-bold text-[#171717]">Workshop Rules & Notices Editor</h1>
+              <p className="text-[#171717]/60">Manage workshops, training programs, and official orders</p>
             </div>
           </div>
-          <button
-            onClick={handleSave}
-            className="bg-[#631012] hover:bg-[#7a1214] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg flex items-center gap-2 transition-colors shadow-md w-full sm:w-auto justify-center text-sm sm:text-base"
-          >
-            <Save className="w-4 h-4 sm:w-5 sm:h-5" />
-            Save Changes
+          <button onClick={handleSave} className="bg-[#631012] hover:bg-[#7a1214] text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors shadow-md">
+            <Save size={20} /> Save Changes
           </button>
         </div>
       </div>
 
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="border-b border-[#171717]/10">
-          <div className="flex overflow-x-auto scrollbar-thin scrollbar-thumb-[#631012]/30 scrollbar-track-gray-100">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`
-                  flex items-center gap-2 px-4 sm:px-6 py-3 sm:py-4 font-medium transition-colors whitespace-nowrap text-sm sm:text-base flex-shrink-0
-                  ${
-                    activeTab === tab.id
-                      ? 'bg-[#631012] text-white border-b-2 border-[#631012]'
-                      : 'text-[#171717]/70 hover:bg-[#F9F9F9] hover:text-[#171717]'
-                  }
-                `}
-              >
-                <span className="w-4 h-4 sm:w-5 sm:h-5">{tab.icon}</span>
-                <span>{tab.label}</span>
-              </button>
-            ))}
-          </div>
+        <div className="flex border-b border-[#171717]/10">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors ${activeTab === tab.id ? 'bg-[#631012] text-white' : 'text-[#171717]/70 hover:bg-gray-50'}`}
+            >
+              {tab.icon} {tab.label}
+            </button>
+          ))}
         </div>
 
-        <div className="p-4 sm:p-6">
-          {/* Hero Section */}
+        <div className="p-6">
           {activeTab === 'hero' && (
-            <div className="space-y-4 sm:space-y-6">
-              <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                <FileText className="text-[#631012] w-5 h-5 sm:w-6 sm:h-6" />
-                <h2 className="text-xl sm:text-2xl font-bold text-[#171717]">
-                  Hero Section Content
-                </h2>
+            <div className="grid grid-cols-2 gap-8">
+              <div className="space-y-4">
+                <label className="block text-xs font-bold uppercase text-gray-500">English Header</label>
+                <input type="text" value={workshopData.heroHeadingEn} onChange={(e) => setWorkshopData({...workshopData, heroHeadingEn: e.target.value})} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#631012]" placeholder="Heading" />
+                <textarea rows={3} value={workshopData.heroDescriptionEn} onChange={(e) => setWorkshopData({...workshopData, heroDescriptionEn: e.target.value})} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#631012]" placeholder="Description" />
+                <label className="block text-xs font-bold uppercase text-gray-500 mt-4">Tab 1 Name (English)</label>
+                <input type="text" value={workshopData.tab1NameEn} onChange={(e) => setWorkshopData({...workshopData, tab1NameEn: e.target.value})} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#631012]" placeholder="Tab 1 English Name" />
+                <label className="block text-xs font-bold uppercase text-gray-500 mt-4">Tab 2 Name (English)</label>
+                <input type="text" value={workshopData.tab2NameEn} onChange={(e) => setWorkshopData({...workshopData, tab2NameEn: e.target.value})} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#631012]" placeholder="Tab 2 English Name" />
               </div>
-
-              <div className="grid grid-cols-1 gap-4 sm:gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-[#171717] mb-2">
-                    Heading
-                  </label>
-                  <input
-                    type="text"
-                    value={workshopData.heroHeading}
-                    onChange={(e) =>
-                      setWorkshopData({
-                        ...workshopData,
-                        heroHeading: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm sm:text-base"
-                    placeholder="Rules for Conducting Workshops"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-[#171717] mb-2">
-                    Description
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={workshopData.heroDescription}
-                    onChange={(e) =>
-                      setWorkshopData({
-                        ...workshopData,
-                        heroDescription: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm sm:text-base"
-                    placeholder="Enter description"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-4 sm:mt-6 p-4 sm:p-6 bg-[#F9F9F9] rounded-lg border-2 border-dashed border-[#171717]/20">
-                <p className="text-xs sm:text-sm font-medium text-[#171717]/60 mb-3">
-                  Preview:
-                </p>
-                <div className="bg-white p-4 sm:p-6 rounded-lg">
-                  <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#171717] mb-3">
-                    {workshopData.heroHeading}
-                  </h3>
-                  <p className="text-base sm:text-lg text-[#171717]/70">
-                    {workshopData.heroDescription}
-                  </p>
-                </div>
+              <div className="space-y-4">
+                <label className="block text-xs font-bold uppercase text-gray-500">Hindi Header</label>
+                <input type="text" value={workshopData.heroHeadingHn} onChange={(e) => setWorkshopData({...workshopData, heroHeadingHn: e.target.value})} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#631012]" placeholder="शीर्षक" />
+                <textarea rows={3} value={workshopData.heroDescriptionHn} onChange={(e) => setWorkshopData({...workshopData, heroDescriptionHn: e.target.value})} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#631012]" placeholder="विवरण" />
+                <label className="block text-xs font-bold uppercase text-gray-500 mt-4">Tab 1 Name (Hindi)</label>
+                <input type="text" value={workshopData.tab1NameHn} onChange={(e) => setWorkshopData({...workshopData, tab1NameHn: e.target.value})} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#631012]" placeholder="Tab 1 Hindi Name" />
+                <label className="block text-xs font-bold uppercase text-gray-500 mt-4">Tab 2 Name (Hindi)</label>
+                <input type="text" value={workshopData.tab2NameHn} onChange={(e) => setWorkshopData({...workshopData, tab2NameHn: e.target.value})} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#631012]" placeholder="Tab 2 Hindi Name" />
               </div>
             </div>
           )}
 
-          {/* Rules */}
           {activeTab === 'rules' && (
-            <div className="space-y-4 sm:space-y-6">
-              <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                <Presentation className="text-[#631012] w-5 h-5 sm:w-6 sm:h-6" />
-                <h2 className="text-xl sm:text-2xl font-bold text-[#171717]">
-                  Workshop Rules Management
-                </h2>
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold text-gray-800">Rules & Formats Management</h2>
+                <button onClick={addRule} className="bg-[#631012] text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-[#7a1214]">
+                  <Plus size={18} /> Add Rule
+                </button>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:gap-6">
-                <div className="p-4 bg-[#F9F9F9] rounded-lg border border-[#171717]/10">
-                  <h3 className="text-lg font-semibold text-[#171717] mb-3">
-                    Filter Categories
-                  </h3>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium text-[#171717] mb-2">
-                        Filter Heading
-                      </label>
-                      <input
-                        type="text"
-                        value={workshopData.filterHeading}
-                        onChange={(e) =>
-                          setWorkshopData({
-                            ...workshopData,
-                            filterHeading: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm sm:text-base"
-                        placeholder="Filter by Category:"
-                      />
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                        <label className="block text-sm font-medium text-[#171717]">
-                          Categories
-                        </label>
-                        <button
-                          onClick={addCategory}
-                          className="flex items-center gap-1 px-2 py-1 bg-[#631012] text-white text-xs rounded hover:bg-[#7a1214] transition-colors"
-                        >
-                          <Plus size={14} />
-                          Add Category
-                        </button>
+              <div className="space-y-4">
+                {workshopData.rules.map((rule) => (
+                  <div key={rule.id} className="p-4 border rounded-xl bg-gray-50 relative group">
+                    <button onClick={() => removeRule(rule.id)} className="absolute top-4 right-4 text-red-500 hover:bg-red-50 p-2 rounded-lg">
+                      <Trash2 size={18} />
+                    </button>
+                    
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <label className="text-xs font-bold text-[#631012] uppercase">English Content</label>
+                        <input value={rule.title_en} onChange={(e) => updateRule(rule.id, 'title_en', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm font-bold" placeholder="Title" />
+                        <textarea value={rule.description_en} onChange={(e) => updateRule(rule.id, 'description_en', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm h-20" placeholder="Description" />
                       </div>
-                      <div className="space-y-2">
-                        {workshopData.categories.map((category, index) => (
-                          <div key={index} className="flex gap-2">
-                            <input
-                              type="text"
-                              value={category}
-                              onChange={(e) =>
-                                updateCategory(index, e.target.value)
-                              }
-                              className="flex-1 px-3 py-2 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm"
-                              placeholder={`Category ${index + 1}`}
-                            />
-                            {index > 0 && (
-                              <button
-                                onClick={() => removeCategory(index)}
-                                className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              >
-                                <Trash2 size={16} />
-                              </button>
+                      <div className="space-y-3">
+                        <label className="text-xs font-bold text-[#631012] uppercase">Hindi Content</label>
+                        <input value={rule.title_hn} onChange={(e) => updateRule(rule.id, 'title_hn', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm font-bold" placeholder="शीर्षक" />
+                        <textarea value={rule.description_hn} onChange={(e) => updateRule(rule.id, 'description_hn', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm h-20" placeholder="विवरण" />
+                      </div>
+                      <div className="col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-4">
+                        {/* PDF Upload and URL */}
+                        <div className="space-y-3 p-3 bg-white rounded-lg border border-gray-200">
+                          <label className="text-[10px] font-bold text-[#631012] uppercase block">PDF Document</label>
+                          <input 
+                            type="text" 
+                            value={rule.pdf_url} 
+                            onChange={(e) => updateRule(rule.id, 'pdf_url', e.target.value)} 
+                            className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50" 
+                            placeholder="PDF URL" 
+                          />
+                          <div className="flex items-center gap-3">
+                            <label className={`px-3 py-1.5 rounded-lg text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm ${uploadingState[`rules-${rule.id}-pdf`] ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#631012] hover:bg-[#7a1214]'}`}>
+                              <Upload size={12} />
+                              {uploadingState[`rules-${rule.id}-pdf`] ? 'Uploading...' : 'Upload PDF'}
+                              <input 
+                                type="file" 
+                                accept="application/pdf" 
+                                disabled={!!uploadingState[`rules-${rule.id}-pdf`]}
+                                onChange={(e) => handleFileUpload(e, rule.id, 'pdf', 'rules')} 
+                                className="hidden" 
+                              />
+                            </label>
+                            {rule.pdf_url && (
+                              <span className="text-[11px] text-green-600 font-semibold flex items-center gap-1 truncate max-w-[180px]">
+                                ✓ Active PDF
+                              </span>
                             )}
                           </div>
-                        ))}
+                        </div>
+
+                        {/* Word Upload and URL */}
+                        <div className="space-y-3 p-3 bg-white rounded-lg border border-gray-200">
+                          <label className="text-[10px] font-bold text-[#631012] uppercase block">Word Document</label>
+                          <input 
+                            type="text" 
+                            value={rule.word_url} 
+                            onChange={(e) => updateRule(rule.id, 'word_url', e.target.value)} 
+                            className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50" 
+                            placeholder="Word Document URL" 
+                          />
+                          <div className="flex items-center gap-3">
+                            <label className={`px-3 py-1.5 rounded-lg text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm ${uploadingState[`rules-${rule.id}-word`] ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#631012] hover:bg-[#7a1214]'}`}>
+                              <Upload size={12} />
+                              {uploadingState[`rules-${rule.id}-word`] ? 'Uploading...' : 'Upload Word'}
+                              <input 
+                                type="file" 
+                                accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
+                                disabled={!!uploadingState[`rules-${rule.id}-word`]}
+                                onChange={(e) => handleFileUpload(e, rule.id, 'word', 'rules')} 
+                                className="hidden" 
+                              />
+                            </label>
+                            {rule.word_url && (
+                              <span className="text-[11px] text-green-600 font-semibold flex items-center gap-1 truncate max-w-[180px]">
+                                ✓ Active Word Doc
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                ))}
+              </div>
+            </div>
+          )}
 
-                <div className="p-4 bg-[#F9F9F9] rounded-lg border border-[#171717]/10">
-                  <div className="flex justify-between items-center mb-3">
-                    <h3 className="text-lg font-semibold text-[#171717]">
-                      Rules ({workshopData.rules.length})
-                    </h3>
-                    <button
-                      onClick={addRule}
-                      className="flex items-center gap-2 px-3 py-1.5 bg-[#631012] text-white text-sm rounded-lg hover:bg-[#7a1214] transition-colors"
-                    >
-                      <Plus size={16} />
-                      Add Rule
+          {activeTab === 'notices' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold text-gray-800">Notices & Office Orders</h2>
+                <button onClick={addNotice} className="bg-[#631012] text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-[#7a1214]">
+                  <Plus size={18} /> Add Notice
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {workshopData.notices.map((notice) => (
+                  <div key={notice.id} className="p-4 border rounded-xl bg-gray-50 relative group">
+                    <button onClick={() => removeNotice(notice.id)} className="absolute top-4 right-4 text-red-500 hover:bg-red-50 p-2 rounded-lg">
+                      <Trash2 size={18} />
                     </button>
-                  </div>
-
-                  <div className="space-y-3 max-h-[600px] overflow-y-auto">
-                    {workshopData.rules.map((rule, index) => (
-                      <div
-                        key={rule.id}
-                        className="p-3 border border-[#171717]/20 rounded-lg bg-white"
-                      >
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm font-medium text-[#171717]/60">
-                            Rule {index + 1}
-                          </span>
-                          <button
-                            onClick={() => removeRule(rule.id)}
-                            className="px-2 py-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                    
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <label className="text-xs font-bold text-blue-600 uppercase">English Content</label>
+                        <input value={notice.title_en} onChange={(e) => updateNotice(notice.id, 'title_en', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm font-bold" placeholder="Notice Title" />
+                        <textarea value={notice.description_en} onChange={(e) => updateNotice(notice.id, 'description_en', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm h-20" placeholder="Description" />
+                        <input value={notice.date_en} onChange={(e) => updateNotice(notice.id, 'date_en', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Date" />
+                      </div>
+                      <div className="space-y-3">
+                        <label className="text-xs font-bold text-blue-600 uppercase">Hindi Content</label>
+                        <input value={notice.title_hn} onChange={(e) => updateNotice(notice.id, 'title_hn', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm font-bold" placeholder="सूचना शीर्षक" />
+                        <textarea value={notice.description_hn} onChange={(e) => updateNotice(notice.id, 'description_hn', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm h-20" placeholder="विवरण" />
+                        <input value={notice.date_hn} onChange={(e) => updateNotice(notice.id, 'date_hn', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="तिथि" />
+                      </div>
+                      <div className="col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-4">
+                        {/* PDF Upload and URL */}
+                        <div className="space-y-3 p-3 bg-white rounded-lg border border-gray-200">
+                          <label className="text-[10px] font-bold text-[#631012] uppercase block">PDF Document</label>
+                          <input 
+                            type="text" 
+                            value={notice.pdf_url} 
+                            onChange={(e) => updateNotice(notice.id, 'pdf_url', e.target.value)} 
+                            className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50" 
+                            placeholder="PDF URL" 
+                          />
+                          <div className="flex items-center gap-3">
+                            <label className={`px-3 py-1.5 rounded-lg text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm ${uploadingState[`notices-${notice.id}-pdf`] ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#631012] hover:bg-[#7a1214]'}`}>
+                              <Upload size={12} />
+                              {uploadingState[`notices-${notice.id}-pdf`] ? 'Uploading...' : 'Upload PDF'}
+                              <input 
+                                type="file" 
+                                accept="application/pdf" 
+                                disabled={!!uploadingState[`notices-${notice.id}-pdf`]}
+                                onChange={(e) => handleFileUpload(e, notice.id, 'pdf', 'notices')} 
+                                className="hidden" 
+                              />
+                            </label>
+                            {notice.pdf_url && (
+                              <span className="text-[11px] text-green-600 font-semibold flex items-center gap-1 truncate max-w-[180px]">
+                                ✓ Active PDF
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          <div className="md:col-span-2">
-                            <label className="block text-xs text-[#171717]/60 mb-1">
-                              Title
+
+                        {/* Word Upload and URL */}
+                        <div className="space-y-3 p-3 bg-white rounded-lg border border-gray-200">
+                          <label className="text-[10px] font-bold text-[#631012] uppercase block">Word Document</label>
+                          <input 
+                            type="text" 
+                            value={notice.word_url} 
+                            onChange={(e) => updateNotice(notice.id, 'word_url', e.target.value)} 
+                            className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50" 
+                            placeholder="Word Document URL" 
+                          />
+                          <div className="flex items-center gap-3">
+                            <label className={`px-3 py-1.5 rounded-lg text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm ${uploadingState[`notices-${notice.id}-word`] ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#631012] hover:bg-[#7a1214]'}`}>
+                              <Upload size={12} />
+                              {uploadingState[`notices-${notice.id}-word`] ? 'Uploading...' : 'Upload Word'}
+                              <input 
+                                type="file" 
+                                accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
+                                disabled={!!uploadingState[`notices-${notice.id}-word`]}
+                                onChange={(e) => handleFileUpload(e, notice.id, 'word', 'notices')} 
+                                className="hidden" 
+                              />
                             </label>
-                            <input
-                              type="text"
-                              value={rule.title}
-                              onChange={(e) =>
-                                updateRule(rule.id, 'title', e.target.value)
-                              }
-                              className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm"
-                              placeholder="Rule Title"
-                            />
-                          </div>
-                          <div className="md:col-span-2">
-                            <label className="block text-xs text-[#171717]/60 mb-1">
-                              Description
-                            </label>
-                            <textarea
-                              rows={2}
-                              value={rule.description}
-                              onChange={(e) =>
-                                updateRule(
-                                  rule.id,
-                                  'description',
-                                  e.target.value
-                                )
-                              }
-                              className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm"
-                              placeholder="Rule description"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs text-[#171717]/60 mb-1">
-                              Category
-                            </label>
-                            <select
-                              value={rule.category}
-                              onChange={(e) =>
-                                updateRule(rule.id, 'category', e.target.value)
-                              }
-                              className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm"
-                            >
-                              {workshopData.categories
-                                .filter((cat) => cat !== 'All')
-                                .map((cat, idx) => (
-                                  <option key={idx} value={cat}>
-                                    {cat}
-                                  </option>
-                                ))}
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-xs text-[#171717]/60 mb-1">
-                              Duration
-                            </label>
-                            <input
-                              type="text"
-                              value={rule.duration}
-                              onChange={(e) =>
-                                updateRule(rule.id, 'duration', e.target.value)
-                              }
-                              className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm"
-                              placeholder="1-5 days"
-                            />
-                          </div>
-                          <div className="md:col-span-2">
-                            <label className="block text-xs text-[#171717]/60 mb-1">
-                              Participant Limit
-                            </label>
-                            <input
-                              type="text"
-                              value={rule.participantLimit}
-                              onChange={(e) =>
-                                updateRule(
-                                  rule.id,
-                                  'participantLimit',
-                                  e.target.value
-                                )
-                              }
-                              className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm"
-                              placeholder="30-50 participants"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs text-[#171717]/60 mb-1">
-                              View URL
-                            </label>
-                            <input
-                              type="text"
-                              value={rule.viewUrl}
-                              onChange={(e) =>
-                                updateRule(rule.id, 'viewUrl', e.target.value)
-                              }
-                              className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm"
-                              placeholder="/documents/rule"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs text-[#171717]/60 mb-1">
-                              Download URL
-                            </label>
-                            <input
-                              type="text"
-                              value={rule.downloadUrl}
-                              onChange={(e) =>
-                                updateRule(
-                                  rule.id,
-                                  'downloadUrl',
-                                  e.target.value
-                                )
-                              }
-                              className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm"
-                              placeholder="/documents/rule.pdf"
-                            />
+                            {notice.word_url && (
+                              <span className="text-[11px] text-green-600 font-semibold flex items-center gap-1 truncate max-w-[180px]">
+                                ✓ Active Word Doc
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
-                    ))}
+                    </div>
                   </div>
-                </div>
-              </div>
-
-              <div className="mt-4 sm:mt-6 p-4 sm:p-6 bg-[#F9F9F9] rounded-lg border-2 border-dashed border-[#171717]/20">
-                <p className="text-xs sm:text-sm font-medium text-[#171717]/60 mb-3">
-                  Preview:
-                </p>
-                <div className="bg-white p-4 sm:p-6 rounded-lg space-y-4">
-                  {/* Filter Section */}
-                  <div className="flex items-center gap-2 mb-4">
-                    <Filter className="text-[#631012] w-5 h-5" />
-                    <h3 className="text-lg font-semibold text-[#171717]">
-                      {workshopData.filterHeading}
-                    </h3>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {workshopData.categories.map((category, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setSelectedCategory(category)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                          selectedCategory === category
-                            ? 'bg-[#631012] text-white'
-                            : 'bg-[#F9F9F9] text-[#171717] hover:bg-[#631012]/10'
-                        }`}
-                      >
-                        {category}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="text-sm text-[#171717]/60 mb-2">
-                    Showing {filteredRules.length} of{' '}
-                    {workshopData.rules.length} rules
-                  </div>
-
-                  <div className="text-base font-semibold text-[#171717] mb-3">
-                    Total: {filteredRules.length} rules
-                  </div>
-
-                  {/* Rules Table */}
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="bg-[#F9F9F9] border-b border-[#171717]/10">
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-[#171717] uppercase tracking-wider">
-                            Rule Title
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-[#171717] uppercase tracking-wider">
-                            Category
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-[#171717] uppercase tracking-wider">
-                            Duration
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-[#171717] uppercase tracking-wider">
-                            Participant Limit
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-[#171717] uppercase tracking-wider">
-                            Actions
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-[#171717]/10">
-                        {filteredRules.map((rule) => (
-                          <tr
-                            key={rule.id}
-                            className="hover:bg-[#F9F9F9] transition-colors"
-                          >
-                            <td className="px-4 py-3">
-                              <div className="text-sm font-semibold text-[#171717]">
-                                {rule.title}
-                              </div>
-                              <div className="text-xs text-[#171717]/60 mt-1">
-                                {rule.description}
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 text-sm text-[#171717]">
-                              <span className="inline-flex px-2 py-1 rounded bg-[#631012]/10 text-[#631012] font-medium text-xs">
-                                {rule.category}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 text-sm text-[#171717]">
-                              <div className="flex items-center gap-1">
-                                <Calendar
-                                  size={14}
-                                  className="text-[#631012]"
-                                />
-                                {rule.duration}
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 text-sm text-[#171717]">
-                              <div className="flex items-center gap-1">
-                                <Users size={14} className="text-[#631012]" />
-                                {rule.participantLimit}
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 text-sm">
-                              <div className="flex gap-2">
-                                <button className="flex items-center gap-1 px-3 py-1 bg-[#631012] text-white text-xs rounded hover:bg-[#7a1214] transition-colors">
-                                  <Eye size={14} />
-                                  View
-                                </button>
-                                <button className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors">
-                                  <Download size={14} />
-                                  Download
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
           )}

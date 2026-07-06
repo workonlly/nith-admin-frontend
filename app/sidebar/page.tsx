@@ -3,10 +3,9 @@
 import Link from 'next/link';
 import { useState } from 'react';
 
-interface SidebarLink {
-  label: string;
-  href: string;
-}
+type SidebarLink = 
+  | { label: string; href: string }
+  | { header: string };
 
 interface SidebarProps {
   heading: string;
@@ -29,11 +28,10 @@ export function Sidebar({
   // FILTER LINKS
   // =========================
 
-  const filteredLinks = links.filter((link) =>
-    link.label
-      .toLowerCase()
-      .includes(search.toLowerCase())
-  );
+  const filteredLinks = links.filter((link) => {
+    if ('header' in link) return true;
+    return link.label.toLowerCase().includes(search.toLowerCase());
+  });
 
   return (
     <div className="w-[280px] min-h-screen bg-[#171717] flex flex-col shadow-2xl sticky top-0">
@@ -61,11 +59,18 @@ export function Sidebar({
 
       {/* LINKS */}
       <div className="flex-1 overflow-y-auto px-3 py-4">
-        <ul className="space-y-2">
-          {filteredLinks.map((link) => {
-            const isActive =
-              activeLink === link.href;
-
+        <ul className="space-y-2 pb-24">
+          {filteredLinks.map((link, index) => {
+            if ('header' in link) {
+              return (
+                <li key={`header-${index}`} className="pt-4 pb-2 px-4">
+                  <span className="text-[10px] font-black text-[#F9F9F9]/40 uppercase tracking-[0.2em]">
+                    {link.header}
+                  </span>
+                </li>
+              );
+            }
+            const isActive = activeLink === link.href;
             return (
               <li key={link.href}>
                 <Link
