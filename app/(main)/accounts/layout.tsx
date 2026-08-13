@@ -3,10 +3,7 @@
 import { usePathname } from 'next/navigation';
 import { Sidebar } from '@/app/sidebar/page';
 const homeLinks = [
-  { label: 'Add faculty', href: '/accounts/faculty' },
-  { label: 'Assign Role', href: '/accounts/role' },
-  { label: 'Assign position', href: '/accounts/position' },
-  { label: 'Assign category', href: '/accounts/category' },
+  { label: 'Add faculty', href: '/accounts' },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
