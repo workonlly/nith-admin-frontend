@@ -1,67 +1,18 @@
+
 'use client';
-
 import React, { useState, useEffect } from 'react';
-import { Save, MapPin, Plus, Trash2, FileText, Train, Plane, Car, Loader2, Globe } from 'lucide-react';
+import { Plus, Edit, Trash2, Loader2, Save, X } from 'lucide-react';
 
-interface ServiceParagraph {
-  id?: number;
-  paragraph_en: string;
-  paragraph_hi: string;
-}
-
-interface TravelOption {
-  id?: number;
-  icon: string;
-  title_en: string;
-  title_hi: string;
-  nearest_point_label_en: string;
-  nearest_point_label_hi: string;
-  nearest_point_value_en: string;
-  nearest_point_value_hi: string;
-  distance_label_en: string;
-  distance_label_hi: string;
-  distance_value_en: string;
-  distance_value_hi: string;
-  travel_time_en: string;
-  travel_time_hi: string;
-  services_label_en: string;
-  services_label_hi: string;
-  servicesParagraphs: ServiceParagraph[];
-}
-
-interface ConnectivityData {
-  hero_heading_en: string;
-  hero_heading_hi: string;
-  hero_description_en: string;
-  hero_description_hi: string;
-  travel_options_label_en: string;
-  travel_options_label_hi: string;
-  travel_options_heading_en: string;
-  travel_options_heading_hi: string;
-  travel_options_subtitle_en: string;
-  travel_options_subtitle_hi: string;
-  travelOptions: TravelOption[];
-}
-
-type TabType = 'hero' | 'travel';
-type LangType = 'en' | 'hi';
-
-export default function ConnectivityPage() {
+export default function ConnectivityModesPage() {
   const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/connectivity`;
-
-  const [activeTab, setActiveTab] = useState<TabType>('hero');
-  const [lang, setLang] = useState<LangType>('en');
-  const [loading, setLoading] = useState(false);
+  
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
-  const [data, setData] = useState<ConnectivityData>({
-    hero_heading_en: '', hero_heading_hi: '',
-    hero_description_en: '', hero_description_hi: '',
-    travel_options_label_en: '', travel_options_label_hi: '',
-    travel_options_heading_en: '', travel_options_heading_hi: '',
-    travel_options_subtitle_en: '', travel_options_subtitle_hi: '',
-    travelOptions: [],
-  });
+  
+  const [editingItem, setEditingItem] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formData, setFormData] = useState<any>({});
 
   useEffect(() => {
     fetchData();
@@ -71,22 +22,8 @@ export default function ConnectivityPage() {
     try {
       setLoading(true);
       const res = await fetch(API_URL);
-      if (res.ok) {
-        const json = await res.json();
-        setData({
-          hero_heading_en: json.heroHeadingEn || '',
-          hero_heading_hi: json.heroHeadingHi || '',
-          hero_description_en: json.heroDescriptionEn || '',
-          hero_description_hi: json.heroDescriptionHi || '',
-          travel_options_label_en: json.travelOptionsLabelEn || '',
-          travel_options_label_hi: json.travelOptionsLabelHi || '',
-          travel_options_heading_en: json.travelOptionsHeadingEn || '',
-          travel_options_heading_hi: json.travelOptionsHeadingHi || '',
-          travel_options_subtitle_en: json.travelOptionsSubtitleEn || '',
-          travel_options_subtitle_hi: json.travelOptionsSubtitleHi || '',
-          travelOptions: json.travelOptions || [],
-        });
-      }
+      const json = await res.json();
+      if (json.success) setData(json.data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -94,24 +31,47 @@ export default function ConnectivityPage() {
     }
   };
 
-  const handleSaveMain = async () => {
-    try {
-      setSaving(true);
-      const res = await fetch(API_URL, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          heroHeading: lang === 'en' ? data.hero_heading_en : data.hero_heading_hi,
-          heroDescription: lang === 'en' ? data.hero_description_en : data.hero_description_hi,
-          travelOptionsLabel: lang === 'en' ? data.travel_options_label_en : data.travel_options_label_hi,
-          travelOptionsHeading: lang === 'en' ? data.travel_options_heading_en : data.travel_options_heading_hi,
-          travelOptionsSubtitle: lang === 'en' ? data.travel_options_subtitle_en : data.travel_options_subtitle_hi,
-          lang
-        }),
-      });
+  const handleEdit = (item: any) => {
+    setEditingItem(item);
+    setFormData(item);
+    setIsModalOpen(true);
+  };
 
-      if (res.ok) alert('Saved successfully!');
-      else alert('Failed to save');
+  const handleAdd = () => {
+    setEditingItem(null);
+    setFormData({});
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async (id: any) => {
+    if (!confirm('Are you sure you want to delete this item?')) return;
+    try {
+      const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+      if (res.ok) fetchData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleSubmit = async (e: any) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const method = editingItem ? 'PUT' : 'POST';
+      const url = editingItem ? `${API_URL}/${editingItem.id}` : API_URL;
+      
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      
+      if (res.ok) {
+        setIsModalOpen(false);
+        fetchData();
+      } else {
+        alert('Failed to save');
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -119,226 +79,206 @@ export default function ConnectivityPage() {
     }
   };
 
-  const updateField = (field: string, value: string) => {
-    setData(prev => ({ ...prev, [`${field}_${lang}`]: value }));
+  const handleChange = (e: any) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const getField = (field: string) => {
-    return (data as any)[`${field}_${lang}`] || '';
-  };
-
-  // --- Sub-items Operations ---
-  const saveOption = async (option: TravelOption, isNew: boolean) => {
-    try {
-      const url = isNew ? `${API_URL}/travel-option` : `${API_URL}/travel-option/${option.id}`;
-      const method = isNew ? 'POST' : 'PUT';
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          icon: option.icon,
-          title_en: option.title_en, title_hi: option.title_hi,
-          nearestPointLabel_en: option.nearest_point_label_en, nearestPointLabel_hi: option.nearest_point_label_hi,
-          nearestPointValue_en: option.nearest_point_value_en, nearestPointValue_hi: option.nearest_point_value_hi,
-          distanceLabel_en: option.distance_label_en, distanceLabel_hi: option.distance_label_hi,
-          distanceValue_en: option.distance_value_en, distanceValue_hi: option.distance_value_hi,
-          travelTime_en: option.travel_time_en, travelTime_hi: option.travel_time_hi,
-          servicesLabel_en: option.services_label_en, servicesLabel_hi: option.services_label_hi,
-        }),
-      });
-      if (res.ok) fetchData();
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const deleteOption = async (id: number | undefined, index: number) => {
-    if (!id) {
-      const updated = [...data.travelOptions];
-      updated.splice(index, 1);
-      setData({ ...data, travelOptions: updated });
-      return;
-    }
-    if (confirm('Delete this option?')) {
-      try {
-        await fetch(`${API_URL}/travel-option/${id}`, { method: 'DELETE' });
-        fetchData();
-      } catch (e) {
-        console.error(e);
-      }
-    }
-  };
-
-  const saveParagraph = async (optionId: number, paragraph: ServiceParagraph, isNew: boolean) => {
-    try {
-      const url = isNew ? `${API_URL}/paragraph` : `${API_URL}/paragraph/${paragraph.id}`;
-      const method = isNew ? 'POST' : 'PUT';
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          travelOptionId: optionId,
-          paragraph_en: paragraph.paragraph_en,
-          paragraph_hi: paragraph.paragraph_hi,
-        }),
-      });
-      if (res.ok) fetchData();
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const deleteParagraph = async (id: number | undefined, optionIndex: number, paragraphIndex: number) => {
-    if (!id) {
-      const updatedOpts = [...data.travelOptions];
-      updatedOpts[optionIndex].servicesParagraphs.splice(paragraphIndex, 1);
-      setData({ ...data, travelOptions: updatedOpts });
-      return;
-    }
-    if (confirm('Delete this paragraph?')) {
-      try {
-        await fetch(`${API_URL}/paragraph/${id}`, { method: 'DELETE' });
-        fetchData();
-      } catch (e) {
-        console.error(e);
-      }
-    }
-  };
-
-  const updateOptionLocal = (index: number, field: string, value: string, useLang: boolean = true) => {
-    const updated = [...data.travelOptions];
-    if (useLang) (updated[index] as any)[`${field}_${lang}`] = value;
-    else (updated[index] as any)[field] = value;
-    setData({ ...data, travelOptions: updated });
-  };
-
-  const updateParagraphLocal = (optionIndex: number, paragraphIndex: number, value: string) => {
-    const updatedOpts = [...data.travelOptions];
-    (updatedOpts[optionIndex].servicesParagraphs[paragraphIndex] as any)[`paragraph_${lang}`] = value;
-    setData({ ...data, travelOptions: updatedOpts });
-  };
-
-  const tabs = [
-    { id: 'hero' as TabType, label: 'Hero Section', icon: <FileText size={18} /> },
-    { id: 'travel' as TabType, label: 'Travel Options', icon: <MapPin size={18} /> },
-  ];
-
-  if (loading) return <div className="p-10 text-center"><Loader2 className="animate-spin inline mr-2" /> Loading...</div>;
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 lg:p-6">
-      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="bg-[#631012]/10 p-2 rounded-full text-[#631012]"><MapPin className="w-6 h-6" /></div>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-[#171717]">Connectivity Editor</h1>
-            <p className="text-sm text-gray-500">Edit travel options and connectivity</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
-            <Globe size={18} className="text-gray-500 ml-2" />
-            <select value={lang} onChange={(e) => setLang(e.target.value as LangType)} className="bg-transparent border-none text-sm font-medium focus:ring-0 cursor-pointer py-1 pr-4">
-              <option value="en">English</option>
-              <option value="hi">हिंदी (Hindi)</option>
-            </select>
-          </div>
-          <button onClick={handleSaveMain} disabled={saving} className="bg-[#631012] hover:bg-[#7a1214] text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm disabled:opacity-50">
-            {saving ? <Loader2 className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4" />} Save Main Content
-          </button>
-        </div>
+    <div className="p-6 max-w-6xl mx-auto">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">Manage ConnectivityModes</h1>
+        <button onClick={handleAdd} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+          <Plus size={18} /> Add New
+        </button>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="border-b border-[#171717]/10 flex overflow-x-auto">
-          {tabs.map((tab) => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-6 py-4 font-medium whitespace-nowrap text-sm ${activeTab === tab.id ? 'bg-[#631012] text-white border-b-2 border-[#631012]' : 'text-gray-600 hover:bg-gray-50'}`}>
-              {tab.icon} {tab.label}
-            </button>
-          ))}
-        </div>
+      <div className="bg-white shadow rounded-lg overflow-hidden">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title (EN)</th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {data.map((item) => (
+              <tr key={item.id}>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.id}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.title_en || 'N/A'}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <button onClick={() => handleEdit(item)} className="text-indigo-600 hover:text-indigo-900 mr-4"><Edit size={18} /></button>
+                  <button onClick={() => handleDelete(item.id)} className="text-red-600 hover:text-red-900"><Trash2 size={18} /></button>
+                </td>
+              </tr>
+            ))}
+            {data.length === 0 && (
+              <tr>
+                <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">No items found.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
-        <div className="p-4 sm:p-6">
-          {/* HERO TAB */}
-          {activeTab === 'hero' && (
-            <div className="space-y-6">
-              <div className="grid gap-3 p-4 bg-gray-50 border rounded-lg">
-                <input type="text" value={getField('hero_heading')} onChange={e => updateField('hero_heading', e.target.value)} placeholder="Hero Heading" className="w-full p-2 border rounded" />
-                <textarea rows={4} value={getField('hero_description')} onChange={e => updateField('hero_description', e.target.value)} placeholder="Hero Description" className="w-full p-2 border rounded" />
-              </div>
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">{editingItem ? 'Edit Item' : 'Add Item'}</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-gray-500 hover:text-gray-700"><X size={24} /></button>
             </div>
-          )}
-
-          {/* TRAVEL TAB */}
-          {activeTab === 'travel' && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-3 gap-3 p-4 bg-gray-50 border rounded-lg">
-                <input type="text" value={getField('travel_options_label')} onChange={e => updateField('travel_options_label', e.target.value)} placeholder="Travel Options Label" className="w-full p-2 border rounded" />
-                <input type="text" value={getField('travel_options_heading')} onChange={e => updateField('travel_options_heading', e.target.value)} placeholder="Travel Options Heading" className="w-full p-2 border rounded" />
-                <input type="text" value={getField('travel_options_subtitle')} onChange={e => updateField('travel_options_subtitle', e.target.value)} placeholder="Travel Options Subtitle" className="w-full p-2 border rounded" />
-              </div>
+            <form onSubmit={handleSubmit} className="space-y-4">
               
               <div>
-                <h3 className="font-semibold mb-3">Travel Options</h3>
-                <div className="space-y-4">
-                  {data.travelOptions.map((option, i) => (
-                    <div key={i} className="p-4 border rounded bg-gray-50 flex gap-4">
-                      <div className="flex-1 space-y-4">
-                        <div className="grid grid-cols-2 gap-3">
-                          <select value={option.icon} onChange={e => updateOptionLocal(i, 'icon', e.target.value, false)} className="w-full p-2 border rounded text-sm bg-white">
-                            <option value="train">Train</option>
-                            <option value="plane">Plane</option>
-                            <option value="car">Car/Road</option>
-                          </select>
-                          <input type="text" value={(option as any)[`title_${lang}`] || ''} onChange={e => updateOptionLocal(i, 'title', e.target.value)} placeholder="Title (e.g. By Rail)" className="w-full p-2 border rounded text-sm" />
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <input type="text" value={(option as any)[`nearest_point_label_${lang}`] || ''} onChange={e => updateOptionLocal(i, 'nearest_point_label', e.target.value)} placeholder="Nearest Point Label" className="w-full p-2 border rounded text-sm" />
-                          <input type="text" value={(option as any)[`nearest_point_value_${lang}`] || ''} onChange={e => updateOptionLocal(i, 'nearest_point_value', e.target.value)} placeholder="Nearest Point Value" className="w-full p-2 border rounded text-sm" />
-                          <input type="text" value={(option as any)[`distance_label_${lang}`] || ''} onChange={e => updateOptionLocal(i, 'distance_label', e.target.value)} placeholder="Distance Label" className="w-full p-2 border rounded text-sm" />
-                          <input type="text" value={(option as any)[`distance_value_${lang}`] || ''} onChange={e => updateOptionLocal(i, 'distance_value', e.target.value)} placeholder="Distance Value" className="w-full p-2 border rounded text-sm" />
-                          <input type="text" value={(option as any)[`travel_time_${lang}`] || ''} onChange={e => updateOptionLocal(i, 'travel_time', e.target.value)} placeholder="Travel Time" className="w-full p-2 border rounded text-sm" />
-                          <input type="text" value={(option as any)[`services_label_${lang}`] || ''} onChange={e => updateOptionLocal(i, 'services_label', e.target.value)} placeholder="Services Label" className="w-full p-2 border rounded text-sm" />
-                        </div>
-                        
-                        {option.id && (
-                          <div className="p-3 bg-white border rounded">
-                            <h4 className="text-sm font-semibold mb-2">Services Paragraphs</h4>
-                            <div className="space-y-2">
-                              {option.servicesParagraphs.map((para, pIdx) => (
-                                <div key={pIdx} className="flex gap-2">
-                                  <textarea rows={2} value={(para as any)[`paragraph_${lang}`] || ''} onChange={e => updateParagraphLocal(i, pIdx, e.target.value)} className="flex-1 p-2 border rounded text-sm" />
-                                  <div className="flex flex-col gap-1">
-                                    <button onClick={() => saveParagraph(option.id!, para, !para.id)} className="p-1 bg-green-100 text-green-700 rounded"><Save size={14}/></button>
-                                    <button onClick={() => deleteParagraph(para.id, i, pIdx)} className="p-1 bg-red-100 text-red-700 rounded"><Trash2 size={14}/></button>
-                                  </div>
-                                </div>
-                              ))}
-                              <button onClick={() => {
-                                const newOpts = [...data.travelOptions];
-                                newOpts[i].servicesParagraphs.push({ paragraph_en: '', paragraph_hi: '' });
-                                setData({ ...data, travelOptions: newOpts });
-                              }} className="text-[#631012] text-xs font-medium flex items-center gap-1 hover:underline"><Plus size={14} /> Add Paragraph</button>
-                            </div>
-                          </div>
-                        )}
-                        {!option.id && <p className="text-xs text-orange-500">Save this option first to add service paragraphs.</p>}
-                      </div>
-
-                      <div className="flex flex-col gap-2">
-                        <button onClick={() => saveOption(option, !option.id)} className="p-2 bg-green-100 text-green-700 rounded"><Save size={16}/></button>
-                        <button onClick={() => deleteOption(option.id, i)} className="p-2 bg-red-100 text-red-700 rounded"><Trash2 size={16}/></button>
-                      </div>
-                    </div>
-                  ))}
-                  <button onClick={() => setData({ ...data, travelOptions: [...data.travelOptions, { icon: 'car', title_en: '', title_hi: '', nearest_point_label_en: 'Nearest Point:', nearest_point_label_hi: '', nearest_point_value_en: '', nearest_point_value_hi: '', distance_label_en: 'Distance:', distance_label_hi: '', distance_value_en: '', distance_value_hi: '', travel_time_en: '', travel_time_hi: '', services_label_en: 'Services Available:', services_label_hi: '', servicesParagraphs: [] }]})} className="text-[#631012] font-medium text-sm flex items-center gap-1 hover:underline"><Plus size={16} /> Add Travel Option</button>
-                </div>
+                <label className="block text-sm font-medium text-gray-700 capitalize">icon</label>
+                <input 
+                  type="text" 
+                  name="icon" 
+                  value={formData.icon || ''} 
+                  onChange={handleChange} 
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2"
+                />
               </div>
-            </div>
-          )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 capitalize">title en</label>
+                <input 
+                  type="text" 
+                  name="title_en" 
+                  value={formData.title_en || ''} 
+                  onChange={handleChange} 
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 capitalize">title hi</label>
+                <input 
+                  type="text" 
+                  name="title_hi" 
+                  value={formData.title_hi || ''} 
+                  onChange={handleChange} 
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 capitalize">nearest point en</label>
+                <input 
+                  type="text" 
+                  name="nearest_point_en" 
+                  value={formData.nearest_point_en || ''} 
+                  onChange={handleChange} 
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 capitalize">nearest point hi</label>
+                <input 
+                  type="text" 
+                  name="nearest_point_hi" 
+                  value={formData.nearest_point_hi || ''} 
+                  onChange={handleChange} 
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 capitalize">distance en</label>
+                <input 
+                  type="text" 
+                  name="distance_en" 
+                  value={formData.distance_en || ''} 
+                  onChange={handleChange} 
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 capitalize">distance hi</label>
+                <input 
+                  type="text" 
+                  name="distance_hi" 
+                  value={formData.distance_hi || ''} 
+                  onChange={handleChange} 
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 capitalize">travel time en</label>
+                <input 
+                  type="text" 
+                  name="travel_time_en" 
+                  value={formData.travel_time_en || ''} 
+                  onChange={handleChange} 
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 capitalize">travel time hi</label>
+                <input 
+                  type="text" 
+                  name="travel_time_hi" 
+                  value={formData.travel_time_hi || ''} 
+                  onChange={handleChange} 
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 capitalize">services en</label>
+                <input 
+                  type="text" 
+                  name="services_en" 
+                  value={formData.services_en || ''} 
+                  onChange={handleChange} 
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 capitalize">services hi</label>
+                <input 
+                  type="text" 
+                  name="services_hi" 
+                  value={formData.services_hi || ''} 
+                  onChange={handleChange} 
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 capitalize">additional info en</label>
+                <input 
+                  type="text" 
+                  name="additional_info_en" 
+                  value={formData.additional_info_en || ''} 
+                  onChange={handleChange} 
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 capitalize">additional info hi</label>
+                <input 
+                  type="text" 
+                  name="additional_info_hi" 
+                  value={formData.additional_info_hi || ''} 
+                  onChange={handleChange} 
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2"
+                />
+              </div>
+              <div className="flex justify-end pt-4 border-t border-gray-200">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 mr-3">Cancel</button>
+                <button type="submit" disabled={saving} className="flex justify-center items-center bg-blue-600 border border-transparent rounded-md shadow-sm py-2 px-4 text-sm font-medium text-white hover:bg-blue-700">
+                  {saving && <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />}
+                  Save
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
