@@ -1,633 +1,338 @@
 'use client';
 
-import React, { useState } from 'react';
-import {
-  Save,
-  MapPin,
-  Plus,
-  Trash2,
-  FileText,
-  Train,
-  Plane,
-  Car,
-} from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Save, MapPin, Plus, Trash2, FileText, Train, Plane, Car, Loader2, Globe } from 'lucide-react';
+
+interface ServiceParagraph {
+  id?: number;
+  paragraph_en: string;
+  paragraph_hi: string;
+}
 
 interface TravelOption {
+  id?: number;
   icon: string;
-  title: string;
-  nearestPointLabel: string;
-  nearestPointValue: string;
-  distanceLabel: string;
-  distanceValue: string;
-  travelTime: string;
-  servicesLabel: string;
-  servicesParagraphs: string[];
+  title_en: string;
+  title_hi: string;
+  nearest_point_label_en: string;
+  nearest_point_label_hi: string;
+  nearest_point_value_en: string;
+  nearest_point_value_hi: string;
+  distance_label_en: string;
+  distance_label_hi: string;
+  distance_value_en: string;
+  distance_value_hi: string;
+  travel_time_en: string;
+  travel_time_hi: string;
+  services_label_en: string;
+  services_label_hi: string;
+  servicesParagraphs: ServiceParagraph[];
 }
 
 interface ConnectivityData {
-  heroHeading: string;
-  heroDescription: string;
-  travelOptionsLabel: string;
-  travelOptionsHeading: string;
-  travelOptionsSubtitle: string;
+  hero_heading_en: string;
+  hero_heading_hi: string;
+  hero_description_en: string;
+  hero_description_hi: string;
+  travel_options_label_en: string;
+  travel_options_label_hi: string;
+  travel_options_heading_en: string;
+  travel_options_heading_hi: string;
+  travel_options_subtitle_en: string;
+  travel_options_subtitle_hi: string;
   travelOptions: TravelOption[];
 }
 
 type TabType = 'hero' | 'travel';
+type LangType = 'en' | 'hi';
 
 export default function ConnectivityPage() {
-  const [activeTab, setActiveTab] = useState<TabType>('hero');
+  const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/connectivity`;
 
-  const [connectivityData, setConnectivityData] = useState<ConnectivityData>({
-    heroHeading: 'Connectivity',
-    heroDescription:
-      'Well connected to all major cities through rail, air, and road networks — situated amidst serene hills while offering excellent accessibility',
-    travelOptionsLabel: 'Travel Options',
-    travelOptionsHeading: 'How to Reach',
-    travelOptionsSubtitle: 'Multiple convenient options to reach our campus',
-    travelOptions: [
-      {
-        icon: 'train',
-        title: 'By Rail',
-        nearestPointLabel: 'Nearest Point:',
-        nearestPointValue: 'Una Railway Station (Himachal Pradesh)',
-        distanceLabel: 'Distance:',
-        distanceValue: 'Approximately 80 km',
-        travelTime: '~2-3 hours',
-        servicesLabel: 'Services Available:',
-        servicesParagraphs: [
-          'Una is well-linked to all parts of the country. Regular bus and taxi services are available from Una to Hamirpur.',
-          'Trains from Delhi, Chandigarh, and Ambala connect to Una, from where road transport to Hamirpur takes around 2–3 hours.',
-        ],
-      },
-      {
-        icon: 'plane',
-        title: 'By Air',
-        nearestPointLabel: 'Nearest Point:',
-        nearestPointValue: 'Dharamshala Airport (Gaggal, District Kangra)',
-        distanceLabel: 'Distance:',
-        distanceValue: 'About 75 km',
-        travelTime: '~2 hours',
-        servicesLabel: 'Services Available:',
-        servicesParagraphs: [
-          'Chandigarh International Airport — approximately 200 km (~4 hours). Both airports have taxi and cab facilities.',
-          'Both airports have taxi and cab facilities directly to Hamirpur, with scenic routes through the Himalayan foothills.',
-        ],
-      },
-      {
-        icon: 'car',
-        title: 'By Road',
-        nearestPointLabel: 'Nearest Point:',
-        nearestPointValue: 'National Highways NH-3',
-        distanceLabel: 'Distance:',
-        distanceValue: '450 km from Delhi | 200 km from Chandigarh',
-        travelTime: '~5 hours from Chandigarh',
-        servicesLabel: 'Services Available:',
-        servicesParagraphs: [
-          'Frequent HRTC and private bus services connect Hamirpur to Delhi, Chandigarh, Shimla, Dharamshala, and other major cities.',
-          'The campus is just 4 km from the main bus stand on the Hamirpur–Tauni Devi road.',
-        ],
-      },
-    ],
+  const [activeTab, setActiveTab] = useState<TabType>('hero');
+  const [lang, setLang] = useState<LangType>('en');
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const [data, setData] = useState<ConnectivityData>({
+    hero_heading_en: '', hero_heading_hi: '',
+    hero_description_en: '', hero_description_hi: '',
+    travel_options_label_en: '', travel_options_label_hi: '',
+    travel_options_heading_en: '', travel_options_heading_hi: '',
+    travel_options_subtitle_en: '', travel_options_subtitle_hi: '',
+    travelOptions: [],
   });
 
-  const tabs = [
-    {
-      id: 'hero' as TabType,
-      label: 'Hero Section',
-      icon: <FileText size={18} />,
-    },
-    {
-      id: 'travel' as TabType,
-      label: 'Travel Options',
-      icon: <MapPin size={18} />,
-    },
-  ];
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-  const handleSave = () => {
-    alert('Changes saved successfully!');
-    console.log(connectivityData);
-  };
-
-  const getIconComponent = (iconName: string) => {
-    switch (iconName) {
-      case 'train':
-        return <Train size={20} />;
-      case 'plane':
-        return <Plane size={20} />;
-      case 'car':
-        return <Car size={20} />;
-      default:
-        return <MapPin size={20} />;
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(API_URL);
+      if (res.ok) {
+        const json = await res.json();
+        setData({
+          hero_heading_en: json.heroHeadingEn || '',
+          hero_heading_hi: json.heroHeadingHi || '',
+          hero_description_en: json.heroDescriptionEn || '',
+          hero_description_hi: json.heroDescriptionHi || '',
+          travel_options_label_en: json.travelOptionsLabelEn || '',
+          travel_options_label_hi: json.travelOptionsLabelHi || '',
+          travel_options_heading_en: json.travelOptionsHeadingEn || '',
+          travel_options_heading_hi: json.travelOptionsHeadingHi || '',
+          travel_options_subtitle_en: json.travelOptionsSubtitleEn || '',
+          travel_options_subtitle_hi: json.travelOptionsSubtitleHi || '',
+          travelOptions: json.travelOptions || [],
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const updateTravelOption = (
-    index: number,
-    field: keyof Omit<TravelOption, 'servicesParagraphs'>,
-    value: string
-  ) => {
-    const updated = [...connectivityData.travelOptions];
-    updated[index] = { ...updated[index], [field]: value };
-    setConnectivityData({ ...connectivityData, travelOptions: updated });
+  const handleSaveMain = async () => {
+    try {
+      setSaving(true);
+      const res = await fetch(API_URL, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          heroHeading: lang === 'en' ? data.hero_heading_en : data.hero_heading_hi,
+          heroDescription: lang === 'en' ? data.hero_description_en : data.hero_description_hi,
+          travelOptionsLabel: lang === 'en' ? data.travel_options_label_en : data.travel_options_label_hi,
+          travelOptionsHeading: lang === 'en' ? data.travel_options_heading_en : data.travel_options_heading_hi,
+          travelOptionsSubtitle: lang === 'en' ? data.travel_options_subtitle_en : data.travel_options_subtitle_hi,
+          lang
+        }),
+      });
+
+      if (res.ok) alert('Saved successfully!');
+      else alert('Failed to save');
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const updateServiceParagraph = (
-    optionIndex: number,
-    paragraphIndex: number,
-    value: string
-  ) => {
-    const updated = [...connectivityData.travelOptions];
-    const paragraphs = [...updated[optionIndex].servicesParagraphs];
-    paragraphs[paragraphIndex] = value;
-    updated[optionIndex] = {
-      ...updated[optionIndex],
-      servicesParagraphs: paragraphs,
-    };
-    setConnectivityData({ ...connectivityData, travelOptions: updated });
+  const updateField = (field: string, value: string) => {
+    setData(prev => ({ ...prev, [`${field}_${lang}`]: value }));
   };
 
-  const addServiceParagraph = (optionIndex: number) => {
-    const updated = [...connectivityData.travelOptions];
-    updated[optionIndex] = {
-      ...updated[optionIndex],
-      servicesParagraphs: [...updated[optionIndex].servicesParagraphs, ''],
-    };
-    setConnectivityData({ ...connectivityData, travelOptions: updated });
+  const getField = (field: string) => {
+    return (data as any)[`${field}_${lang}`] || '';
   };
 
-  const removeServiceParagraph = (
-    optionIndex: number,
-    paragraphIndex: number
-  ) => {
-    const updated = [...connectivityData.travelOptions];
-    updated[optionIndex] = {
-      ...updated[optionIndex],
-      servicesParagraphs: updated[optionIndex].servicesParagraphs.filter(
-        (_, i) => i !== paragraphIndex
-      ),
-    };
-    setConnectivityData({ ...connectivityData, travelOptions: updated });
+  // --- Sub-items Operations ---
+  const saveOption = async (option: TravelOption, isNew: boolean) => {
+    try {
+      const url = isNew ? `${API_URL}/travel-option` : `${API_URL}/travel-option/${option.id}`;
+      const method = isNew ? 'POST' : 'PUT';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          icon: option.icon,
+          title_en: option.title_en, title_hi: option.title_hi,
+          nearestPointLabel_en: option.nearest_point_label_en, nearestPointLabel_hi: option.nearest_point_label_hi,
+          nearestPointValue_en: option.nearest_point_value_en, nearestPointValue_hi: option.nearest_point_value_hi,
+          distanceLabel_en: option.distance_label_en, distanceLabel_hi: option.distance_label_hi,
+          distanceValue_en: option.distance_value_en, distanceValue_hi: option.distance_value_hi,
+          travelTime_en: option.travel_time_en, travelTime_hi: option.travel_time_hi,
+          servicesLabel_en: option.services_label_en, servicesLabel_hi: option.services_label_hi,
+        }),
+      });
+      if (res.ok) fetchData();
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  const addTravelOption = () => {
-    setConnectivityData({
-      ...connectivityData,
-      travelOptions: [
-        ...connectivityData.travelOptions,
-        {
-          icon: 'car',
-          title: '',
-          nearestPointLabel: 'Nearest Point:',
-          nearestPointValue: '',
-          distanceLabel: 'Distance:',
-          distanceValue: '',
-          travelTime: '',
-          servicesLabel: 'Services Available:',
-          servicesParagraphs: [''],
-        },
-      ],
-    });
+  const deleteOption = async (id: number | undefined, index: number) => {
+    if (!id) {
+      const updated = [...data.travelOptions];
+      updated.splice(index, 1);
+      setData({ ...data, travelOptions: updated });
+      return;
+    }
+    if (confirm('Delete this option?')) {
+      try {
+        await fetch(`${API_URL}/travel-option/${id}`, { method: 'DELETE' });
+        fetchData();
+      } catch (e) {
+        console.error(e);
+      }
+    }
   };
 
-  const removeTravelOption = (index: number) => {
-    setConnectivityData({
-      ...connectivityData,
-      travelOptions: connectivityData.travelOptions.filter(
-        (_, i) => i !== index
-      ),
-    });
+  const saveParagraph = async (optionId: number, paragraph: ServiceParagraph, isNew: boolean) => {
+    try {
+      const url = isNew ? `${API_URL}/paragraph` : `${API_URL}/paragraph/${paragraph.id}`;
+      const method = isNew ? 'POST' : 'PUT';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          travelOptionId: optionId,
+          paragraph_en: paragraph.paragraph_en,
+          paragraph_hi: paragraph.paragraph_hi,
+        }),
+      });
+      if (res.ok) fetchData();
+    } catch (e) {
+      console.error(e);
+    }
   };
+
+  const deleteParagraph = async (id: number | undefined, optionIndex: number, paragraphIndex: number) => {
+    if (!id) {
+      const updatedOpts = [...data.travelOptions];
+      updatedOpts[optionIndex].servicesParagraphs.splice(paragraphIndex, 1);
+      setData({ ...data, travelOptions: updatedOpts });
+      return;
+    }
+    if (confirm('Delete this paragraph?')) {
+      try {
+        await fetch(`${API_URL}/paragraph/${id}`, { method: 'DELETE' });
+        fetchData();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
+
+  const updateOptionLocal = (index: number, field: string, value: string, useLang: boolean = true) => {
+    const updated = [...data.travelOptions];
+    if (useLang) (updated[index] as any)[`${field}_${lang}`] = value;
+    else (updated[index] as any)[field] = value;
+    setData({ ...data, travelOptions: updated });
+  };
+
+  const updateParagraphLocal = (optionIndex: number, paragraphIndex: number, value: string) => {
+    const updatedOpts = [...data.travelOptions];
+    (updatedOpts[optionIndex].servicesParagraphs[paragraphIndex] as any)[`paragraph_${lang}`] = value;
+    setData({ ...data, travelOptions: updatedOpts });
+  };
+
+  const tabs = [
+    { id: 'hero' as TabType, label: 'Hero Section', icon: <FileText size={18} /> },
+    { id: 'travel' as TabType, label: 'Travel Options', icon: <MapPin size={18} /> },
+  ];
+
+  if (loading) return <div className="p-10 text-center"><Loader2 className="animate-spin inline mr-2" /> Loading...</div>;
 
   return (
     <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 lg:p-6">
-      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="bg-[#631012]/10 p-2 sm:p-3 rounded-full text-[#631012] flex-shrink-0">
-              <MapPin className="w-6 h-6 sm:w-7 sm:h-7" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#171717] break-words">
-                Connectivity Editor
-              </h1>
-              <p className="text-sm sm:text-base text-[#171717]/60 mt-1">
-                Edit travel options and connectivity
-              </p>
-            </div>
+      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="bg-[#631012]/10 p-2 rounded-full text-[#631012]"><MapPin className="w-6 h-6" /></div>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-[#171717]">Connectivity Editor</h1>
+            <p className="text-sm text-gray-500">Edit travel options and connectivity</p>
           </div>
-          <button
-            onClick={handleSave}
-            className="bg-[#631012] hover:bg-[#7a1214] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg flex items-center gap-2 transition-colors shadow-md w-full sm:w-auto justify-center text-sm sm:text-base"
-          >
-            <Save className="w-4 h-4 sm:w-5 sm:h-5" />
-            Save Changes
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
+            <Globe size={18} className="text-gray-500 ml-2" />
+            <select value={lang} onChange={(e) => setLang(e.target.value as LangType)} className="bg-transparent border-none text-sm font-medium focus:ring-0 cursor-pointer py-1 pr-4">
+              <option value="en">English</option>
+              <option value="hi">हिंदी (Hindi)</option>
+            </select>
+          </div>
+          <button onClick={handleSaveMain} disabled={saving} className="bg-[#631012] hover:bg-[#7a1214] text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm disabled:opacity-50">
+            {saving ? <Loader2 className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4" />} Save Main Content
           </button>
         </div>
       </div>
 
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="border-b border-[#171717]/10">
-          <div className="flex overflow-x-auto scrollbar-thin scrollbar-thumb-[#631012]/30 scrollbar-track-gray-100">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`
-                  flex items-center gap-2 px-4 sm:px-6 py-3 sm:py-4 font-medium transition-colors whitespace-nowrap text-sm sm:text-base flex-shrink-0
-                  ${
-                    activeTab === tab.id
-                      ? 'bg-[#631012] text-white border-b-2 border-[#631012]'
-                      : 'text-[#171717]/70 hover:bg-[#F9F9F9] hover:text-[#171717]'
-                  }
-                `}
-              >
-                <span className="w-4 h-4 sm:w-5 sm:h-5">{tab.icon}</span>
-                <span>{tab.label}</span>
-              </button>
-            ))}
-          </div>
+        <div className="border-b border-[#171717]/10 flex overflow-x-auto">
+          {tabs.map((tab) => (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-6 py-4 font-medium whitespace-nowrap text-sm ${activeTab === tab.id ? 'bg-[#631012] text-white border-b-2 border-[#631012]' : 'text-gray-600 hover:bg-gray-50'}`}>
+              {tab.icon} {tab.label}
+            </button>
+          ))}
         </div>
 
         <div className="p-4 sm:p-6">
-          {/* Hero Section */}
+          {/* HERO TAB */}
           {activeTab === 'hero' && (
-            <div className="space-y-4 sm:space-y-6">
-              <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                <FileText className="text-[#631012] w-5 h-5 sm:w-6 sm:h-6" />
-                <h2 className="text-xl sm:text-2xl font-bold text-[#171717]">
-                  Hero Section Content
-                </h2>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 sm:gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-[#171717] mb-2">
-                    Heading
-                  </label>
-                  <input
-                    type="text"
-                    value={connectivityData.heroHeading}
-                    onChange={(e) =>
-                      setConnectivityData({
-                        ...connectivityData,
-                        heroHeading: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm sm:text-base"
-                    placeholder="Connectivity"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-[#171717] mb-2">
-                    Description
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={connectivityData.heroDescription}
-                    onChange={(e) =>
-                      setConnectivityData({
-                        ...connectivityData,
-                        heroDescription: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm sm:text-base"
-                    placeholder="Enter description"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-4 sm:mt-6 p-4 sm:p-6 bg-[#F9F9F9] rounded-lg border-2 border-dashed border-[#171717]/20">
-                <p className="text-xs sm:text-sm font-medium text-[#171717]/60 mb-3">
-                  Preview:
-                </p>
-                <div className="bg-white p-4 sm:p-6 rounded-lg">
-                  <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#171717] mb-3">
-                    {connectivityData.heroHeading}
-                  </h3>
-                  <p className="text-base sm:text-lg text-[#171717]/70">
-                    {connectivityData.heroDescription}
-                  </p>
-                </div>
+            <div className="space-y-6">
+              <div className="grid gap-3 p-4 bg-gray-50 border rounded-lg">
+                <input type="text" value={getField('hero_heading')} onChange={e => updateField('hero_heading', e.target.value)} placeholder="Hero Heading" className="w-full p-2 border rounded" />
+                <textarea rows={4} value={getField('hero_description')} onChange={e => updateField('hero_description', e.target.value)} placeholder="Hero Description" className="w-full p-2 border rounded" />
               </div>
             </div>
           )}
 
-          {/* Travel Options */}
+          {/* TRAVEL TAB */}
           {activeTab === 'travel' && (
-            <div className="space-y-4 sm:space-y-6">
-              <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                <MapPin className="text-[#631012] w-5 h-5 sm:w-6 sm:h-6" />
-                <h2 className="text-xl sm:text-2xl font-bold text-[#171717]">
-                  Travel Options Section
-                </h2>
+            <div className="space-y-6">
+              <div className="grid grid-cols-3 gap-3 p-4 bg-gray-50 border rounded-lg">
+                <input type="text" value={getField('travel_options_label')} onChange={e => updateField('travel_options_label', e.target.value)} placeholder="Travel Options Label" className="w-full p-2 border rounded" />
+                <input type="text" value={getField('travel_options_heading')} onChange={e => updateField('travel_options_heading', e.target.value)} placeholder="Travel Options Heading" className="w-full p-2 border rounded" />
+                <input type="text" value={getField('travel_options_subtitle')} onChange={e => updateField('travel_options_subtitle', e.target.value)} placeholder="Travel Options Subtitle" className="w-full p-2 border rounded" />
               </div>
-
-              <div className="grid grid-cols-1 gap-4 sm:gap-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-[#171717] mb-2">
-                      Section Label
-                    </label>
-                    <input
-                      type="text"
-                      value={connectivityData.travelOptionsLabel}
-                      onChange={(e) =>
-                        setConnectivityData({
-                          ...connectivityData,
-                          travelOptionsLabel: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm sm:text-base"
-                      placeholder="Travel Options"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-[#171717] mb-2">
-                      Section Heading
-                    </label>
-                    <input
-                      type="text"
-                      value={connectivityData.travelOptionsHeading}
-                      onChange={(e) =>
-                        setConnectivityData({
-                          ...connectivityData,
-                          travelOptionsHeading: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm sm:text-base"
-                      placeholder="How to Reach"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-[#171717] mb-2">
-                      Section Subtitle
-                    </label>
-                    <input
-                      type="text"
-                      value={connectivityData.travelOptionsSubtitle}
-                      onChange={(e) =>
-                        setConnectivityData({
-                          ...connectivityData,
-                          travelOptionsSubtitle: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm sm:text-base"
-                      placeholder="Multiple convenient options..."
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-[#171717] mb-2">
-                    Travel Options
-                  </label>
-                  <div className="space-y-4">
-                    {connectivityData.travelOptions.map((option, index) => (
-                      <div
-                        key={index}
-                        className="p-4 border border-[#171717]/20 rounded-lg bg-[#F9F9F9] space-y-3"
-                      >
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm font-medium text-[#171717]/60">
-                            Travel Option {index + 1}
-                          </span>
-                          <button
-                            onClick={() => removeTravelOption(index)}
-                            className="px-2 py-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+              
+              <div>
+                <h3 className="font-semibold mb-3">Travel Options</h3>
+                <div className="space-y-4">
+                  {data.travelOptions.map((option, i) => (
+                    <div key={i} className="p-4 border rounded bg-gray-50 flex gap-4">
+                      <div className="flex-1 space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
+                          <select value={option.icon} onChange={e => updateOptionLocal(i, 'icon', e.target.value, false)} className="w-full p-2 border rounded text-sm bg-white">
+                            <option value="train">Train</option>
+                            <option value="plane">Plane</option>
+                            <option value="car">Car/Road</option>
+                          </select>
+                          <input type="text" value={(option as any)[`title_${lang}`] || ''} onChange={e => updateOptionLocal(i, 'title', e.target.value)} placeholder="Title (e.g. By Rail)" className="w-full p-2 border rounded text-sm" />
                         </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-xs text-[#171717]/60 mb-1">
-                              Icon (train/plane/car)
-                            </label>
-                            <select
-                              value={option.icon}
-                              onChange={(e) =>
-                                updateTravelOption(
-                                  index,
-                                  'icon',
-                                  e.target.value
-                                )
-                              }
-                              className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm"
-                            >
-                              <option value="train">Train</option>
-                              <option value="plane">Plane</option>
-                              <option value="car">Car/Road</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-xs text-[#171717]/60 mb-1">
-                              Title
-                            </label>
-                            <input
-                              type="text"
-                              value={option.title}
-                              onChange={(e) =>
-                                updateTravelOption(
-                                  index,
-                                  'title',
-                                  e.target.value
-                                )
-                              }
-                              className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm"
-                              placeholder="By Rail"
-                            />
-                          </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <input type="text" value={(option as any)[`nearest_point_label_${lang}`] || ''} onChange={e => updateOptionLocal(i, 'nearest_point_label', e.target.value)} placeholder="Nearest Point Label" className="w-full p-2 border rounded text-sm" />
+                          <input type="text" value={(option as any)[`nearest_point_value_${lang}`] || ''} onChange={e => updateOptionLocal(i, 'nearest_point_value', e.target.value)} placeholder="Nearest Point Value" className="w-full p-2 border rounded text-sm" />
+                          <input type="text" value={(option as any)[`distance_label_${lang}`] || ''} onChange={e => updateOptionLocal(i, 'distance_label', e.target.value)} placeholder="Distance Label" className="w-full p-2 border rounded text-sm" />
+                          <input type="text" value={(option as any)[`distance_value_${lang}`] || ''} onChange={e => updateOptionLocal(i, 'distance_value', e.target.value)} placeholder="Distance Value" className="w-full p-2 border rounded text-sm" />
+                          <input type="text" value={(option as any)[`travel_time_${lang}`] || ''} onChange={e => updateOptionLocal(i, 'travel_time', e.target.value)} placeholder="Travel Time" className="w-full p-2 border rounded text-sm" />
+                          <input type="text" value={(option as any)[`services_label_${lang}`] || ''} onChange={e => updateOptionLocal(i, 'services_label', e.target.value)} placeholder="Services Label" className="w-full p-2 border rounded text-sm" />
                         </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-xs text-[#171717]/60 mb-1">
-                              Nearest Point Value
-                            </label>
-                            <input
-                              type="text"
-                              value={option.nearestPointValue}
-                              onChange={(e) =>
-                                updateTravelOption(
-                                  index,
-                                  'nearestPointValue',
-                                  e.target.value
-                                )
-                              }
-                              className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm"
-                              placeholder="Una Railway Station"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs text-[#171717]/60 mb-1">
-                              Distance Value
-                            </label>
-                            <input
-                              type="text"
-                              value={option.distanceValue}
-                              onChange={(e) =>
-                                updateTravelOption(
-                                  index,
-                                  'distanceValue',
-                                  e.target.value
-                                )
-                              }
-                              className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm"
-                              placeholder="Approximately 80 km"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-xs text-[#171717]/60 mb-1">
-                            Travel Time
-                          </label>
-                          <input
-                            type="text"
-                            value={option.travelTime}
-                            onChange={(e) =>
-                              updateTravelOption(
-                                index,
-                                'travelTime',
-                                e.target.value
-                              )
-                            }
-                            className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm"
-                            placeholder="~2-3 hours"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-xs text-[#171717]/60 mb-1">
-                            Services Paragraphs
-                          </label>
-                          <div className="space-y-2">
-                            {option.servicesParagraphs.map(
-                              (paragraph, pIndex) => (
-                                <div key={pIndex} className="flex gap-2">
-                                  <textarea
-                                    rows={2}
-                                    value={paragraph}
-                                    onChange={(e) =>
-                                      updateServiceParagraph(
-                                        index,
-                                        pIndex,
-                                        e.target.value
-                                      )
-                                    }
-                                    className="flex-1 px-3 py-2 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm"
-                                    placeholder="Service description"
-                                  />
-                                  <button
-                                    onClick={() =>
-                                      removeServiceParagraph(index, pIndex)
-                                    }
-                                    className="px-2 py-1 text-red-600 hover:bg-red-50 rounded transition-colors h-fit"
-                                  >
-                                    <Trash2 size={14} />
-                                  </button>
-                                </div>
-                              )
-                            )}
-                            <button
-                              onClick={() => addServiceParagraph(index)}
-                              className="flex items-center gap-1 px-2 py-1 text-[#631012] hover:bg-[#631012]/10 rounded transition-colors text-sm"
-                            >
-                              <Plus size={14} />
-                              Add Service Info
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                    <button
-                      onClick={addTravelOption}
-                      className="flex items-center gap-2 px-3 sm:px-4 py-2 text-[#631012] hover:bg-[#631012]/10 rounded-lg transition-colors text-sm sm:text-base"
-                    >
-                      <Plus size={18} />
-                      Add Travel Option
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-4 sm:mt-6 p-4 sm:p-6 bg-[#F9F9F9] rounded-lg border-2 border-dashed border-[#171717]/20">
-                <p className="text-xs sm:text-sm font-medium text-[#171717]/60 mb-3">
-                  Preview:
-                </p>
-                <div className="bg-white p-4 sm:p-6 rounded-lg space-y-6">
-                  <div className="text-center">
-                    <span className="text-sm font-semibold text-[#631012] uppercase tracking-wide">
-                      {connectivityData.travelOptionsLabel}
-                    </span>
-                    <h3 className="text-2xl font-bold text-[#171717] mt-2 mb-2">
-                      {connectivityData.travelOptionsHeading}
-                    </h3>
-                    <p className="text-sm text-[#171717]/60">
-                      {connectivityData.travelOptionsSubtitle}
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {connectivityData.travelOptions.map((option, index) => (
-                      <div
-                        key={index}
-                        className="bg-[#F9F9F9] p-5 rounded-lg border border-[#171717]/10 hover:border-[#631012]/30 transition-colors"
-                      >
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="w-12 h-12 flex items-center justify-center bg-[#631012] text-white rounded-full">
-                            {getIconComponent(option.icon)}
-                          </div>
-                          <h4 className="text-lg font-semibold text-[#171717]">
-                            {option.title}
-                          </h4>
-                        </div>
-
-                        <div className="space-y-3">
-                          <div>
-                            <p className="text-xs font-medium text-[#171717]/60">
-                              {option.nearestPointLabel}
-                            </p>
-                            <p className="text-sm font-semibold text-[#171717]">
-                              {option.nearestPointValue}
-                            </p>
-                          </div>
-
-                          <div>
-                            <p className="text-xs font-medium text-[#171717]/60">
-                              {option.distanceLabel}
-                            </p>
-                            <p className="text-sm font-semibold text-[#171717]">
-                              {option.distanceValue}
-                            </p>
-                          </div>
-
-                          <div className="inline-block px-3 py-1 bg-[#631012]/10 text-[#631012] rounded-full text-sm font-medium">
-                            {option.travelTime}
-                          </div>
-
-                          <div>
-                            <p className="text-xs font-medium text-[#171717]/60 mb-2">
-                              {option.servicesLabel}
-                            </p>
+                        
+                        {option.id && (
+                          <div className="p-3 bg-white border rounded">
+                            <h4 className="text-sm font-semibold mb-2">Services Paragraphs</h4>
                             <div className="space-y-2">
                               {option.servicesParagraphs.map((para, pIdx) => (
-                                <p
-                                  key={pIdx}
-                                  className="text-sm text-[#171717]/70 leading-relaxed"
-                                >
-                                  {para}
-                                </p>
+                                <div key={pIdx} className="flex gap-2">
+                                  <textarea rows={2} value={(para as any)[`paragraph_${lang}`] || ''} onChange={e => updateParagraphLocal(i, pIdx, e.target.value)} className="flex-1 p-2 border rounded text-sm" />
+                                  <div className="flex flex-col gap-1">
+                                    <button onClick={() => saveParagraph(option.id!, para, !para.id)} className="p-1 bg-green-100 text-green-700 rounded"><Save size={14}/></button>
+                                    <button onClick={() => deleteParagraph(para.id, i, pIdx)} className="p-1 bg-red-100 text-red-700 rounded"><Trash2 size={14}/></button>
+                                  </div>
+                                </div>
                               ))}
+                              <button onClick={() => {
+                                const newOpts = [...data.travelOptions];
+                                newOpts[i].servicesParagraphs.push({ paragraph_en: '', paragraph_hi: '' });
+                                setData({ ...data, travelOptions: newOpts });
+                              }} className="text-[#631012] text-xs font-medium flex items-center gap-1 hover:underline"><Plus size={14} /> Add Paragraph</button>
                             </div>
                           </div>
-                        </div>
+                        )}
+                        {!option.id && <p className="text-xs text-orange-500">Save this option first to add service paragraphs.</p>}
                       </div>
-                    ))}
-                  </div>
+
+                      <div className="flex flex-col gap-2">
+                        <button onClick={() => saveOption(option, !option.id)} className="p-2 bg-green-100 text-green-700 rounded"><Save size={16}/></button>
+                        <button onClick={() => deleteOption(option.id, i)} className="p-2 bg-red-100 text-red-700 rounded"><Trash2 size={16}/></button>
+                      </div>
+                    </div>
+                  ))}
+                  <button onClick={() => setData({ ...data, travelOptions: [...data.travelOptions, { icon: 'car', title_en: '', title_hi: '', nearest_point_label_en: 'Nearest Point:', nearest_point_label_hi: '', nearest_point_value_en: '', nearest_point_value_hi: '', distance_label_en: 'Distance:', distance_label_hi: '', distance_value_en: '', distance_value_hi: '', travel_time_en: '', travel_time_hi: '', services_label_en: 'Services Available:', services_label_hi: '', servicesParagraphs: [] }]})} className="text-[#631012] font-medium text-sm flex items-center gap-1 hover:underline"><Plus size={16} /> Add Travel Option</button>
                 </div>
               </div>
             </div>

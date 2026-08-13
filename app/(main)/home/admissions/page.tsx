@@ -2,6 +2,29 @@
 
 import React, { useState, useEffect } from 'react';
 import { Save, Plus, Trash2 } from 'lucide-react';
+import CRUDAdmin, { FieldDef } from '../../../components/CRUDAdmin';
+
+const admissionsFields: FieldDef[] = [
+  { name: 'title_en', label: 'Title (English)', type: 'text' },
+  { name: 'title_hi', label: 'Title (Hindi)', type: 'text' },
+  { name: 'date', label: 'Date', type: 'date' },
+  { name: 'category_en', label: 'Category (English)', type: 'text' },
+  { name: 'category_hi', label: 'Category (Hindi)', type: 'text' },
+  { name: 'description_en', label: 'Description (English)', type: 'textarea' },
+  { name: 'description_hi', label: 'Description (Hindi)', type: 'textarea' },
+];
+
+export default function AdmissionsPage() {
+  return (
+    <CRUDAdmin
+      title="Admissions"
+      endpoint="http://localhost:4000/v1/homepage/admission"
+      dataKey="admissions"
+      fields={admissionsFields}
+    />
+  );
+}
+
 
 interface AdmissionItem {
   id?: number;
@@ -19,7 +42,8 @@ interface AdmissionsData {
   admissions: AdmissionItem[];
 }
 
-export default function AdmissionsPage() {
+// Old implementation (commented out by removing export default)
+function OldAdmissionsPage() {
   const [admissionsData, setAdmissionsData] = useState<AdmissionsData>({
     heading_en: '',
     heading_hi: '',

@@ -1,773 +1,438 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Save, Target, Plus, Trash2, Eye, Compass, Award } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Save, Target, Plus, Trash2, Eye, Compass, Award, Loader2, Globe } from 'lucide-react';
 
 interface MissionPillar {
-  title: string;
-  description: string;
+  id?: number;
+  title_en: string;
+  title_hi: string;
+  description_en: string;
+  description_hi: string;
 }
 
 interface LegacyStat {
-  value: string;
-  label: string;
-  description: string;
+  id?: number;
+  value_en: string;
+  value_hi: string;
+  label_en: string;
+  label_hi: string;
+  description_en: string;
+  description_hi: string;
 }
 
 interface VisionMissionData {
-  guidingPrinciplesHeading: string;
-  guidingPrinciplesDescription: string;
-  visionHeading: string;
-  visionSubtitle: string;
-  visionDescription: string;
-  strategicObjectivesHeading: string;
-  missionHeading: string;
-  missionSubtitle: string;
+  guiding_principles_heading_en: string;
+  guiding_principles_heading_hi: string;
+  guiding_principles_description_en: string;
+  guiding_principles_description_hi: string;
+  vision_heading_en: string;
+  vision_heading_hi: string;
+  vision_subtitle_en: string;
+  vision_subtitle_hi: string;
+  vision_description_en: string;
+  vision_description_hi: string;
+  strategic_objectives_heading_en: string;
+  strategic_objectives_heading_hi: string;
+  mission_heading_en: string;
+  mission_heading_hi: string;
+  mission_subtitle_en: string;
+  mission_subtitle_hi: string;
   missionPillars: MissionPillar[];
-  tagline: string;
-  taglineDescription: string;
-  legacyHeading: string;
-  legacySubheading: string;
+  tagline_en: string;
+  tagline_hi: string;
+  tagline_description_en: string;
+  tagline_description_hi: string;
+  legacy_heading_en: string;
+  legacy_heading_hi: string;
+  legacy_subheading_en: string;
+  legacy_subheading_hi: string;
   legacyStats: LegacyStat[];
 }
 
 type TabType = 'vision' | 'mission' | 'legacy';
+type LangType = 'en' | 'hi';
 
 export default function VisionMissionPage() {
   const [activeTab, setActiveTab] = useState<TabType>('vision');
+  const [lang, setLang] = useState<LangType>('en');
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const [visionMissionData, setVisionMissionData] = useState<VisionMissionData>(
-    {
-      guidingPrinciplesHeading: 'Guiding Principles',
-      guidingPrinciplesDescription:
-        'Our vision and mission define our commitment to academic excellence, research innovation, and holistic human development',
-      visionHeading: 'Our Vision',
-      visionSubtitle: "Building Tomorrow's Leaders",
-      visionDescription:
-        'To build a center of excellence in technical education and research that fosters innovation, critical thinking, and societal growth — empowering students to lead with vision, wisdom, and integrity.',
-      strategicObjectivesHeading: 'Strategic Objectives',
-      missionHeading: 'Our Mission',
-      missionSubtitle:
-        'Five core pillars that guide our institutional excellence',
-      missionPillars: [
-        {
-          title: 'Academic Excellence',
-          description:
-            'To provide high-quality technical education and foster an environment that encourages curiosity, creativity, and lifelong learning.',
-        },
-        {
-          title: 'Research & Innovation',
-          description:
-            'To promote cutting-edge research and innovation that contributes to sustainable technological and social development.',
-        },
-        {
-          title: 'Holistic Development',
-          description:
-            'To cultivate ethical values, leadership qualities, and teamwork among students for personal and professional excellence.',
-        },
-        {
-          title: 'Social Contribution',
-          description:
-            'To leverage technology and knowledge in service of society, addressing real-world challenges with compassion and responsibility.',
-        },
-        {
-          title: 'Global Competence',
-          description:
-            'To build collaborations with academic and research institutions globally for knowledge exchange and innovation.',
-        },
-      ],
-      tagline: 'Innovation. Integrity. Impact.',
-      taglineDescription:
-        'Empowering minds, building futures, and advancing humanity through technology.',
-      legacyHeading: 'Our Legacy',
-      legacySubheading: 'At a Glance',
-      legacyStats: [
-        {
-          value: '1986',
-          label: 'Established',
-          description: 'Legacy of Excellence',
-        },
-        {
-          value: '5000+',
-          label: 'Students',
-          description: 'Bright Minds Learning',
-        },
-        {
-          value: '200+',
-          label: 'Faculty Members',
-          description: 'Expert Educators',
-        },
-        {
-          value: '20+',
-          label: 'Departments',
-          description: 'Diverse Disciplines',
-        },
-      ],
+  const [data, setData] = useState<VisionMissionData>({
+    guiding_principles_heading_en: '', guiding_principles_heading_hi: '',
+    guiding_principles_description_en: '', guiding_principles_description_hi: '',
+    vision_heading_en: '', vision_heading_hi: '',
+    vision_subtitle_en: '', vision_subtitle_hi: '',
+    vision_description_en: '', vision_description_hi: '',
+    strategic_objectives_heading_en: '', strategic_objectives_heading_hi: '',
+    mission_heading_en: '', mission_heading_hi: '',
+    mission_subtitle_en: '', mission_subtitle_hi: '',
+    missionPillars: [],
+    tagline_en: '', tagline_hi: '',
+    tagline_description_en: '', tagline_description_hi: '',
+    legacy_heading_en: '', legacy_heading_hi: '',
+    legacy_subheading_en: '', legacy_subheading_hi: '',
+    legacyStats: [],
+  });
+
+  const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/vision-mission`;
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(API_URL);
+      if (res.ok) {
+        const json = await res.json();
+        setData({
+          guiding_principles_heading_en: json.guiding_principles_heading_en || '',
+          guiding_principles_heading_hi: json.guiding_principles_heading_hi || '',
+          guiding_principles_description_en: json.guiding_principles_description_en || '',
+          guiding_principles_description_hi: json.guiding_principles_description_hi || '',
+          vision_heading_en: json.vision_heading_en || '',
+          vision_heading_hi: json.vision_heading_hi || '',
+          vision_subtitle_en: json.vision_subtitle_en || '',
+          vision_subtitle_hi: json.vision_subtitle_hi || '',
+          vision_description_en: json.vision_description_en || '',
+          vision_description_hi: json.vision_description_hi || '',
+          strategic_objectives_heading_en: json.strategic_objectives_heading_en || '',
+          strategic_objectives_heading_hi: json.strategic_objectives_heading_hi || '',
+          mission_heading_en: json.mission_heading_en || '',
+          mission_heading_hi: json.mission_heading_hi || '',
+          mission_subtitle_en: json.mission_subtitle_en || '',
+          mission_subtitle_hi: json.mission_subtitle_hi || '',
+          missionPillars: json.missionPillars || [],
+          tagline_en: json.tagline_en || '',
+          tagline_hi: json.tagline_hi || '',
+          tagline_description_en: json.tagline_description_en || '',
+          tagline_description_hi: json.tagline_description_hi || '',
+          legacy_heading_en: json.legacy_heading_en || '',
+          legacy_heading_hi: json.legacy_heading_hi || '',
+          legacy_subheading_en: json.legacy_subheading_en || '',
+          legacy_subheading_hi: json.legacy_subheading_hi || '',
+          legacyStats: json.legacyStats || [],
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
-  );
-
-  const tabs = [
-    {
-      id: 'vision' as TabType,
-      label: 'Vision Section',
-      icon: <Eye size={18} />,
-    },
-    {
-      id: 'mission' as TabType,
-      label: 'Mission Section',
-      icon: <Compass size={18} />,
-    },
-    {
-      id: 'legacy' as TabType,
-      label: 'Legacy Section',
-      icon: <Award size={18} />,
-    },
-  ];
-
-  const handleSave = () => {
-    alert('Changes saved successfully!');
-    console.log(visionMissionData);
   };
 
-  const updateMissionPillar = (
-    index: number,
-    field: 'title' | 'description',
-    value: string
-  ) => {
-    const updated = [...visionMissionData.missionPillars];
-    updated[index] = { ...updated[index], [field]: value };
-    setVisionMissionData({ ...visionMissionData, missionPillars: updated });
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      const res = await fetch(API_URL, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          guidingPrinciplesHeading_en: data.guiding_principles_heading_en,
+          guidingPrinciplesHeading_hi: data.guiding_principles_heading_hi,
+          guidingPrinciplesDescription_en: data.guiding_principles_description_en,
+          guidingPrinciplesDescription_hi: data.guiding_principles_description_hi,
+          visionHeading_en: data.vision_heading_en,
+          visionHeading_hi: data.vision_heading_hi,
+          visionSubtitle_en: data.vision_subtitle_en,
+          visionSubtitle_hi: data.vision_subtitle_hi,
+          visionDescription_en: data.vision_description_en,
+          visionDescription_hi: data.vision_description_hi,
+          strategicObjectivesHeading_en: data.strategic_objectives_heading_en,
+          strategicObjectivesHeading_hi: data.strategic_objectives_heading_hi,
+          missionHeading_en: data.mission_heading_en,
+          missionHeading_hi: data.mission_heading_hi,
+          missionSubtitle_en: data.mission_subtitle_en,
+          missionSubtitle_hi: data.mission_subtitle_hi,
+          tagline_en: data.tagline_en,
+          tagline_hi: data.tagline_hi,
+          taglineDescription_en: data.tagline_description_en,
+          taglineDescription_hi: data.tagline_description_hi,
+          legacyHeading_en: data.legacy_heading_en,
+          legacyHeading_hi: data.legacy_heading_hi,
+          legacySubheading_en: data.legacy_subheading_en,
+          legacySubheading_hi: data.legacy_subheading_hi,
+        }),
+      });
+
+      if (res.ok) {
+        alert('Saved successfully!');
+      } else {
+        alert('Failed to save');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error saving');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const addMissionPillar = () => {
-    setVisionMissionData({
-      ...visionMissionData,
+  const updateField = (field: string, value: string) => {
+    setData((prev: any) => ({ ...prev, [`${field}_${lang}`]: value }));
+  };
+
+  const getField = (field: string) => {
+    return (data as any)[`${field}_${lang}`] || '';
+  };
+
+  // --- Pillars API ---
+  const savePillar = async (pillar: MissionPillar) => {
+    try {
+      const isNew = !pillar.id;
+      const url = isNew ? `${API_URL}/pillar` : `${API_URL}/pillar/${pillar.id}`;
+      const method = isNew ? 'POST' : 'PUT';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title_en: pillar.title_en,
+          title_hi: pillar.title_hi,
+          description_en: pillar.description_en,
+          description_hi: pillar.description_hi,
+        }),
+      });
+      if (res.ok) fetchData();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const deletePillar = async (id: number | undefined, index: number) => {
+    if (!id) {
+      const updated = [...data.missionPillars];
+      updated.splice(index, 1);
+      setData({ ...data, missionPillars: updated });
+      return;
+    }
+    if (confirm('Delete this pillar?')) {
+      try {
+        await fetch(`${API_URL}/pillar/${id}`, { method: 'DELETE' });
+        fetchData();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
+
+  const updatePillarLocal = (index: number, field: string, value: string) => {
+    const updated = [...data.missionPillars];
+    (updated[index] as any)[`${field}_${lang}`] = value;
+    setData({ ...data, missionPillars: updated });
+  };
+
+  const addPillar = () => {
+    setData({
+      ...data,
       missionPillars: [
-        ...visionMissionData.missionPillars,
-        { title: '', description: '' },
-      ],
+        ...data.missionPillars,
+        { title_en: '', title_hi: '', description_en: '', description_hi: '' }
+      ]
     });
   };
 
-  const removeMissionPillar = (index: number) => {
-    setVisionMissionData({
-      ...visionMissionData,
-      missionPillars: visionMissionData.missionPillars.filter(
-        (_, i) => i !== index
-      ),
-    });
+  // --- Legacy Stats API ---
+  const saveLegacyStat = async (stat: LegacyStat) => {
+    try {
+      const isNew = !stat.id;
+      const url = isNew ? `${API_URL}/legacy-stat` : `${API_URL}/legacy-stat/${stat.id}`;
+      const method = isNew ? 'POST' : 'PUT';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          value_en: stat.value_en,
+          value_hi: stat.value_hi,
+          label_en: stat.label_en,
+          label_hi: stat.label_hi,
+          description_en: stat.description_en,
+          description_hi: stat.description_hi,
+        }),
+      });
+      if (res.ok) fetchData();
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  const updateLegacyStat = (
-    index: number,
-    field: 'value' | 'label' | 'description',
-    value: string
-  ) => {
-    const updated = [...visionMissionData.legacyStats];
-    updated[index] = { ...updated[index], [field]: value };
-    setVisionMissionData({ ...visionMissionData, legacyStats: updated });
+  const deleteLegacyStat = async (id: number | undefined, index: number) => {
+    if (!id) {
+      const updated = [...data.legacyStats];
+      updated.splice(index, 1);
+      setData({ ...data, legacyStats: updated });
+      return;
+    }
+    if (confirm('Delete this stat?')) {
+      try {
+        await fetch(`${API_URL}/legacy-stat/${id}`, { method: 'DELETE' });
+        fetchData();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
+
+  const updateLegacyStatLocal = (index: number, field: string, value: string) => {
+    const updated = [...data.legacyStats];
+    (updated[index] as any)[`${field}_${lang}`] = value;
+    setData({ ...data, legacyStats: updated });
   };
 
   const addLegacyStat = () => {
-    setVisionMissionData({
-      ...visionMissionData,
+    setData({
+      ...data,
       legacyStats: [
-        ...visionMissionData.legacyStats,
-        { value: '', label: '', description: '' },
-      ],
+        ...data.legacyStats,
+        { value_en: '', value_hi: '', label_en: '', label_hi: '', description_en: '', description_hi: '' }
+      ]
     });
   };
 
-  const removeLegacyStat = (index: number) => {
-    setVisionMissionData({
-      ...visionMissionData,
-      legacyStats: visionMissionData.legacyStats.filter((_, i) => i !== index),
-    });
-  };
+  const tabs = [
+    { id: 'vision' as TabType, label: 'Vision Section', icon: <Eye size={18} /> },
+    { id: 'mission' as TabType, label: 'Mission Section', icon: <Compass size={18} /> },
+    { id: 'legacy' as TabType, label: 'Legacy Section', icon: <Award size={18} /> },
+  ];
+
+  if (loading) return <div className="p-10 text-center"><Loader2 className="animate-spin inline mr-2" /> Loading...</div>;
 
   return (
     <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 lg:p-6">
-      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="bg-[#631012]/10 p-2 sm:p-3 rounded-full text-[#631012] flex-shrink-0">
-              <Target className="w-6 h-6 sm:w-7 sm:h-7" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#171717] break-words">
-                Vision & Mission Editor
-              </h1>
-              <p className="text-sm sm:text-base text-[#171717]/60 mt-1">
-                Edit vision, mission, and legacy content
-              </p>
-            </div>
+      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="bg-[#631012]/10 p-2 rounded-full text-[#631012]"><Target className="w-6 h-6" /></div>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-[#171717]">Vision & Mission Editor</h1>
+            <p className="text-sm text-gray-500">Edit vision, mission, and legacy content</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
+            <Globe size={18} className="text-gray-500 ml-2" />
+            <select
+              value={lang}
+              onChange={(e) => setLang(e.target.value as LangType)}
+              className="bg-transparent border-none text-sm font-medium focus:ring-0 cursor-pointer py-1 pr-4"
+            >
+              <option value="en">English</option>
+              <option value="hi">हिंदी (Hindi)</option>
+            </select>
           </div>
           <button
             onClick={handleSave}
-            className="bg-[#631012] hover:bg-[#7a1214] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg flex items-center gap-2 transition-colors shadow-md w-full sm:w-auto justify-center text-sm sm:text-base"
+            disabled={saving}
+            className="bg-[#631012] hover:bg-[#7a1214] text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm disabled:opacity-50"
           >
-            <Save className="w-4 h-4 sm:w-5 sm:h-5" />
-            Save Changes
+            {saving ? <Loader2 className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4" />}
+            Save Main Content
           </button>
         </div>
       </div>
 
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="border-b border-[#171717]/10">
-          <div className="flex overflow-x-auto scrollbar-thin scrollbar-thumb-[#631012]/30 scrollbar-track-gray-100">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`
-                  flex items-center gap-2 px-4 sm:px-6 py-3 sm:py-4 font-medium transition-colors whitespace-nowrap text-sm sm:text-base flex-shrink-0
-                  ${
-                    activeTab === tab.id
-                      ? 'bg-[#631012] text-white border-b-2 border-[#631012]'
-                      : 'text-[#171717]/70 hover:bg-[#F9F9F9] hover:text-[#171717]'
-                  }
-                `}
-              >
-                <span className="w-4 h-4 sm:w-5 sm:h-5">{tab.icon}</span>
-                <span>{tab.label}</span>
-              </button>
-            ))}
-          </div>
+        <div className="border-b border-[#171717]/10 flex overflow-x-auto">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors whitespace-nowrap text-sm ${activeTab === tab.id ? 'bg-[#631012] text-white border-b-2 border-[#631012]' : 'text-gray-600 hover:bg-gray-50'}`}
+            >
+              {tab.icon} {tab.label}
+            </button>
+          ))}
         </div>
 
         <div className="p-4 sm:p-6">
-          {/* Vision Section */}
+          {/* VISION TAB */}
           {activeTab === 'vision' && (
-            <div className="space-y-4 sm:space-y-6">
-              <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                <Eye className="text-[#631012] w-5 h-5 sm:w-6 sm:h-6" />
-                <h2 className="text-xl sm:text-2xl font-bold text-[#171717]">
-                  Vision Section Content
-                </h2>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 sm:gap-6">
-                <div className="p-4 bg-[#F9F9F9] rounded-lg border border-[#171717]/10">
-                  <h3 className="text-lg font-semibold text-[#171717] mb-3">
-                    Guiding Principles Section
-                  </h3>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium text-[#171717] mb-2">
-                        Heading
-                      </label>
-                      <input
-                        type="text"
-                        value={visionMissionData.guidingPrinciplesHeading}
-                        onChange={(e) =>
-                          setVisionMissionData({
-                            ...visionMissionData,
-                            guidingPrinciplesHeading: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm sm:text-base"
-                        placeholder="Guiding Principles"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-[#171717] mb-2">
-                        Description
-                      </label>
-                      <textarea
-                        rows={3}
-                        value={visionMissionData.guidingPrinciplesDescription}
-                        onChange={(e) =>
-                          setVisionMissionData({
-                            ...visionMissionData,
-                            guidingPrinciplesDescription: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm sm:text-base"
-                        placeholder="Description"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 bg-[#F9F9F9] rounded-lg border border-[#171717]/10">
-                  <h3 className="text-lg font-semibold text-[#171717] mb-3">
-                    Our Vision Section
-                  </h3>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium text-[#171717] mb-2">
-                        Vision Heading
-                      </label>
-                      <input
-                        type="text"
-                        value={visionMissionData.visionHeading}
-                        onChange={(e) =>
-                          setVisionMissionData({
-                            ...visionMissionData,
-                            visionHeading: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm sm:text-base"
-                        placeholder="Our Vision"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-[#171717] mb-2">
-                        Vision Subtitle
-                      </label>
-                      <input
-                        type="text"
-                        value={visionMissionData.visionSubtitle}
-                        onChange={(e) =>
-                          setVisionMissionData({
-                            ...visionMissionData,
-                            visionSubtitle: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm sm:text-base"
-                        placeholder="Building Tomorrow's Leaders"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-[#171717] mb-2">
-                        Vision Description
-                      </label>
-                      <textarea
-                        rows={4}
-                        value={visionMissionData.visionDescription}
-                        onChange={(e) =>
-                          setVisionMissionData({
-                            ...visionMissionData,
-                            visionDescription: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm sm:text-base"
-                        placeholder="Vision description"
-                      />
-                    </div>
-                  </div>
+            <div className="space-y-6">
+              <div className="p-4 bg-gray-50 rounded-lg border">
+                <h3 className="font-semibold mb-3">Guiding Principles</h3>
+                <div className="grid gap-3">
+                  <input type="text" value={getField('guiding_principles_heading')} onChange={e => updateField('guiding_principles_heading', e.target.value)} placeholder="Heading" className="w-full p-2 border rounded" />
+                  <textarea rows={2} value={getField('guiding_principles_description')} onChange={e => updateField('guiding_principles_description', e.target.value)} placeholder="Description" className="w-full p-2 border rounded" />
                 </div>
               </div>
 
-              <div className="mt-4 sm:mt-6 p-4 sm:p-6 bg-[#F9F9F9] rounded-lg border-2 border-dashed border-[#171717]/20">
-                <p className="text-xs sm:text-sm font-medium text-[#171717]/60 mb-3">
-                  Preview:
-                </p>
-                <div className="bg-white p-4 sm:p-6 rounded-lg space-y-6">
-                  <div className="text-center">
-                    <h3 className="text-xl sm:text-2xl font-bold text-[#171717] mb-2">
-                      {visionMissionData.guidingPrinciplesHeading}
-                    </h3>
-                    <p className="text-sm sm:text-base text-[#171717]/70">
-                      {visionMissionData.guidingPrinciplesDescription}
-                    </p>
-                  </div>
-
-                  <div className="bg-gradient-to-r from-[#631012]/5 to-[#8B1518]/5 p-6 rounded-lg border border-[#631012]/20">
-                    <h4 className="text-lg font-semibold text-[#631012] mb-2">
-                      {visionMissionData.visionHeading}
-                    </h4>
-                    <h5 className="text-2xl font-bold text-[#171717] mb-3">
-                      {visionMissionData.visionSubtitle}
-                    </h5>
-                    <p className="text-sm sm:text-base text-[#171717]/70 leading-relaxed">
-                      {visionMissionData.visionDescription}
-                    </p>
-                  </div>
+              <div className="p-4 bg-gray-50 rounded-lg border">
+                <h3 className="font-semibold mb-3">Our Vision</h3>
+                <div className="grid gap-3">
+                  <input type="text" value={getField('vision_heading')} onChange={e => updateField('vision_heading', e.target.value)} placeholder="Heading" className="w-full p-2 border rounded" />
+                  <input type="text" value={getField('vision_subtitle')} onChange={e => updateField('vision_subtitle', e.target.value)} placeholder="Subtitle" className="w-full p-2 border rounded" />
+                  <textarea rows={3} value={getField('vision_description')} onChange={e => updateField('vision_description', e.target.value)} placeholder="Description" className="w-full p-2 border rounded" />
                 </div>
               </div>
             </div>
           )}
 
-          {/* Mission Section */}
+          {/* MISSION TAB */}
           {activeTab === 'mission' && (
-            <div className="space-y-4 sm:space-y-6">
-              <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                <Compass className="text-[#631012] w-5 h-5 sm:w-6 sm:h-6" />
-                <h2 className="text-xl sm:text-2xl font-bold text-[#171717]">
-                  Mission Section Content
-                </h2>
+            <div className="space-y-6">
+              <div className="grid gap-3 p-4 bg-gray-50 border rounded-lg">
+                <input type="text" value={getField('strategic_objectives_heading')} onChange={e => updateField('strategic_objectives_heading', e.target.value)} placeholder="Strategic Objectives Heading" className="w-full p-2 border rounded" />
+                <div className="grid grid-cols-2 gap-3">
+                  <input type="text" value={getField('mission_heading')} onChange={e => updateField('mission_heading', e.target.value)} placeholder="Mission Heading" className="w-full p-2 border rounded" />
+                  <input type="text" value={getField('mission_subtitle')} onChange={e => updateField('mission_subtitle', e.target.value)} placeholder="Mission Subtitle" className="w-full p-2 border rounded" />
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-[#171717] mb-2">
-                    Strategic Objectives Heading
-                  </label>
-                  <input
-                    type="text"
-                    value={visionMissionData.strategicObjectivesHeading}
-                    onChange={(e) =>
-                      setVisionMissionData({
-                        ...visionMissionData,
-                        strategicObjectivesHeading: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm sm:text-base"
-                    placeholder="Strategic Objectives"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-[#171717] mb-2">
-                      Mission Heading
-                    </label>
-                    <input
-                      type="text"
-                      value={visionMissionData.missionHeading}
-                      onChange={(e) =>
-                        setVisionMissionData({
-                          ...visionMissionData,
-                          missionHeading: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm sm:text-base"
-                      placeholder="Our Mission"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-[#171717] mb-2">
-                      Mission Subtitle
-                    </label>
-                    <input
-                      type="text"
-                      value={visionMissionData.missionSubtitle}
-                      onChange={(e) =>
-                        setVisionMissionData({
-                          ...visionMissionData,
-                          missionSubtitle: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm sm:text-base"
-                      placeholder="Five core pillars..."
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-[#171717] mb-2">
-                    Mission Pillars
-                  </label>
-                  <div className="space-y-3">
-                    {visionMissionData.missionPillars.map((pillar, index) => (
-                      <div
-                        key={index}
-                        className="p-3 border border-[#171717]/20 rounded-lg bg-[#F9F9F9] space-y-2"
-                      >
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm font-medium text-[#171717]/60">
-                            Pillar {index + 1}
-                          </span>
-                          <button
-                            onClick={() => removeMissionPillar(index)}
-                            className="px-2 py-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                        <div>
-                          <label className="block text-xs text-[#171717]/60 mb-1">
-                            Title
-                          </label>
-                          <input
-                            type="text"
-                            value={pillar.title}
-                            onChange={(e) =>
-                              updateMissionPillar(
-                                index,
-                                'title',
-                                e.target.value
-                              )
-                            }
-                            className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm"
-                            placeholder="Academic Excellence"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs text-[#171717]/60 mb-1">
-                            Description
-                          </label>
-                          <textarea
-                            rows={3}
-                            value={pillar.description}
-                            onChange={(e) =>
-                              updateMissionPillar(
-                                index,
-                                'description',
-                                e.target.value
-                              )
-                            }
-                            className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm"
-                            placeholder="Description"
-                          />
-                        </div>
+              <div>
+                <h3 className="font-semibold mb-3">Mission Pillars</h3>
+                <div className="space-y-3">
+                  {data.missionPillars.map((pillar, i) => (
+                    <div key={i} className="p-3 border rounded bg-gray-50 flex gap-3 relative">
+                      <div className="flex-1 space-y-2">
+                        <input type="text" value={(pillar as any)[`title_${lang}`]} onChange={e => updatePillarLocal(i, 'title', e.target.value)} placeholder="Title" className="w-full p-2 border rounded text-sm" />
+                        <textarea rows={2} value={(pillar as any)[`description_${lang}`]} onChange={e => updatePillarLocal(i, 'description', e.target.value)} placeholder="Description" className="w-full p-2 border rounded text-sm" />
                       </div>
-                    ))}
-                    <button
-                      onClick={addMissionPillar}
-                      className="flex items-center gap-2 px-3 sm:px-4 py-2 text-[#631012] hover:bg-[#631012]/10 rounded-lg transition-colors text-sm sm:text-base"
-                    >
-                      <Plus size={18} />
-                      Add Mission Pillar
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-4 sm:mt-6 p-4 sm:p-6 bg-[#F9F9F9] rounded-lg border-2 border-dashed border-[#171717]/20">
-                <p className="text-xs sm:text-sm font-medium text-[#171717]/60 mb-3">
-                  Preview:
-                </p>
-                <div className="bg-white p-4 sm:p-6 rounded-lg space-y-6">
-                  <div className="text-center">
-                    <h3 className="text-lg sm:text-xl font-semibold text-[#631012] mb-4">
-                      {visionMissionData.strategicObjectivesHeading}
-                    </h3>
-                  </div>
-
-                  <div>
-                    <h4 className="text-2xl font-bold text-[#171717] mb-1">
-                      {visionMissionData.missionHeading}
-                    </h4>
-                    <p className="text-sm text-[#171717]/60 mb-6">
-                      {visionMissionData.missionSubtitle}
-                    </p>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {visionMissionData.missionPillars.map((pillar, index) => (
-                        <div
-                          key={index}
-                          className="bg-[#F9F9F9] p-4 rounded-lg border border-[#171717]/10 hover:border-[#631012]/30 transition-colors"
-                        >
-                          <h5 className="text-base font-semibold text-[#171717] mb-2 flex items-center gap-2">
-                            <span className="w-6 h-6 flex items-center justify-center bg-[#631012] text-white rounded-full text-xs">
-                              {index + 1}
-                            </span>
-                            {pillar.title}
-                          </h5>
-                          <p className="text-sm text-[#171717]/70 leading-relaxed">
-                            {pillar.description}
-                          </p>
-                        </div>
-                      ))}
+                      <div className="flex flex-col gap-2">
+                        <button onClick={() => savePillar(pillar)} className="p-2 bg-green-100 text-green-700 hover:bg-green-200 rounded" title="Save Pillar"><Save size={16} /></button>
+                        <button onClick={() => deletePillar(pillar.id, i)} className="p-2 bg-red-100 text-red-700 hover:bg-red-200 rounded" title="Delete Pillar"><Trash2 size={16} /></button>
+                      </div>
                     </div>
-                  </div>
+                  ))}
+                  <button onClick={addPillar} className="text-[#631012] font-medium text-sm flex items-center gap-1 hover:underline"><Plus size={16} /> Add Pillar</button>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Legacy Section */}
+          {/* LEGACY TAB */}
           {activeTab === 'legacy' && (
-            <div className="space-y-4 sm:space-y-6">
-              <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                <Award className="text-[#631012] w-5 h-5 sm:w-6 sm:h-6" />
-                <h2 className="text-xl sm:text-2xl font-bold text-[#171717]">
-                  Legacy Section Content
-                </h2>
+            <div className="space-y-6">
+              <div className="p-4 bg-gray-50 rounded-lg border grid gap-3">
+                <input type="text" value={getField('tagline')} onChange={e => updateField('tagline', e.target.value)} placeholder="Tagline" className="w-full p-2 border rounded" />
+                <textarea rows={2} value={getField('tagline_description')} onChange={e => updateField('tagline_description', e.target.value)} placeholder="Tagline Description" className="w-full p-2 border rounded" />
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:gap-6">
-                <div className="p-4 bg-[#F9F9F9] rounded-lg border border-[#171717]/10">
-                  <h3 className="text-lg font-semibold text-[#171717] mb-3">
-                    Tagline Section
-                  </h3>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium text-[#171717] mb-2">
-                        Tagline
-                      </label>
-                      <input
-                        type="text"
-                        value={visionMissionData.tagline}
-                        onChange={(e) =>
-                          setVisionMissionData({
-                            ...visionMissionData,
-                            tagline: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm sm:text-base"
-                        placeholder="Innovation. Integrity. Impact."
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-[#171717] mb-2">
-                        Tagline Description
-                      </label>
-                      <textarea
-                        rows={3}
-                        value={visionMissionData.taglineDescription}
-                        onChange={(e) =>
-                          setVisionMissionData({
-                            ...visionMissionData,
-                            taglineDescription: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm sm:text-base"
-                        placeholder="Description"
-                      />
-                    </div>
-                  </div>
-                </div>
+              <div className="p-4 bg-gray-50 rounded-lg border grid grid-cols-2 gap-3">
+                <input type="text" value={getField('legacy_heading')} onChange={e => updateField('legacy_heading', e.target.value)} placeholder="Legacy Heading" className="w-full p-2 border rounded" />
+                <input type="text" value={getField('legacy_subheading')} onChange={e => updateField('legacy_subheading', e.target.value)} placeholder="Legacy Subheading" className="w-full p-2 border rounded" />
+              </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-[#171717] mb-2">
-                      Legacy Heading
-                    </label>
-                    <input
-                      type="text"
-                      value={visionMissionData.legacyHeading}
-                      onChange={(e) =>
-                        setVisionMissionData({
-                          ...visionMissionData,
-                          legacyHeading: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm sm:text-base"
-                      placeholder="Our Legacy"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-[#171717] mb-2">
-                      Legacy Subheading
-                    </label>
-                    <input
-                      type="text"
-                      value={visionMissionData.legacySubheading}
-                      onChange={(e) =>
-                        setVisionMissionData({
-                          ...visionMissionData,
-                          legacySubheading: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm sm:text-base"
-                      placeholder="At a Glance"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-[#171717] mb-2">
-                    Legacy Statistics
-                  </label>
-                  <div className="space-y-3">
-                    {visionMissionData.legacyStats.map((stat, index) => (
-                      <div
-                        key={index}
-                        className="grid grid-cols-1 md:grid-cols-3 gap-3 p-3 border border-[#171717]/20 rounded-lg bg-[#F9F9F9]"
-                      >
-                        <div>
-                          <label className="block text-xs text-[#171717]/60 mb-1">
-                            Value
-                          </label>
-                          <input
-                            type="text"
-                            value={stat.value}
-                            onChange={(e) =>
-                              updateLegacyStat(index, 'value', e.target.value)
-                            }
-                            className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm"
-                            placeholder="1986"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs text-[#171717]/60 mb-1">
-                            Label
-                          </label>
-                          <input
-                            type="text"
-                            value={stat.label}
-                            onChange={(e) =>
-                              updateLegacyStat(index, 'label', e.target.value)
-                            }
-                            className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm"
-                            placeholder="Established"
-                          />
-                        </div>
-                        <div className="flex gap-2">
-                          <div className="flex-1">
-                            <label className="block text-xs text-[#171717]/60 mb-1">
-                              Description
-                            </label>
-                            <input
-                              type="text"
-                              value={stat.description}
-                              onChange={(e) =>
-                                updateLegacyStat(
-                                  index,
-                                  'description',
-                                  e.target.value
-                                )
-                              }
-                              className="w-full px-3 py-2 border border-[#171717]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#631012] focus:border-transparent text-black text-sm"
-                              placeholder="Legacy of Excellence"
-                            />
-                          </div>
-                          <div className="flex items-end">
-                            <button
-                              onClick={() => removeLegacyStat(index)}
-                              className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        </div>
+              <div>
+                <h3 className="font-semibold mb-3">Legacy Statistics</h3>
+                <div className="space-y-3">
+                  {data.legacyStats.map((stat, i) => (
+                    <div key={i} className="p-3 border rounded bg-gray-50 flex gap-3 relative">
+                      <div className="flex-1 grid grid-cols-3 gap-2">
+                        <input type="text" value={(stat as any)[`value_${lang}`]} onChange={e => updateLegacyStatLocal(i, 'value', e.target.value)} placeholder="Value (e.g. 1986)" className="p-2 border rounded text-sm" />
+                        <input type="text" value={(stat as any)[`label_${lang}`]} onChange={e => updateLegacyStatLocal(i, 'label', e.target.value)} placeholder="Label (e.g. Established)" className="p-2 border rounded text-sm" />
+                        <input type="text" value={(stat as any)[`description_${lang}`]} onChange={e => updateLegacyStatLocal(i, 'description', e.target.value)} placeholder="Description" className="p-2 border rounded text-sm" />
                       </div>
-                    ))}
-                    <button
-                      onClick={addLegacyStat}
-                      className="flex items-center gap-2 px-3 sm:px-4 py-2 text-[#631012] hover:bg-[#631012]/10 rounded-lg transition-colors text-sm sm:text-base"
-                    >
-                      <Plus size={18} />
-                      Add Legacy Statistic
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-4 sm:mt-6 p-4 sm:p-6 bg-[#F9F9F9] rounded-lg border-2 border-dashed border-[#171717]/20">
-                <p className="text-xs sm:text-sm font-medium text-[#171717]/60 mb-3">
-                  Preview:
-                </p>
-                <div className="bg-white p-4 sm:p-6 rounded-lg space-y-6">
-                  <div className="text-center bg-gradient-to-r from-[#631012]/5 to-[#8B1518]/5 p-6 rounded-lg">
-                    <h3 className="text-2xl sm:text-3xl font-bold text-[#171717] mb-3">
-                      {visionMissionData.tagline}
-                    </h3>
-                    <p className="text-sm sm:text-base text-[#171717]/70">
-                      {visionMissionData.taglineDescription}
-                    </p>
-                  </div>
-
-                  <div>
-                    <h4 className="text-2xl font-bold text-[#171717] mb-1 text-center">
-                      {visionMissionData.legacyHeading}
-                    </h4>
-                    <p className="text-sm text-[#171717]/60 mb-6 text-center">
-                      {visionMissionData.legacySubheading}
-                    </p>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                      {visionMissionData.legacyStats.map((stat, index) => (
-                        <div
-                          key={index}
-                          className="bg-[#F9F9F9] p-4 rounded-lg border border-[#171717]/10 text-center hover:border-[#631012]/30 transition-colors"
-                        >
-                          <div className="text-3xl font-bold text-[#631012] mb-2">
-                            {stat.value}
-                          </div>
-                          <div className="text-sm font-semibold text-[#171717] mb-1">
-                            {stat.label}
-                          </div>
-                          <div className="text-xs text-[#171717]/60">
-                            {stat.description}
-                          </div>
-                        </div>
-                      ))}
+                      <div className="flex flex-col justify-center gap-2">
+                        <button onClick={() => saveLegacyStat(stat)} className="p-2 bg-green-100 text-green-700 hover:bg-green-200 rounded" title="Save"><Save size={16} /></button>
+                        <button onClick={() => deleteLegacyStat(stat.id, i)} className="p-2 bg-red-100 text-red-700 hover:bg-red-200 rounded" title="Delete"><Trash2 size={16} /></button>
+                      </div>
                     </div>
-                  </div>
+                  ))}
+                  <button onClick={addLegacyStat} className="text-[#631012] font-medium text-sm flex items-center gap-1 hover:underline"><Plus size={16} /> Add Statistic</button>
                 </div>
               </div>
             </div>

@@ -6,6 +6,7 @@ import { Sidebar } from '@/app/sidebar/page';
 const homeLinks = [
   { label: 'Dashboard', href: '/home' },
   { label: 'Hero Section', href: '/home/hero' },
+  { label: 'Hotlinks', href: '/home/hotlinks' },
   { label: 'About Us', href: '/home/about' },
   { label: 'Academics', href: '/home/academics' },
   { label: 'Admissions', href: '/home/admissions' },

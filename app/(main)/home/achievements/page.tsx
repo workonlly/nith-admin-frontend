@@ -1,15 +1,30 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import {
-  Save,
-  Trophy,
-  Plus,
-  Trash2,
-  Loader,
-  Image as ImageIcon,
-  Languages,
-} from 'lucide-react';
+import { Save, Trophy, Plus, Trash2, Loader, Image as ImageIcon, Languages } from 'lucide-react';
+import CRUDAdmin, { FieldDef } from '../../../components/CRUDAdmin';
+
+const achievementsFields: FieldDef[] = [
+  { name: 'heading_en', label: 'Heading (English)', type: 'text' },
+  { name: 'heading_hi', label: 'Heading (Hindi)', type: 'text' },
+  { name: 'tagline_en', label: 'Tagline (English)', type: 'text' },
+  { name: 'tagline_hi', label: 'Tagline (Hindi)', type: 'text' },
+  { name: 'description_en', label: 'Description (English)', type: 'textarea' },
+  { name: 'description_hi', label: 'Description (Hindi)', type: 'textarea' },
+  { name: 'image', label: 'Image URL', type: 'text' },
+];
+
+export default function AchievementsAdminPage() {
+  return (
+    <CRUDAdmin
+      title="Achievements"
+      endpoint="http://localhost:4000/v1/homepage/achievements"
+      dataKey="" // Because achievements API directly returns the array in data
+      fields={achievementsFields}
+    />
+  );
+}
+
 
 interface AchievementItem {
   id?: number;
@@ -32,7 +47,8 @@ interface AchievementsData {
 
 type Language = 'en' | 'hi';
 
-export default function AchievementsAdminPage() {
+// Old implementation (commented out by removing export default)
+function OldAchievementsAdminPage() {
 
   const [language, setLanguage] =
     useState<Language>('en');

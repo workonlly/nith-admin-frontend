@@ -1,102 +1,147 @@
 'use client';
 
-import React from 'react';
-import {
+import Link from 'next/link';
+import { 
   Download,
   GraduationCap,
   Users,
   FolderOpen,
   ArrowRight,
+  Settings2,
+  Sparkles
 } from 'lucide-react';
-import Link from 'next/link';
+
+interface SectionItem {
+  id: number;
+  title: string;
+  description: string;
+  href: string;
+  icon: React.ElementType;
+}
+
+const sections: SectionItem[] = [
+  {
+    id: 1,
+    title: 'Downloads for Students',
+    description: 'Academic calendars, syllabus, anti-ragging affidavits, and hostel forms.',
+    href: '/downloads/students',
+    icon: GraduationCap,
+  },
+  {
+    id: 2,
+    title: 'Downloads for Faculty',
+    description: 'CPDA forms, leave applications, event proposals, and administrative docs.',
+    href: '/downloads/faculty',
+    icon: Users,
+  },
+  {
+    id: 3,
+    title: 'Miscellaneous Downloads',
+    description: 'Annual reports, newsletters, telephone directory, and guest house rules.',
+    href: '/downloads/miscellaneous',
+    icon: FolderOpen,
+  },
+];
 
 export default function DownloadsHub() {
-  const downloadLinks = [
-    {
-      label: 'Downloads for Students',
-      href: '/downloads/students',
-      description:
-        'Academic calendars, syllabus, anti-ragging affidavits, and hostel forms.',
-      icon: <GraduationCap size={40} />,
-      color: 'bg-blue-50 text-blue-600 border-blue-100',
-    },
-    {
-      label: 'Downloads for Faculty',
-      href: '/downloads/faculty',
-      description:
-        'CPDA forms, leave applications, event proposals, and administrative docs.',
-      icon: <Users size={40} />,
-      color: 'bg-green-50 text-green-600 border-green-100',
-    },
-    {
-      label: 'Miscellaneous Downloads',
-      href: '/downloads/miscellaneous',
-      description:
-        'Annual reports, newsletters, telephone directory, and guest house rules.',
-      icon: <FolderOpen size={40} />,
-      color: 'bg-purple-50 text-purple-600 border-purple-100',
-    },
-  ];
-
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 font-sans">
-      {/* --- Page Header --- */}
-      <div className="max-w-5xl mx-auto mb-12 text-center">
-        <div className="inline-flex items-center justify-center p-3 bg-[#631012]/10 rounded-full text-[#631012] mb-4">
-          <Download size={32} />
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8 min-h-screen bg-gray-50/50">
+      {/* HEADER */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#631012] via-[#7a1214] to-[#921b1e] rounded-3xl p-8 md:p-12 text-white shadow-xl shadow-[#631012]/10">
+        <div className="absolute top-0 right-0 -translate-y-12 translate-x-1/3 opacity-10 pointer-events-none">
+          <Settings2 className="w-96 h-96" />
         </div>
-        <h1 className="text-3xl md:text-4xl font-bold text-[#171717] mb-4">
-          Downloads Section
-        </h1>
-        <p className="text-gray-600 max-w-2xl mx-auto text-lg">
-          Select a category below to access relevant forms, documents, and
-          resources.
-        </p>
+        <div className="absolute -bottom-10 -left-10 opacity-20 pointer-events-none">
+          <Sparkles className="w-40 h-40" />
+        </div>
+
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-sm text-sm font-medium">
+              <Download className="w-4 h-4" />
+              <span>CMS Dashboard</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
+              Downloads Section
+            </h1>
+            <p className="text-lg text-white/80 max-w-xl leading-relaxed">
+              Manage downloadable forms, documents, and resources for students, faculty, and general public. Select a category below.
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* --- Navigation Cards --- */}
-      <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
-        {downloadLinks.map((link, index) => (
-          <Link
-            href={link.href}
-            key={index}
-            className="group relative bg-white rounded-2xl p-8 shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 hover:-translate-y-1 block"
-          >
-            {/* Icon Container */}
-            <div
-              className={`w-16 h-16 rounded-xl flex items-center justify-center mb-6 transition-colors ${link.color}`}
-            >
-              {link.icon}
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* SECTIONS GRID */}
+        <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {sections.map((section, index) => {
+            const Icon = section.icon;
+            return (
+              <Link
+                key={section.id}
+                href={section.href}
+                className="group relative bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md hover:border-[#631012]/30 transition-all duration-300 overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-[#631012]/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                
+                <div className="relative z-10 flex flex-col h-full">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="w-12 h-12 rounded-xl bg-[#631012]/5 text-[#631012] flex items-center justify-center group-hover:scale-110 group-hover:bg-[#631012] group-hover:text-white transition-all duration-300">
+                      <Icon className="w-6 h-6" strokeWidth={1.5} />
+                    </div>
+                    <span className="text-sm font-medium text-gray-300">
+                      {String(index + 1).padStart(2, '0')}
+                    </span>
+                  </div>
 
-            {/* Content */}
-            <h2 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-[#631012] transition-colors">
-              {link.label}
-            </h2>
-            <p className="text-gray-500 text-sm leading-relaxed mb-6">
-              {link.description}
+                  <h2 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-[#631012] transition-colors">
+                    {section.title}
+                  </h2>
+                  
+                  <p className="text-gray-500 text-sm flex-grow leading-relaxed">
+                    {section.description}
+                  </p>
+
+                  <div className="mt-6 flex items-center text-sm font-medium text-[#631012] opacity-80 group-hover:opacity-100">
+                    <span className="mr-2">Manage Files</span>
+                    <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-300" />
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* SIDEBAR PREVIEW - Quick Navigation */}
+        <div className="space-y-6">
+          <div className="bg-white rounded-3xl p-6 md:p-8 border border-gray-100 shadow-sm sticky top-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-gray-50 rounded-lg">
+                <Settings2 className="w-5 h-5 text-gray-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">
+                Quick Navigation
+              </h2>
+            </div>
+            
+            <p className="text-sm text-gray-500 mb-6 pb-6 border-b border-gray-100">
+              Jump directly to any category to add, update, or remove downloadable documents.
             </p>
 
-            {/* Action Arrow */}
-            <div className="flex items-center text-sm font-bold text-[#631012] opacity-0 group-hover:opacity-100 transform translate-x-[-10px] group-hover:translate-x-0 transition-all duration-300">
-              Browse Files <ArrowRight size={16} className="ml-2" />
+            <div className="space-y-1">
+              {sections.map((section) => (
+                <Link
+                  key={section.id}
+                  href={section.href}
+                  className="flex items-center justify-between px-4 py-3 rounded-xl hover:bg-[#631012]/5 text-gray-600 hover:text-[#631012] transition-colors group"
+                >
+                  <span className="font-medium text-sm">{section.title}</span>
+                  <ArrowRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
+                </Link>
+              ))}
             </div>
-          </Link>
-        ))}
-      </div>
-
-      {/* --- Quick Help Footer --- */}
-      <div className="max-w-5xl mx-auto mt-16 pt-8 border-t border-gray-200 text-center">
-        <p className="text-gray-500 text-sm">
-          Can&apos;t find what you&apos;re looking for? Visit the{' '}
-          <a
-            href="/contact"
-            className="text-[#631012] font-semibold hover:underline"
-          >
-            Contact Us
-          </a>{' '}
-          page for assistance.
-        </p>
+          </div>
+        </div>
       </div>
     </div>
   );

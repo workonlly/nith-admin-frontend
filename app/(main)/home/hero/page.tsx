@@ -2,47 +2,24 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Save,
-  Home,
-  FileText,
+  Image as ImageIcon,
   Trash2,
-  Languages,
   Upload,
+  PlusCircle,
+  Loader2
 } from 'lucide-react';
 
-interface HeroData {
-  heading_en: string;
-  heading_hi: string;
-  tagline_en: string;
-  tagline_hi: string;
-  description_en: string;
-  description_hi: string;
-}
-
 interface HeroImage {
-  id: number;
-  image: string;
-  image_url: string;
+  id: string;
+  herourl: string;
 }
 
 export default function HeroPage() {
-  const API_BASE =
-    
-    'http://localhost:4000';
-
-  const [heroData, setHeroData] = useState<HeroData>({
-    heading_en: 'NIT HAMIRPUR',
-    heading_hi: 'एनआईटी हमीरपुर',
-    tagline_en: 'Shaping Minds. Building Futures.',
-    tagline_hi: 'दिमाग को आकार देना। भविष्य का निर्माण करना।',
-    description_en: 'NIT Hamirpur is committed to academic excellence.',
-    description_hi: 'एनआईटी हमीरपुर शैक्षणिक उत्कृष्टता के लिए प्रतिबद्ध है।',
-  });
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
   const [heroImages, setHeroImages] = useState<HeroImage[]>([]);
   const [heroImageFile, setHeroImageFile] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -50,54 +27,22 @@ export default function HeroPage() {
   // LOAD DATA
   // ======================================================
   useEffect(() => {
-    loadHeroData();
     loadHeroImages();
   }, []);
 
-  // ======================================================
-  // HERO TEXT (MATCHED BACKEND)
-  // ======================================================
-  const loadHeroData = async () => {
-    try {
-      setError('');
-
-      const res = await fetch(`${API_BASE}/v1/homepage/hero`);
-      const data = await res.json();
-
-      if (!data.success) throw new Error(data.error);
-
-      const h = data.data;
-
-      setHeroData({
-        heading_en: h.heromaintext_en || '',
-        heading_hi: h.heromaintext_hi || '',
-        tagline_en: h.herosubheading_en || '',
-        tagline_hi: h.herosubheading_hi || '',
-        description_en: h.herodescheading_en || '',
-        description_hi: h.herodescheading_hi || '',
-      });
-    } catch (err) {
-      console.error(err);
-      setError('Failed to load hero data');
-    }
-  };
-
-  // ======================================================
-  // HERO IMAGES
-  // ======================================================
   const loadHeroImages = async () => {
     try {
       setError('');
-
-      const res = await fetch(`${API_BASE}/v1/homepage/hero/hero-image`);
+      setLoading(true);
+      const res = await fetch(`${API_BASE}/hero/hero`);
       const data = await res.json();
-
       if (!data.success) throw new Error(data.error);
-
-      setHeroImages(data.images || []);
+      setHeroImages(data.data || []);
     } catch (err) {
       console.error(err);
       setError('Failed to load hero images');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -133,30 +78,24 @@ export default function HeroPage() {
   // ======================================================
   const uploadImage = async () => {
     if (!heroImageFile) return;
-
     try {
       setLoading(true);
       setError('');
-
       const formData = new FormData();
       formData.append('image', heroImageFile);
-
-      const res = await fetch(`${API_BASE}/v1/homepage/hero/hero-image`, {
+      const res = await fetch(`${API_BASE}/hero/heropost`, {
         method: 'POST',
         body: formData,
       });
-
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
-
+      
       setHeroImages((prev) => [data.data, ...prev]);
       setHeroImageFile(null);
       setPreviewImage(null);
-
-      alert('Image uploaded successfully');
     } catch (err) {
       console.error(err);
-      alert('Image upload failed');
+      setError('Image upload failed');
     } finally {
       setLoading(false);
     }
@@ -165,234 +104,136 @@ export default function HeroPage() {
   // ======================================================
   // DELETE IMAGE
   // ======================================================
-  const handleDeleteImage = async (id: number) => {
-    const ok = confirm('Delete this image?');
+  const handleDeleteImage = async (id: string) => {
+    const ok = confirm('Are you sure you want to delete this image? This action cannot be undone.');
     if (!ok) return;
 
     try {
       setLoading(true);
-
-      const res = await fetch(`${API_BASE}/v1/homepage/hero/hero-image/${id}`, {
+      const res = await fetch(`${API_BASE}/hero/herodelete/${id}`, {
         method: 'DELETE',
       });
-
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
 
       setHeroImages((prev) => prev.filter((img) => img.id !== id));
-
-      alert('Image deleted successfully');
     } catch (err) {
       console.error(err);
-      alert('Failed to delete image');
+      setError('Failed to delete image');
     } finally {
       setLoading(false);
     }
   };
 
-  // ======================================================
-  // SAVE HERO TEXT
-  // ======================================================
-  const handleSave = async () => {
-    try {
-      setLoading(true);
-      setError('');
-
-      const body = {
-        heromaintext_en: heroData.heading_en,
-        heromaintext_hi: heroData.heading_hi,
-        herosubheading_en: heroData.tagline_en,
-        herosubheading_hi: heroData.tagline_hi,
-        herodescheading_en: heroData.description_en,
-        herodescheading_hi: heroData.description_hi,
-        aboutdesc: '',
-      };
-
-      const res = await fetch(`${API_BASE}/v1/homepage/hero`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-      });
-
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error);
-
-      alert('Hero content updated successfully');
-    } catch (err) {
-      console.error(err);
-      setError('Failed to save hero content');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ======================================================
-  // UI
-  // ======================================================
   return (
-    <div className="space-y-6 p-4 lg:p-6">
+    <div className="min-h-screen bg-gray-50/50 p-6 lg:p-10 space-y-8 font-sans">
+      {/* HEADER SECTION */}
+      <div className="bg-gradient-to-r from-[#631012] to-[#8c1719] rounded-2xl p-8 text-white shadow-xl flex justify-between items-center relative overflow-hidden">
+        <div className="absolute inset-0 bg-white/5 pointer-events-none" />
+        <div className="relative z-10 space-y-2">
+          <div className="flex items-center gap-3">
+            <ImageIcon className="w-8 h-8 opacity-90" />
+            <h1 className="text-4xl font-extrabold tracking-tight">Hero Carousel</h1>
+          </div>
+          <p className="text-white/80 text-lg max-w-xl">
+            Upload and manage breathtaking images for the main website's homepage hero banner.
+          </p>
+        </div>
+      </div>
 
       {error && (
-        <div className="bg-red-100 text-red-700 px-4 py-3 rounded-lg">
+        <div className="bg-red-50 border-l-4 border-red-600 text-red-800 p-4 rounded-r-lg shadow-sm font-medium">
           {error}
         </div>
       )}
 
-      {/* HEADER */}
-      <div className="bg-gradient-to-r from-[#631012] to-[#7a1214] rounded-xl p-6 text-white shadow-lg">
-        <div className="flex items-center gap-3 mb-2">
-          <Home className="w-7 h-7" />
-          <h1 className="text-3xl font-bold">Hero Section</h1>
-        </div>
-        <p className="text-white/90">
-          Manage bilingual homepage hero section
-        </p>
-      </div>
-
-      {/* SAVE BAR */}
-      <div className="bg-white rounded-xl shadow p-6 flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <Languages className="text-[#631012] w-6 h-6" />
-          <div>
-            <h2 className="text-2xl font-bold">Hero Editor</h2>
-            <p className="text-gray-500">English + Hindi content</p>
-          </div>
-        </div>
-
-        <button
-          onClick={handleSave}
-          disabled={loading}
-          className="bg-[#631012] hover:bg-[#7a1214] text-white px-6 py-3 rounded-lg flex items-center gap-2"
-        >
-          <Save className="w-5 h-5" />
-          {loading ? 'Saving...' : 'Save Changes'}
-        </button>
-      </div>
-
-      {/* CONTENT */}
-      <div className="bg-white rounded-xl shadow p-6 space-y-8">
-
-        {/* IMAGE UPLOAD */}
-        <div>
-          <label className="block font-medium mb-2">
-            Upload Hero Image
-          </label>
-
-          <div className="border-2 border-dashed border-gray-300 rounded-xl p-6">
-            <input type="file" accept="image/*" onChange={handleImageChange} />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* UPLOAD SECTION */}
+        <div className="lg:col-span-4">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sticky top-6">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+              <Upload className="text-[#631012] w-6 h-6" />
+              Upload Image
+            </h2>
+            
+            <label className="group relative flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 hover:bg-gray-100/80 hover:border-[#631012] transition-all cursor-pointer overflow-hidden">
+              {previewImage ? (
+                <>
+                  <img src={previewImage} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-opacity" alt="Preview" />
+                  <div className="relative z-10 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg font-medium text-gray-800 shadow-sm border border-gray-200">
+                    Change Image
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center pt-5 pb-6 text-gray-500 group-hover:text-[#631012] transition-colors">
+                  <PlusCircle className="w-12 h-12 mb-3 opacity-60 group-hover:opacity-100 transition-opacity" />
+                  <p className="mb-2 text-sm font-semibold">Click to browse or drag & drop</p>
+                  <p className="text-xs opacity-75">JPEG, PNG, WEBP (Max 5MB)</p>
+                </div>
+              )}
+              <input type="file" className="hidden" accept="image/jpeg, image/png, image/webp" onChange={handleImageChange} />
+            </label>
 
             <button
               type="button"
               onClick={uploadImage}
-              disabled={!heroImageFile}
-              className="mt-4 bg-[#631012] text-white px-5 py-2 rounded-lg flex items-center gap-2"
+              disabled={!heroImageFile || loading}
+              className="mt-6 w-full bg-[#631012] hover:bg-[#7a1214] disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg active:scale-[0.98]"
             >
-              <Upload className="w-4 h-4" />
-              Upload Image
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
+              {loading ? 'Uploading...' : 'Save to Carousel'}
             </button>
+          </div>
+        </div>
 
-            {previewImage && (
-              <img
-                src={previewImage}
-                className="mt-4 rounded-lg max-h-60 border"
-              />
+        {/* IMAGES GRID */}
+        <div className="lg:col-span-8">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 min-h-[400px]">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">Active Banner Images</h2>
+              <span className="bg-[#631012]/10 text-[#631012] px-3 py-1 rounded-full text-sm font-bold">
+                {heroImages.length} {heroImages.length === 1 ? 'Image' : 'Images'}
+              </span>
+            </div>
+
+            {loading && heroImages.length === 0 ? (
+              <div className="flex justify-center items-center h-64 text-gray-400">
+                <Loader2 className="w-8 h-8 animate-spin" />
+              </div>
+            ) : heroImages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50">
+                <ImageIcon className="w-16 h-16 text-gray-300 mb-4" />
+                <p className="text-gray-500 font-medium text-lg">No images in your carousel</p>
+                <p className="text-gray-400 text-sm">Upload one from the left panel to get started.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {heroImages.map((img) => (
+                  <div key={img.id} className="group relative rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-200 bg-gray-100">
+                    <img
+                      src={img.herourl}
+                      className="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-500"
+                      alt="Hero banner"
+                      loading="lazy"
+                    />
+                    
+                    {/* Hover Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-between p-4">
+                      <button
+                        onClick={() => handleDeleteImage(img.id)}
+                        disabled={loading}
+                        className="bg-red-500 hover:bg-red-600 text-white p-2.5 rounded-lg shadow-lg flex items-center justify-center transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 disabled:opacity-50"
+                        title="Delete image"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>
-
-        {/* IMAGES */}
-        <div>
-          <h3 className="text-xl font-semibold mb-4">
-            Uploaded Hero Images
-          </h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {heroImages.map((img) => (
-              <div key={img.id} className="relative border rounded-xl overflow-hidden">
-                <img
-                  src={img.image_url}
-                  className="w-full h-60 object-cover"
-                />
-
-                <button
-                  onClick={() => handleDeleteImage(img.id)}
-                  className="absolute top-3 right-3 bg-red-600 text-white p-2 rounded-full"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* TEXT FIELDS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-          <input
-            value={heroData.heading_en}
-            onChange={(e) =>
-              setHeroData({ ...heroData, heading_en: e.target.value })
-            }
-            className="border p-3 rounded-lg"
-            placeholder="Heading English"
-          />
-
-          <input
-            value={heroData.heading_hi}
-            onChange={(e) =>
-              setHeroData({ ...heroData, heading_hi: e.target.value })
-            }
-            className="border p-3 rounded-lg"
-            placeholder="Heading Hindi"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-          <input
-            value={heroData.tagline_en}
-            onChange={(e) =>
-              setHeroData({ ...heroData, tagline_en: e.target.value })
-            }
-            className="border p-3 rounded-lg"
-            placeholder="Tagline English"
-          />
-
-          <input
-            value={heroData.tagline_hi}
-            onChange={(e) =>
-              setHeroData({ ...heroData, tagline_hi: e.target.value })
-            }
-            className="border p-3 rounded-lg"
-            placeholder="Tagline Hindi"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-          <textarea
-            value={heroData.description_en}
-            onChange={(e) =>
-              setHeroData({ ...heroData, description_en: e.target.value })
-            }
-            className="border p-3 rounded-lg"
-            rows={5}
-            placeholder="Description English"
-          />
-
-          <textarea
-            value={heroData.description_hi}
-            onChange={(e) =>
-              setHeroData({ ...heroData, description_hi: e.target.value })
-            }
-            className="border p-3 rounded-lg"
-            rows={5}
-            placeholder="Description Hindi"
-          />
-        </div>
-
       </div>
     </div>
   );

@@ -2,6 +2,29 @@
 
 import React, { useState, useEffect } from 'react';
 import { Save, Calendar, Plus, Trash2, Loader } from 'lucide-react';
+import CRUDAdmin, { FieldDef } from '../../../components/CRUDAdmin';
+
+const academicsFields: FieldDef[] = [
+  { name: 'title_en', label: 'Title (English)', type: 'text' },
+  { name: 'title_hi', label: 'Title (Hindi)', type: 'text' },
+  { name: 'date', label: 'Date', type: 'date' },
+  { name: 'category_en', label: 'Category (English)', type: 'text' },
+  { name: 'category_hi', label: 'Category (Hindi)', type: 'text' },
+  { name: 'description_en', label: 'Description (English)', type: 'textarea' },
+  { name: 'description_hi', label: 'Description (Hindi)', type: 'textarea' },
+];
+
+export default function AcademicsAdminPage() {
+  return (
+    <CRUDAdmin
+      title="Academics"
+      endpoint="http://localhost:4000/v1/homepage/academic"
+      dataKey="academics"
+      fields={academicsFields}
+    />
+  );
+}
+
 
 interface AcademicsItem {
   id?: number;
@@ -179,7 +202,8 @@ const convertToHindiNumerals = (str: string): string => {
   return str.split('').map((char) => hindiNumerals[char] || char).join('');
 };
 
-export default function AcademicsAdminPage() {
+// Old implementation (commented out by removing export default)
+function OldAcademicsAdminPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
