@@ -93,7 +93,8 @@ const tabs: TabDef[] = [
 ];
 
 export default function StudentDownloadPage() {
-  const API_BASE = "http://localhost:4000/v1/downloads";
+  // const API_BASE = "http://localhost:4000/v1/downloads";
+  const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/v1/downloads`;
 
   // States
 
