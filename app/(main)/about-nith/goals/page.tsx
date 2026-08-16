@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Loader2, X } from 'lucide-react';
 
 export default function GoalsPage() {
-  const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/goals`;
+  const API_URL = `${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/goals`;
   
   const [activeTab, setActiveTab] = useState('goals'); // 'goals' or 'roadmap'
   

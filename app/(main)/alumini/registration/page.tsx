@@ -104,7 +104,7 @@ export default function AlumniRegistrationAdmin() {
   const fetchData = async () => {
     try {
       // 1. Fetch Headings
-      const hRes = await fetch('http://localhost:4000/api/alumni-registration');
+      const hRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-registration`);
       const hData = await hRes.json();
       if (hData && hData.title_en) {
         const merged = { ...INITIAL_HEADING };
@@ -118,7 +118,7 @@ export default function AlumniRegistrationAdmin() {
       }
 
       // 2. Fetch Registrations List
-      const lRes = await fetch('http://localhost:4000/api/alumni-registration/list');
+      const lRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-registration/list`);
       const lData = await lRes.json();
       if (Array.isArray(lData)) {
         setRegistrations(lData);
@@ -136,7 +136,7 @@ export default function AlumniRegistrationAdmin() {
   const handleSaveHeading = async () => {
     setIsSaving(true);
     try {
-      const res = await fetch('http://localhost:4000/api/alumni-registration/heading', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-registration/heading`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(heading)
@@ -158,7 +158,7 @@ export default function AlumniRegistrationAdmin() {
   // Update registration status
   const handleUpdateStatus = async (id: number, newStatus: string) => {
     try {
-      const res = await fetch(`http://localhost:4000/api/alumni-registration/${id}/status`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/alumni-registration/${id}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
@@ -186,7 +186,7 @@ export default function AlumniRegistrationAdmin() {
       return;
     }
     try {
-      const res = await fetch(`http://localhost:4000/api/alumni-registration/${id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/alumni-registration/${id}`, {
         method: 'DELETE'
       });
       if (res.ok) {

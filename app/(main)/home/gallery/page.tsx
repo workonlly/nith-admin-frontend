@@ -15,7 +15,7 @@ interface GalleryImage {
 }
 
 export default function GalleryPage() {
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000');
 
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [galleryImageFile, setGalleryImageFile] = useState<File | null>(null);

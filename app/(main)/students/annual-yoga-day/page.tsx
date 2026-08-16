@@ -166,7 +166,7 @@ export default function AnnualYogaDayPage() {
   const [editingInstructorId, setEditingInstructorId] = useState<number | null>(null);
   const [editingInstructorData, setEditingInstructorData] = useState({ name_en: '', name_hn: '', role_en: '', role_hn: '', email: '' });
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000');
 
   const handleLoadDefaultSchedule = async () => {
     try {

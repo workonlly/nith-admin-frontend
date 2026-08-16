@@ -9,8 +9,8 @@ interface SingleAnchorLinkManagerProps {
 }
 
 export default function SingleAnchorLinkManager({ id, linkText, title }: SingleAnchorLinkManagerProps) {
-  const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/anchor-links`;
-  const UPLOAD_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/upload`;
+  const API_URL = `${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/anchor-links`;
+  const UPLOAD_URL = `${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/upload`;
   
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);

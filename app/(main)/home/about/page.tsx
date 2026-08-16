@@ -24,7 +24,7 @@ export default function AboutPage() {
   const [descriptionEn, setDescriptionEn] = useState('');
   const [descriptionHi, setDescriptionHi] = useState('');
 
-  const API_BASE = 'http://localhost:4000/v1/homepage/about';
+  const API_BASE = `${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/v1/homepage/about`;
 
   // -------------------------
   // FETCH DATA

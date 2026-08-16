@@ -84,7 +84,7 @@ export default function Director() {
         setLoading(true);
 
         const res = await fetch(
-          'http://localhost:4000/v1/homepage/director'
+          `${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/v1/homepage/director`
         );
 
         const json = await res.json();
@@ -217,7 +217,7 @@ export default function Director() {
       }
 
       const res = await fetch(
-        'http://localhost:4000/v1/homepage/director',
+        `${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/v1/homepage/director`,
         {
           method: 'PUT',
           body: formData,

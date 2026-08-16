@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Loader2, Save, X } from 'lucide-react';
 
 export default function MissionsPage() {
-  const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/vision-mission`;
+  const API_URL = `${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/vision-mission`;
   
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

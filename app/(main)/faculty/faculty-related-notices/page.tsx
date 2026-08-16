@@ -96,7 +96,7 @@ export default function FacultyRelatedNoticesPage() {
       const formData = new FormData();
       formData.append('file', file);
 
-      const res = await fetch('http://localhost:4000/api/upload', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/upload`, {
         method: 'POST',
         headers: {
           'x-bucket-name': 'faculty-section',
@@ -151,7 +151,7 @@ export default function FacultyRelatedNoticesPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const hRes = await fetch('http://localhost:4000/api/faculty-notices');
+        const hRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-notices`);
         const hData = await hRes.json();
         if (hData && typeof hData === 'object' && hData.title_en) {
           setNoticesData(prev => ({
@@ -163,7 +163,7 @@ export default function FacultyRelatedNoticesPage() {
           }));
         }
 
-        const lData = await fetch('http://localhost:4000/api/faculty-notices/list').then(res => res.json());
+        const lData = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-notices/list`).then(res => res.json());
         if (Array.isArray(lData) && lData.length > 0) {
             setNoticesData(prev => {
                 const merged = [...lData];
@@ -186,7 +186,7 @@ export default function FacultyRelatedNoticesPage() {
   const handleSave = async () => {
     try {
       // Save Hero
-      await fetch('http://localhost:4000/api/faculty-notices', {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-notices`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -200,13 +200,13 @@ export default function FacultyRelatedNoticesPage() {
       // Save Notices
       for (const notice of noticesData.notices) {
         if (notice.id > 0 && notice.id < 1000000) { // DB ID
-          await fetch(`http://localhost:4000/api/faculty-notices/list/${notice.id}`, {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/faculty-notices/list/${notice.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(notice),
           });
         } else {
-          await fetch('http://localhost:4000/api/faculty-notices/list', {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-notices/list`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(notice),
@@ -244,7 +244,7 @@ export default function FacultyRelatedNoticesPage() {
   const removeNotice = async (id: number) => {
     if (id > 0 && id < 1000000) {
       if (!confirm('Are you sure you want to delete this notice from database?')) return;
-      await fetch(`http://localhost:4000/api/faculty-notices/list/${id}`, { method: 'DELETE' });
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/faculty-notices/list/${id}`, { method: 'DELETE' });
     }
     setNoticesData({
       ...noticesData,

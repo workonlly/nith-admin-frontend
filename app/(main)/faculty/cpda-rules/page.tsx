@@ -82,7 +82,7 @@ export default function CPDARulesPage() {
       const formData = new FormData();
       formData.append('file', file);
 
-      const res = await fetch('http://localhost:4000/api/upload', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/upload`, {
         method: 'POST',
         headers: {
           'x-bucket-name': 'faculty-section',
@@ -118,7 +118,7 @@ export default function CPDARulesPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const hRes = await fetch('http://localhost:4000/api/faculty-cpda');
+        const hRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-cpda`);
         const hData = await hRes.json();
         if (hData && hData.title_en) {
           setCpdaData(prev => ({
@@ -130,7 +130,7 @@ export default function CPDARulesPage() {
           }));
         }
 
-        const lRes = await fetch('http://localhost:4000/api/faculty-cpda/list');
+        const lRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-cpda/list`);
         const lData = await lRes.json();
         if (Array.isArray(lData) && lData.length > 0) {
           setCpdaData(prev => ({ ...prev, rules: lData }));
@@ -145,7 +145,7 @@ export default function CPDARulesPage() {
   const handleSave = async () => {
     try {
       // Save Hero
-      await fetch('http://localhost:4000/api/faculty-cpda', {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-cpda`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -159,14 +159,14 @@ export default function CPDARulesPage() {
       // Save Rules
       for (const rule of cpdaData.rules) {
         if (rule.id > 0 && rule.id < 1000000) { // Existing Database ID
-          await fetch(`http://localhost:4000/api/faculty-cpda/list/${rule.id}`, {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/faculty-cpda/list/${rule.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(rule),
           });
         } else {
           // New Rule (Date.now() or Negative Hardcoded ID)
-          await fetch('http://localhost:4000/api/faculty-cpda/list', {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-cpda/list`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(rule),
@@ -202,7 +202,7 @@ export default function CPDARulesPage() {
   const removeRule = async (id: number) => {
     if (id > 0 && id < 1000000) {
       if (!confirm('Delete from database?')) return;
-      await fetch(`http://localhost:4000/api/faculty-cpda/list/${id}`, { method: 'DELETE' });
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/faculty-cpda/list/${id}`, { method: 'DELETE' });
     }
     setCpdaData({
       ...cpdaData,

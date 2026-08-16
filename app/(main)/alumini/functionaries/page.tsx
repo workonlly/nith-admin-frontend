@@ -77,7 +77,7 @@ export default function AlumniFunctionariesAdmin() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const hRes = await fetch('http://localhost:4000/api/alumni-functionaries');
+        const hRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-functionaries`);
         const hData = await hRes.json();
         if (hData && hData.title_en) {
           setData(prev => ({
@@ -89,7 +89,7 @@ export default function AlumniFunctionariesAdmin() {
           }));
         }
 
-        const lRes = await fetch('http://localhost:4000/api/alumni-functionaries/list');
+        const lRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-functionaries/list`);
         const lData = await lRes.json();
         if (Array.isArray(lData) && lData.length > 0) {
           const sectionsMap: { [key: string]: Section } = {};
@@ -126,7 +126,7 @@ export default function AlumniFunctionariesAdmin() {
 
   const handleSave = async () => {
     try {
-      await fetch('http://localhost:4000/api/alumni-functionaries', {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-functionaries`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -152,13 +152,13 @@ export default function AlumniFunctionariesAdmin() {
           };
 
           if (row.id > 0 && row.id < 1000000000) {
-            await fetch(`http://localhost:4000/api/alumni-functionaries/list/${row.id}`, {
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/alumni-functionaries/list/${row.id}`, {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(payload),
             });
           } else {
-            await fetch('http://localhost:4000/api/alumni-functionaries/list', {
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-functionaries/list`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(payload),
@@ -200,7 +200,7 @@ export default function AlumniFunctionariesAdmin() {
   const removeRow = async (sectionIdx: number, rowIdx: number, id: number) => {
     if (id > 0 && id < 1000000000) {
       if (!confirm('Delete from database?')) return;
-      await fetch(`http://localhost:4000/api/alumni-functionaries/list/${id}`, { method: 'DELETE' });
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/alumni-functionaries/list/${id}`, { method: 'DELETE' });
     }
     const updated = [...data.sections];
     updated[sectionIdx].rows = updated[sectionIdx].rows.filter((_, i) => i !== rowIdx);

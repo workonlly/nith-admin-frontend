@@ -104,7 +104,7 @@ export default function AnnualInnovationActivityPage() {
   const [editingStepId, setEditingStepId] = useState<number | null>(null);
   const [editingStepData, setEditingStepData] = useState({ step_order: 1, step_en: '', step_hn: '' });
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000');
 
   useEffect(() => {
     fetchData();

@@ -106,7 +106,7 @@ export default function AwardInitiativesAdmin() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch('http://localhost:4000/api/alumni-awards', { cache: 'no-store' });
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-awards`, { cache: 'no-store' });
         const data = await res.json();
         
         if (data.heading) {
@@ -138,7 +138,7 @@ export default function AwardInitiativesAdmin() {
     setIsSaving(true);
     try {
       // 1. Headings PUT request
-      await fetch('http://localhost:4000/api/alumni-awards/heading', {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-awards/heading`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(heading)
@@ -146,16 +146,16 @@ export default function AwardInitiativesAdmin() {
 
       // 2. Perform deletions
       for (const id of deletedCategoryIds) {
-        await fetch(`http://localhost:4000/api/alumni-awards/categories/${id}`, { method: 'DELETE' });
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/alumni-awards/categories/${id}`, { method: 'DELETE' });
       }
       for (const id of deletedInitiativeIds) {
-        await fetch(`http://localhost:4000/api/alumni-awards/initiatives/${id}`, { method: 'DELETE' });
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/alumni-awards/initiatives/${id}`, { method: 'DELETE' });
       }
       for (const id of deletedEligibilityIds) {
-        await fetch(`http://localhost:4000/api/alumni-awards/eligibility/${id}`, { method: 'DELETE' });
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/alumni-awards/eligibility/${id}`, { method: 'DELETE' });
       }
       for (const id of deletedBenefitIds) {
-        await fetch(`http://localhost:4000/api/alumni-awards/benefits/${id}`, { method: 'DELETE' });
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/alumni-awards/benefits/${id}`, { method: 'DELETE' });
       }
 
       // Reset deletions tracking lists
@@ -167,13 +167,13 @@ export default function AwardInitiativesAdmin() {
       // 3. Save Categories
       for (const cat of categories) {
         if (cat.id > 0 && cat.id < 1000000000) {
-          await fetch(`http://localhost:4000/api/alumni-awards/categories/${cat.id}`, {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/alumni-awards/categories/${cat.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(cat)
           });
         } else {
-          await fetch('http://localhost:4000/api/alumni-awards/categories', {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-awards/categories`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ...cat, id: undefined })
@@ -184,13 +184,13 @@ export default function AwardInitiativesAdmin() {
       // 4. Save Initiatives
       for (const init of initiatives) {
         if (init.id > 0 && init.id < 1000000000) {
-          await fetch(`http://localhost:4000/api/alumni-awards/initiatives/${init.id}`, {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/alumni-awards/initiatives/${init.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(init)
           });
         } else {
-          await fetch('http://localhost:4000/api/alumni-awards/initiatives', {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-awards/initiatives`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ...init, id: undefined })
@@ -201,13 +201,13 @@ export default function AwardInitiativesAdmin() {
       // 5. Save Eligibility steps
       for (const elig of eligibility) {
         if (elig.id > 0 && elig.id < 1000000000) {
-          await fetch(`http://localhost:4000/api/alumni-awards/eligibility/${elig.id}`, {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/alumni-awards/eligibility/${elig.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(elig)
           });
         } else {
-          await fetch('http://localhost:4000/api/alumni-awards/eligibility', {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-awards/eligibility`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ...elig, id: undefined })
@@ -218,13 +218,13 @@ export default function AwardInitiativesAdmin() {
       // 6. Save Benefits
       for (const ben of benefits) {
         if (ben.id > 0 && ben.id < 1000000000) {
-          await fetch(`http://localhost:4000/api/alumni-awards/benefits/${ben.id}`, {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/alumni-awards/benefits/${ben.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(ben)
           });
         } else {
-          await fetch('http://localhost:4000/api/alumni-awards/benefits', {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-awards/benefits`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ...ben, id: undefined })

@@ -199,7 +199,7 @@ export default function AnnualAlumniMeetAdmin() {
     const formData = new FormData();
     formData.append('file', file);
 
-    const res = await fetch('http://localhost:4000/api/upload', {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/upload`, {
       method: 'POST',
       headers: {
         'x-bucket-name': 'alumni-section'
@@ -284,7 +284,7 @@ export default function AnnualAlumniMeetAdmin() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch('http://localhost:4000/api/alumni-annual-meet', { cache: 'no-store' });
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-annual-meet`, { cache: 'no-store' });
         const data = await res.json();
         
         if (data.heading) {
@@ -306,20 +306,20 @@ export default function AnnualAlumniMeetAdmin() {
     try {
       // 1. Process deleted items
       for (const id of deletedScheduleIds) {
-        await fetch(`http://localhost:4000/api/alumni-annual-meet/schedule/${id}`, { method: 'DELETE' });
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/alumni-annual-meet/schedule/${id}`, { method: 'DELETE' });
       }
       for (const id of deletedPastIds) {
-        await fetch(`http://localhost:4000/api/alumni-annual-meet/past-meets/${id}`, { method: 'DELETE' });
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/alumni-annual-meet/past-meets/${id}`, { method: 'DELETE' });
       }
       for (const id of deletedGalleryIds) {
-        await fetch(`http://localhost:4000/api/alumni-annual-meet/gallery/${id}`, { method: 'DELETE' });
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/alumni-annual-meet/gallery/${id}`, { method: 'DELETE' });
       }
       setDeletedScheduleIds([]);
       setDeletedPastIds([]);
       setDeletedGalleryIds([]);
 
       // 2. Save Headings and Copy
-      await fetch('http://localhost:4000/api/alumni-annual-meet/heading', {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-annual-meet/heading`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(heading)
@@ -338,13 +338,13 @@ export default function AnnualAlumniMeetAdmin() {
           speaker_hn: item.speaker_hn
         };
         if (item.id > 0 && item.id < 1000000000) {
-          await fetch(`http://localhost:4000/api/alumni-annual-meet/schedule/${item.id}`, {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/alumni-annual-meet/schedule/${item.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
           });
         } else {
-          await fetch('http://localhost:4000/api/alumni-annual-meet/schedule', {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-annual-meet/schedule`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -366,13 +366,13 @@ export default function AnnualAlumniMeetAdmin() {
           images: item.images
         };
         if (item.id > 0 && item.id < 1000000000) {
-          await fetch(`http://localhost:4000/api/alumni-annual-meet/past-meets/${item.id}`, {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/alumni-annual-meet/past-meets/${item.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
           });
         } else {
-          await fetch('http://localhost:4000/api/alumni-annual-meet/past-meets', {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-annual-meet/past-meets`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -389,13 +389,13 @@ export default function AnnualAlumniMeetAdmin() {
           caption_hn: item.caption_hn
         };
         if (item.id > 0 && item.id < 1000000000) {
-          await fetch(`http://localhost:4000/api/alumni-annual-meet/gallery/${item.id}`, {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/alumni-annual-meet/gallery/${item.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
           });
         } else {
-          await fetch('http://localhost:4000/api/alumni-annual-meet/gallery', {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-annual-meet/gallery`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)

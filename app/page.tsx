@@ -28,16 +28,43 @@ export default function LoginPage() {
     setError('');
 
     try {
-      // TODO: Implement actual login logic here
-      console.log('Login attempt:', formData);
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000');
+      
+      const res = await fetch(`${API_BASE}/auth/faculty/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email.trim(),
+          password: formData.password,
+        }),
+      });
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const data = await res.json();
 
-      // Redirect to page selector after successful login
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Invalid email or password');
+      }
+
+      // Store JWT token and faculty user info in localStorage
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('faculty_token', data.token);
+        // Optional session cookie for Next.js SSR / route guards
+        document.cookie = `token=${data.token}; path=/; max-age=604800; SameSite=Lax`;
+      }
+
+      if (data.faculty || data.user) {
+        const userData = data.faculty || data.user;
+        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('faculty_user', JSON.stringify(userData));
+      }
+
+      // Redirect to admin dashboard after successful login
       router.push('/admin');
-    } catch (err) {
-      setError('Invalid email or password');
+    } catch (err: any) {
+      setError(err.message || 'Failed to connect to authentication server');
       console.error('Login error:', err);
     } finally {
       setIsLoading(false);

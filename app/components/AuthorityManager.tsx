@@ -47,12 +47,12 @@ export default function AuthorityManager({ authorityName, apiBase }: AuthorityMa
       setLoading(true);
       
       const fetchPromises = [
-        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/${apiBase}/minutes`).then(res => res.json())
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/${apiBase}/minutes`).then(res => res.json())
       ];
       
       if (hasMembers) {
         fetchPromises.unshift(
-          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/${apiBase}/members`).then(res => res.json())
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/${apiBase}/members`).then(res => res.json())
         );
       }
       
@@ -81,8 +81,8 @@ export default function AuthorityManager({ authorityName, apiBase }: AuthorityMa
     setSavingId(`member-${index}`);
     try {
       const url = member.id 
-        ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/${apiBase}/members/${member.id}`
-        : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/${apiBase}/members`;
+        ? `${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/${apiBase}/members/${member.id}`
+        : `${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/${apiBase}/members`;
         
       const method = member.id ? 'PUT' : 'POST';
       
@@ -117,7 +117,7 @@ export default function AuthorityManager({ authorityName, apiBase }: AuthorityMa
     
     try {
       setSavingId(`member-del-${index}`);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/${apiBase}/members/${id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/${apiBase}/members/${id}`, {
         method: 'DELETE'
       });
       if (res.ok) {
@@ -148,8 +148,8 @@ export default function AuthorityManager({ authorityName, apiBase }: AuthorityMa
     setSavingId(`minute-${index}`);
     try {
       const url = minute.id 
-        ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/${apiBase}/minutes/${minute.id}`
-        : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/${apiBase}/minutes`;
+        ? `${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/${apiBase}/minutes/${minute.id}`
+        : `${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/${apiBase}/minutes`;
         
       const method = minute.id ? 'PUT' : 'POST';
       
@@ -191,7 +191,7 @@ export default function AuthorityManager({ authorityName, apiBase }: AuthorityMa
     
     try {
       setSavingId(`minute-del-${index}`);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/${apiBase}/minutes/${id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/${apiBase}/minutes/${id}`, {
         method: 'DELETE'
       });
       if (res.ok) {

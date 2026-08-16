@@ -244,7 +244,7 @@ export default function FacultyFunctionariesPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const hData = await fetch('http://localhost:4000/api/faculty-functionaries').then(res => res.json());
+        const hData = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-functionaries`).then(res => res.json());
         if (hData && hData.title_en) {
           setFunctionariesData(prev => ({
             ...prev,
@@ -255,7 +255,7 @@ export default function FacultyFunctionariesPage() {
           }));
         }
         
-        const lData = await fetch('http://localhost:4000/api/faculty-functionaries/list').then(res => res.json());
+        const lData = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-functionaries/list`).then(res => res.json());
         if (Array.isArray(lData) && lData.length > 0) {
           setFunctionariesData(prev => {
             // Merge database data with defaults, avoiding duplicates by email
@@ -291,7 +291,7 @@ export default function FacultyFunctionariesPage() {
   const handleSave = async () => {
     try {
       // Save Hero
-      await fetch('http://localhost:4000/api/faculty-functionaries', {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-functionaries`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -305,13 +305,13 @@ export default function FacultyFunctionariesPage() {
       // Save Functionaries
       for (const func of functionariesData.functionaries) {
         if (func.id > 0 && func.id < 1000000) { // Check if it's a real database ID
-           await fetch(`http://localhost:4000/api/faculty-functionaries/list/${func.id}`, {
+           await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/faculty-functionaries/list/${func.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(func),
           });
         } else {
-          await fetch('http://localhost:4000/api/faculty-functionaries/list', {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-functionaries/list`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(func),
@@ -370,7 +370,7 @@ export default function FacultyFunctionariesPage() {
     if (id > 0 && id < 1000000) { // Real DB ID
       if (!confirm('Are you sure you want to delete this from database?')) return;
       try {
-        await fetch(`http://localhost:4000/api/faculty-functionaries/list/${id}`, {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/faculty-functionaries/list/${id}`, {
           method: 'DELETE',
         });
       } catch (err) {

@@ -121,7 +121,7 @@ export default function WorkshopRulesPage() {
       const formData = new FormData();
       formData.append('file', file);
 
-      const res = await fetch('http://localhost:4000/api/upload', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/upload`, {
         method: 'POST',
         headers: {
           'x-bucket-name': 'faculty-section',
@@ -158,7 +158,7 @@ export default function WorkshopRulesPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const hRes = await fetch('http://localhost:4000/api/faculty-workshop');
+        const hRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-workshop`);
         const hData = await hRes.json();
         if (hData && hData.title_en) {
           setWorkshopData(prev => ({
@@ -175,7 +175,7 @@ export default function WorkshopRulesPage() {
         }
 
         // Rules
-        const lRes = await fetch('http://localhost:4000/api/faculty-workshop/list');
+        const lRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-workshop/list`);
         const lData = await lRes.json();
         if (Array.isArray(lData) && lData.length > 0) {
           setWorkshopData(prev => {
@@ -190,7 +190,7 @@ export default function WorkshopRulesPage() {
         }
 
         // Notices
-        const nRes = await fetch('http://localhost:4000/api/faculty-workshop/notices');
+        const nRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-workshop/notices`);
         const nData = await nRes.json();
         if (Array.isArray(nData) && nData.length > 0) {
           setWorkshopData(prev => {
@@ -213,7 +213,7 @@ export default function WorkshopRulesPage() {
   const handleSave = async () => {
     try {
       // Header
-      await fetch('http://localhost:4000/api/faculty-workshop', {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-workshop`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -231,13 +231,13 @@ export default function WorkshopRulesPage() {
       // Rules
       for (const rule of workshopData.rules) {
         if (rule.id > 0 && rule.id < 1000000) {
-          await fetch(`http://localhost:4000/api/faculty-workshop/list/${rule.id}`, {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/faculty-workshop/list/${rule.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(rule),
           });
         } else {
-          await fetch('http://localhost:4000/api/faculty-workshop/list', {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-workshop/list`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(rule),
@@ -248,13 +248,13 @@ export default function WorkshopRulesPage() {
       // Notices
       for (const notice of workshopData.notices) {
         if (notice.id > 0 && notice.id < 1000000) {
-          await fetch(`http://localhost:4000/api/faculty-workshop/notices/${notice.id}`, {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/faculty-workshop/notices/${notice.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(notice),
           });
         } else {
-          await fetch('http://localhost:4000/api/faculty-workshop/notices', {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-workshop/notices`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(notice),
@@ -290,7 +290,7 @@ export default function WorkshopRulesPage() {
   const removeRule = async (id: number) => {
     if (id > 0 && id < 1000000) {
       if (!confirm('Delete from database?')) return;
-      await fetch(`http://localhost:4000/api/faculty-workshop/list/${id}`, { method: 'DELETE' });
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/faculty-workshop/list/${id}`, { method: 'DELETE' });
     }
     setWorkshopData({
       ...workshopData,
@@ -318,7 +318,7 @@ export default function WorkshopRulesPage() {
   const removeNotice = async (id: number) => {
     if (id > 0 && id < 1000000) {
       if (!confirm('Delete notice from database?')) return;
-      await fetch(`http://localhost:4000/api/faculty-workshop/notices/${id}`, { method: 'DELETE' });
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/faculty-workshop/notices/${id}`, { method: 'DELETE' });
     }
     setWorkshopData({
       ...workshopData,

@@ -62,21 +62,21 @@ export default function AlumniAssistAdmin() {
     const fetchData = async () => {
       try {
         // 1. Fetch Headings
-        const hRes = await fetch('http://localhost:4000/api/alumni-assist');
+        const hRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-assist`);
         const hData = await hRes.json();
         if (hData && hData.title_en) {
           setHeading(hData);
         }
 
         // 2. Fetch Procedures
-        const pRes = await fetch('http://localhost:4000/api/alumni-assist/procedures');
+        const pRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-assist/procedures`);
         const pData = await pRes.json();
         if (Array.isArray(pData)) {
           setProcedures(pData);
         }
 
         // 3. Fetch Fees
-        const fRes = await fetch('http://localhost:4000/api/alumni-assist/fees');
+        const fRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-assist/fees`);
         const fData = await fRes.json();
         if (Array.isArray(fData)) {
           setFees(fData);
@@ -94,21 +94,21 @@ export default function AlumniAssistAdmin() {
     try {
       // 1. Process Deletions
       for (const id of deletedProcedureIds) {
-        await fetch(`http://localhost:4000/api/alumni-assist/procedures/${id}`, {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/alumni-assist/procedures/${id}`, {
           method: 'DELETE'
         });
       }
       setDeletedProcedureIds([]);
 
       for (const id of deletedFeeIds) {
-        await fetch(`http://localhost:4000/api/alumni-assist/fees/${id}`, {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/alumni-assist/fees/${id}`, {
           method: 'DELETE'
         });
       }
       setDeletedFeeIds([]);
 
       // 2. Save Headings
-      await fetch('http://localhost:4000/api/alumni-assist', {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-assist`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(heading)
@@ -126,14 +126,14 @@ export default function AlumniAssistAdmin() {
 
         if (proc.id > 0 && proc.id < 1000000000) {
           // Real ID, do PUT
-          await fetch(`http://localhost:4000/api/alumni-assist/procedures/${proc.id}`, {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/alumni-assist/procedures/${proc.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
           });
         } else {
           // Local/Temporary ID, do POST
-          await fetch('http://localhost:4000/api/alumni-assist/procedures', {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-assist/procedures`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -152,14 +152,14 @@ export default function AlumniAssistAdmin() {
 
         if (feeItem.id > 0 && feeItem.id < 1000000000) {
           // Real ID, do PUT
-          await fetch(`http://localhost:4000/api/alumni-assist/fees/${feeItem.id}`, {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/alumni-assist/fees/${feeItem.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
           });
         } else {
           // Local/Temporary ID, do POST
-          await fetch('http://localhost:4000/api/alumni-assist/fees', {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-assist/fees`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)

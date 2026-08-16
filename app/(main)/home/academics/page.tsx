@@ -18,7 +18,7 @@ export default function AcademicsAdminPage() {
   return (
     <CRUDAdmin
       title="Academics"
-      endpoint="http://localhost:4000/v1/homepage/academic"
+      endpoint=`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/v1/homepage/academic`
       dataKey="academics"
       fields={academicsFields}
     />
@@ -227,7 +227,7 @@ function OldAcademicsAdminPage() {
         setLoading(true);
         setError('');
 
-        const res = await fetch('http://localhost:4000/v1/homepage/academic');
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/v1/homepage/academic`);
         const json = await res.json();
 
         if (mounted && json.success) {
@@ -261,7 +261,7 @@ function OldAcademicsAdminPage() {
       setSuccess('');
 
       const res = await fetch(
-        'http://localhost:4000/v1/homepage/academic/bulk/save',
+        `${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/v1/homepage/academic/bulk/save`,
         {
           method: 'POST',
           headers: {
@@ -330,7 +330,7 @@ function OldAcademicsAdminPage() {
     if (academicId) {
       try {
         const response = await fetch(
-          `http://localhost:4000/v1/homepage/academic/${academicId}`,
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/v1/homepage/academic/${academicId}`,
           {
             method: 'DELETE',
             headers: {

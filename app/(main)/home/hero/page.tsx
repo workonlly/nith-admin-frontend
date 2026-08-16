@@ -15,7 +15,7 @@ interface HeroImage {
 }
 
 export default function HeroPage() {
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000');
 
   const [heroImages, setHeroImages] = useState<HeroImage[]>([]);
   const [heroImageFile, setHeroImageFile] = useState<File | null>(null);

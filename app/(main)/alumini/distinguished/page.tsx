@@ -47,14 +47,14 @@ export default function DistinguishedAlumniAdmin() {
     const fetchData = async () => {
       try {
         // 1. Fetch Headings
-        const hRes = await fetch('http://localhost:4000/api/alumni-distinguished');
+        const hRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-distinguished`);
         const hData = await hRes.json();
         if (hData && hData.title_en) {
           setHeading(hData);
         }
 
         // 2. Fetch Alumni List
-        const lRes = await fetch('http://localhost:4000/api/alumni-distinguished/list');
+        const lRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-distinguished/list`);
         const lData = await lRes.json();
         if (Array.isArray(lData)) {
           setAlumni(lData);
@@ -72,14 +72,14 @@ export default function DistinguishedAlumniAdmin() {
     try {
       // 1. Prune Deleted Alumni Records
       for (const id of deletedAlumniIds) {
-        await fetch(`http://localhost:4000/api/alumni-distinguished/list/${id}`, {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/alumni-distinguished/list/${id}`, {
           method: 'DELETE'
         });
       }
       setDeletedAlumniIds([]);
 
       // 2. Save Headings Settings
-      await fetch('http://localhost:4000/api/alumni-distinguished', {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-distinguished`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(heading)
@@ -102,14 +102,14 @@ export default function DistinguishedAlumniAdmin() {
 
         if (al.id > 0 && al.id < 1000000000) {
           // Real ID, do PUT
-          await fetch(`http://localhost:4000/api/alumni-distinguished/list/${al.id}`, {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/alumni-distinguished/list/${al.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
           });
         } else {
           // Temporary ID, do POST
-          await fetch('http://localhost:4000/api/alumni-distinguished/list', {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-distinguished/list`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -175,7 +175,7 @@ export default function DistinguishedAlumniAdmin() {
       const formData = new FormData();
       formData.append('file', file);
 
-      const res = await fetch('http://localhost:4000/api/upload', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/upload`, {
         method: 'POST',
         body: formData
       });

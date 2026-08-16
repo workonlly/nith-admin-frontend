@@ -102,7 +102,7 @@ export default function PlacementsAdminPage() {
         setError('');
 
         const res = await fetch(
-          'http://localhost:4000/v1/homepage/placements'
+          `${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/v1/homepage/placements`
         );
 
         const json = await res.json();
@@ -173,7 +173,7 @@ export default function PlacementsAdminPage() {
       setSuccess('');
 
       const res = await fetch(
-        'http://localhost:4000/v1/homepage/placements',
+        `${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/v1/homepage/placements`,
         {
           method: 'PUT',
           headers: {

@@ -18,7 +18,7 @@ export default function NewsAdminPage() {
   return (
     <CRUDAdmin
       title="News"
-      endpoint="http://localhost:4000/v1/homepage/news"
+      endpoint=`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/v1/homepage/news`
       dataKey="newss"
       fields={newsFields}
     />
@@ -227,7 +227,7 @@ function OldNewsAdminPage() {
         setLoading(true);
         setError('');
 
-        const res = await fetch('http://localhost:4000/v1/homepage/news');
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/v1/homepage/news`);
         const json = await res.json();
 
         if (mounted && json.success) {
@@ -261,7 +261,7 @@ function OldNewsAdminPage() {
       setSuccess('');
 
       const res = await fetch(
-        'http://localhost:4000/v1/homepage/news/bulk/save',
+        `${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/v1/homepage/news/bulk/save`,
         {
           method: 'POST',
           headers: {
@@ -330,7 +330,7 @@ function OldNewsAdminPage() {
     if (newsId) {
       try {
         const response = await fetch(
-          `http://localhost:4000/v1/homepage/news/${newsId}`,
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/v1/homepage/news/${newsId}`,
           {
             method: 'DELETE',
             headers: {

@@ -71,7 +71,7 @@ export default function ForwardingRulesPage() {
       const formData = new FormData();
       formData.append('file', file);
 
-      const res = await fetch('http://localhost:4000/api/upload', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/upload`, {
         method: 'POST',
         headers: {
           'x-bucket-name': 'faculty-section',
@@ -107,7 +107,7 @@ export default function ForwardingRulesPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const hRes = await fetch('http://localhost:4000/api/faculty-forwarding');
+        const hRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-forwarding`);
         const hData = await hRes.json();
         if (hData && hData.title_en) {
           setForwardingData(prev => ({
@@ -119,7 +119,7 @@ export default function ForwardingRulesPage() {
           }));
         }
 
-        const lRes = await fetch('http://localhost:4000/api/faculty-forwarding/list');
+        const lRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-forwarding/list`);
         const lData = await lRes.json();
         if (Array.isArray(lData) && lData.length > 0) {
           setForwardingData(prev => {
@@ -141,7 +141,7 @@ export default function ForwardingRulesPage() {
 
   const handleSave = async () => {
     try {
-      await fetch('http://localhost:4000/api/faculty-forwarding', {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-forwarding`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -154,13 +154,13 @@ export default function ForwardingRulesPage() {
 
       for (const rule of forwardingData.rules) {
         if (rule.id > 0 && rule.id < 1000000) {
-          await fetch(`http://localhost:4000/api/faculty-forwarding/list/${rule.id}`, {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/faculty-forwarding/list/${rule.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(rule),
           });
         } else {
-          await fetch('http://localhost:4000/api/faculty-forwarding/list', {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-forwarding/list`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(rule),
@@ -195,7 +195,7 @@ export default function ForwardingRulesPage() {
   const removeRule = async (id: number) => {
     if (id > 0 && id < 1000000) {
       if (!confirm('Delete from database?')) return;
-      await fetch(`http://localhost:4000/api/faculty-forwarding/list/${id}`, { method: 'DELETE' });
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/faculty-forwarding/list/${id}`, { method: 'DELETE' });
     }
     setForwardingData({
       ...forwardingData,

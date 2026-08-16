@@ -74,7 +74,7 @@ export default function DeputationRulesPage() {
       const formData = new FormData();
       formData.append('file', file);
 
-      const res = await fetch('http://localhost:4000/api/upload', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/upload`, {
         method: 'POST',
         headers: {
           'x-bucket-name': 'faculty-section',
@@ -110,7 +110,7 @@ export default function DeputationRulesPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const hRes = await fetch('http://localhost:4000/api/faculty-deputation');
+        const hRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-deputation`);
         const hData = await hRes.json();
         if (hData && hData.title_en) {
           setDeputationData(prev => ({
@@ -122,7 +122,7 @@ export default function DeputationRulesPage() {
           }));
         }
 
-        const lRes = await fetch('http://localhost:4000/api/faculty-deputation/list');
+        const lRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-deputation/list`);
         const lData = await lRes.json();
         if (Array.isArray(lData) && lData.length > 0) {
           setDeputationData(prev => {
@@ -144,7 +144,7 @@ export default function DeputationRulesPage() {
 
   const handleSave = async () => {
     try {
-      await fetch('http://localhost:4000/api/faculty-deputation', {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-deputation`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -157,13 +157,13 @@ export default function DeputationRulesPage() {
 
       for (const rule of deputationData.rules) {
         if (rule.id > 0 && rule.id < 1000000) {
-          await fetch(`http://localhost:4000/api/faculty-deputation/list/${rule.id}`, {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/faculty-deputation/list/${rule.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(rule),
           });
         } else {
-          await fetch('http://localhost:4000/api/faculty-deputation/list', {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-deputation/list`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(rule),
@@ -198,7 +198,7 @@ export default function DeputationRulesPage() {
   const removeRule = async (id: number) => {
     if (id > 0 && id < 1000000) {
       if (!confirm('Delete from database?')) return;
-      await fetch(`http://localhost:4000/api/faculty-deputation/list/${id}`, { method: 'DELETE' });
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/faculty-deputation/list/${id}`, { method: 'DELETE' });
     }
     setDeputationData({
       ...deputationData,

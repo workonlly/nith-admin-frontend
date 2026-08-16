@@ -166,7 +166,7 @@ export default function NCCActivitiesPage() {
   const [editingCommunityId, setEditingCommunityId] = useState<number | null>(null);
   const [editingCommunityData, setEditingCommunityData] = useState({ service_en: '', service_hn: '' });
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000');
 
   useEffect(() => {
     fetchData();

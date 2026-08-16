@@ -45,7 +45,7 @@ export default function FacultyActivitiesPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const hData = await fetch('http://localhost:4000/api/faculty-activities').then(res => res.json());
+        const hData = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-activities`).then(res => res.json());
         if (hData) {
           setActivitiesData(prev => ({
             ...prev,
@@ -56,7 +56,7 @@ export default function FacultyActivitiesPage() {
           }));
         }
         
-        const sData = await fetch('http://localhost:4000/api/faculty-activities/subtext').then(res => res.json());
+        const sData = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-activities/subtext`).then(res => res.json());
         if (Array.isArray(sData)) {
           setSubtexts(sData);
         }
@@ -180,13 +180,13 @@ export default function FacultyActivitiesPage() {
     try {
       for (const section of subtexts) {
         if (section.id > 0 && section.id < 1000000) {
-          await fetch(`http://localhost:4000/api/faculty-activities/subtext/${section.id}`, {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/faculty-activities/subtext/${section.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(section),
           });
         } else {
-          await fetch('http://localhost:4000/api/faculty-activities/subtext', {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-activities/subtext`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(section),
@@ -219,7 +219,7 @@ export default function FacultyActivitiesPage() {
     if (id && id > 0 && id < 1000000) {
       if (!confirm('Are you sure you want to delete this section from database?')) return;
       try {
-        await fetch(`http://localhost:4000/api/faculty-activities/subtext/${id}`, {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/faculty-activities/subtext/${id}`, {
           method: 'DELETE',
         });
       } catch (err) {
@@ -237,7 +237,7 @@ export default function FacultyActivitiesPage() {
 
   const handleSave = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/faculty-activities', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-activities`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

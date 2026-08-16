@@ -239,7 +239,7 @@ export default function EndowmentFundAdmin() {
     const fetchData = async () => {
       try {
         // 1. Fetch Headings
-        const hRes = await fetch('http://localhost:4000/api/alumni-endowment', { cache: 'no-store' });
+        const hRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-endowment`, { cache: 'no-store' });
         const hData = await hRes.json();
         if (hData && hData.title_en) {
           const merged = { ...INITIAL_HEADING };
@@ -253,7 +253,7 @@ export default function EndowmentFundAdmin() {
         }
 
         // 2. Fetch Initiatives List
-        const iRes = await fetch('http://localhost:4000/api/alumni-endowment/initiatives', { cache: 'no-store' });
+        const iRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-endowment/initiatives`, { cache: 'no-store' });
         const iData = await iRes.json();
         if (Array.isArray(iData)) {
           setInitiatives(iData);
@@ -271,14 +271,14 @@ export default function EndowmentFundAdmin() {
     try {
       // 1. Delete Removed Initiatives
       for (const id of deletedIds) {
-        await fetch(`http://localhost:4000/api/alumni-endowment/initiatives/${id}`, {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/alumni-endowment/initiatives/${id}`, {
           method: 'DELETE'
         });
       }
       setDeletedIds([]);
 
       // 2. Save Headings Settings
-      await fetch('http://localhost:4000/api/alumni-endowment/heading', {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-endowment/heading`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(heading)
@@ -300,14 +300,14 @@ export default function EndowmentFundAdmin() {
 
         if (item.id > 0 && item.id < 1000000000) {
           // Real ID, do PUT
-          await fetch(`http://localhost:4000/api/alumni-endowment/initiatives/${item.id}`, {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/alumni-endowment/initiatives/${item.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
           });
         } else {
           // Temporary ID, do POST
-          await fetch('http://localhost:4000/api/alumni-endowment/initiatives', {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-endowment/initiatives`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)

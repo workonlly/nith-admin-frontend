@@ -18,7 +18,7 @@ export default function EventsAdminPage() {
   return (
     <CRUDAdmin
       title="Events"
-      endpoint="http://localhost:4000/v1/homepage/event"
+      endpoint=`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/v1/homepage/event`
       dataKey="events"
       fields={eventsFields}
     />
@@ -227,7 +227,7 @@ function OldEventsAdminPage() {
         setLoading(true);
         setError('');
 
-        const res = await fetch('http://localhost:4000/v1/homepage/event');
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/v1/homepage/event`);
         const json = await res.json();
 
         if (mounted && json.success) {
@@ -261,7 +261,7 @@ function OldEventsAdminPage() {
       setSuccess('');
 
       const res = await fetch(
-        'http://localhost:4000/v1/homepage/event/bulk/save',
+        `${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/v1/homepage/event/bulk/save`,
         {
           method: 'POST',
           headers: {
@@ -330,7 +330,7 @@ function OldEventsAdminPage() {
     if (eventId) {
       try {
         const response = await fetch(
-          `http://localhost:4000/v1/homepage/event/${eventId}`,
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/v1/homepage/event/${eventId}`,
           {
             method: 'DELETE',
             headers: {

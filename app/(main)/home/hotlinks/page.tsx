@@ -11,7 +11,7 @@ export default function HotlinksPage() {
   return (
     <CRUDAdmin
       title="Hotlinks"
-      endpoint={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/hero/hotlinks`}
+      endpoint={`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/hero/hotlinks`}
       dataKey="" // Hero routes just return the array in 'data' directly
       fields={hotlinkFields}
     />

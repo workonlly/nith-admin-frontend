@@ -18,7 +18,7 @@ export default function AdmissionsPage() {
   return (
     <CRUDAdmin
       title="Admissions"
-      endpoint="http://localhost:4000/v1/homepage/admission"
+      endpoint=`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/v1/homepage/admission`
       dataKey="admissions"
       fields={admissionsFields}
     />
@@ -64,7 +64,7 @@ function OldAdmissionsPage() {
       setError(null);
 
       const response = await fetch(
-        'http://localhost:4000/v1/homepage/admission'
+        `${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/v1/homepage/admission`
       );
 
       if (!response.ok) throw new Error('Failed to fetch admissions');
@@ -111,7 +111,7 @@ function OldAdmissionsPage() {
       }
 
       const response = await fetch(
-        'http://localhost:4000/v1/homepage/admission/bulk/save',
+        `${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/v1/homepage/admission/bulk/save`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -167,7 +167,7 @@ function OldAdmissionsPage() {
 
     if (item.id) {
       await fetch(
-        `http://localhost:4000/v1/homepage/admission/${item.id}`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/v1/homepage/admission/${item.id}`,
         { method: 'DELETE' }
       );
       await fetchAdmissions();

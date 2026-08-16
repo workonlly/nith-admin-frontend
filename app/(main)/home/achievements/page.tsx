@@ -18,7 +18,7 @@ export default function AchievementsAdminPage() {
   return (
     <CRUDAdmin
       title="Achievements"
-      endpoint="http://localhost:4000/v1/homepage/achievements"
+      endpoint=`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/v1/homepage/achievements`
       dataKey="" // Because achievements API directly returns the array in data
       fields={achievementsFields}
     />
@@ -83,7 +83,7 @@ function OldAchievementsAdminPage() {
         setError('');
 
         const res = await fetch(
-          'http://localhost:4000/v1/homepage/achievements'
+          `${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/v1/homepage/achievements`
         );
 
         const json = await res.json();
@@ -124,7 +124,7 @@ function OldAchievementsAdminPage() {
       setSuccess('');
 
       const res = await fetch(
-        'http://localhost:4000/v1/homepage/achievements',
+        `${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/v1/homepage/achievements`,
         {
           method: 'PUT',
 

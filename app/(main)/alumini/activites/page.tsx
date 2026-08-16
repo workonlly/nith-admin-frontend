@@ -66,7 +66,7 @@ export default function AlumniActivitiesAdmin() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const hRes = await fetch('http://localhost:4000/api/alumni-activities');
+        const hRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-activities`);
         const hData = await hRes.json();
         if (hData && hData.title_en) {
           setData(prev => ({
@@ -78,7 +78,7 @@ export default function AlumniActivitiesAdmin() {
           }));
         }
 
-        const lRes = await fetch('http://localhost:4000/api/alumni-activities/list');
+        const lRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-activities/list`);
         const lData = await lRes.json();
         if (Array.isArray(lData) && lData.length > 0) {
           setData(prev => {
@@ -100,7 +100,7 @@ export default function AlumniActivitiesAdmin() {
 
   const handleSave = async () => {
     try {
-      await fetch('http://localhost:4000/api/alumni-activities', {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-activities`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -113,13 +113,13 @@ export default function AlumniActivitiesAdmin() {
 
       for (const act of data.activities) {
         if (act.id > 0 && act.id < 1000000) {
-          await fetch(`http://localhost:4000/api/alumni-activities/list/${act.id}`, {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/alumni-activities/list/${act.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(act),
           });
         } else {
-          await fetch('http://localhost:4000/api/alumni-activities/list', {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-activities/list`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(act),
@@ -162,7 +162,7 @@ export default function AlumniActivitiesAdmin() {
   const removeActivity = async (id: number) => {
     if (id > 0 && id < 1000000) {
       if (!confirm('Delete from database?')) return;
-      await fetch(`http://localhost:4000/api/alumni-activities/list/${id}`, { method: 'DELETE' });
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/alumni-activities/list/${id}`, { method: 'DELETE' });
     }
     setData({
       ...data,

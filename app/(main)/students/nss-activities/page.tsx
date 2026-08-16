@@ -165,7 +165,7 @@ export default function NSSActivitiesPage() {
   const [editingActivityId, setEditingActivityId] = useState<number | null>(null);
   const [editingActivityData, setEditingActivityData] = useState({ activity_en: '', activity_hn: '' });
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000');
 
   useEffect(() => {
     fetchData();

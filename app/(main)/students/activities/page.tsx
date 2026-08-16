@@ -46,7 +46,7 @@ export default function ActivitiesPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingData, setEditingData] = useState({ activity_en: '', activity_hn: '' });
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000');
 
   // Fetch initial data
   useEffect(() => {

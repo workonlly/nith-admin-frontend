@@ -57,7 +57,7 @@ export default function AlumniMouAdmin() {
       const formData = new FormData();
       formData.append('file', file);
 
-      const res = await fetch('http://localhost:4000/api/upload', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/upload`, {
         method: 'POST',
         headers: {
           'x-bucket-name': 'alumni-section',
@@ -89,7 +89,7 @@ export default function AlumniMouAdmin() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const hRes = await fetch('http://localhost:4000/api/alumni-mou');
+        const hRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-mou`);
         const hData = await hRes.json();
         if (hData && hData.title_en) {
           setData(prev => ({
@@ -101,7 +101,7 @@ export default function AlumniMouAdmin() {
           }));
         }
 
-        const lRes = await fetch('http://localhost:4000/api/alumni-mou/list');
+        const lRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-mou/list`);
         const lData = await lRes.json();
         if (Array.isArray(lData)) {
           setData(prev => ({ ...prev, mous: lData }));
@@ -115,7 +115,7 @@ export default function AlumniMouAdmin() {
 
   const handleSave = async () => {
     try {
-      await fetch('http://localhost:4000/api/alumni-mou', {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-mou`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -128,13 +128,13 @@ export default function AlumniMouAdmin() {
 
       for (const item of data.mous) {
         if (item.id > 0 && item.id < 1000000) {
-          await fetch(`http://localhost:4000/api/alumni-mou/list/${item.id}`, {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/alumni-mou/list/${item.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(item),
           });
         } else {
-          await fetch('http://localhost:4000/api/alumni-mou/list', {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/alumni-mou/list`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(item),
@@ -175,7 +175,7 @@ export default function AlumniMouAdmin() {
   const removeMou = async (id: number) => {
     if (id > 0 && id < 1000000) {
       if (!confirm('Delete from database?')) return;
-      await fetch(`http://localhost:4000/api/alumni-mou/list/${id}`, { method: 'DELETE' });
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/alumni-mou/list/${id}`, { method: 'DELETE' });
     }
     setData({
       ...data,

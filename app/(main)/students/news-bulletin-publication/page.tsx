@@ -140,7 +140,7 @@ export default function NewsBulletinPublicationPage() {
     pdf_url: ''
   });
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000');
 
   const [uploadingNewPdf, setUploadingNewPdf] = useState(false);
   const [uploadingIds, setUploadingIds] = useState<{ [key: number]: boolean }>({});
