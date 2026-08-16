@@ -1,12 +1,14 @@
 'use client';
 
-export default function DisciplineRulesPage() {
+import SingleAnchorLinkManager from '@/app/components/SingleAnchorLinkManager';
+
+export default function Page() {
   return (
-    <div className="w-full min-h-screen bg-[#F9F9F9] p-8">
-      <h1 className="text-2xl font-bold text-[#171717] mb-4">
-        Discipline Rules
-      </h1>
-      <p className="text-gray-600">This page is under construction.</p>
-    </div>
+    <SingleAnchorLinkManager
+      id="discipline-rules"
+      defaultText="Discipline Rules"
+      title="Discipline Rules"
+      category="Students"
+    />
   );
 }

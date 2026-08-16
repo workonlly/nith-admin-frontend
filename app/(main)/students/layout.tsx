@@ -21,7 +21,7 @@ const studentLinks = [
   },
   {
     label: 'Cultural Introduction & List',
-    href: '/students/cultural-introduction-list',
+    href: '/students/students-introduction-list',
   },
   {
     label: "Annual Cultural Festival (Hill'ffair)",
@@ -70,7 +70,7 @@ const studentLinks = [
   },
   {
     label: 'Annual Innovation Activity',
-    href: '/students/annual-innovation-activity',
+    href: '/students/technical-annualinovation-activity',
   },
   {
     label: 'Student Welfare & Schemes',

@@ -5,10 +5,10 @@ import SingleAnchorLinkManager from '@/app/components/SingleAnchorLinkManager';
 export default function Page() {
   return (
     <SingleAnchorLinkManager
-      id="deputation-rules"
-      defaultText="Deputation Rules"
-      title="Deputation Rules"
-      category="Faculty"
+      id="technical-annualinovation-activity"
+      defaultText="Annual Innovation Activity"
+      title="Annual Innovation Activity"
+      category="Students"
     />
   );
 }

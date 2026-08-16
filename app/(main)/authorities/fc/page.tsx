@@ -1,5 +1,14 @@
-import AuthorityManager from '@/app/components/AuthorityManager';
+'use client';
 
-export default function FCPage() {
-  return <AuthorityManager authorityName="Finance Committee (FC)" apiBase="fc" />;
+import SingleAnchorLinkManager from '@/app/components/SingleAnchorLinkManager';
+
+export default function Page() {
+  return (
+    <SingleAnchorLinkManager
+      id="fc"
+      defaultText="Composition of Finance Committee (FC)"
+      title="Composition of Finance Committee (FC)"
+      category="Authorities"
+    />
+  );
 }

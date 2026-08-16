@@ -1,7 +1,14 @@
-import React from 'react';
+'use client';
 
-function Page() {
-  return <div>Results</div>;
+import SingleAnchorLinkManager from '@/app/components/SingleAnchorLinkManager';
+
+export default function Page() {
+  return (
+    <SingleAnchorLinkManager
+      id="results"
+      defaultText="Results"
+      title="Results"
+      category="Academics"
+    />
+  );
 }
-
-export default Page;

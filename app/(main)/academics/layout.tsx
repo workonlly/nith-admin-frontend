@@ -12,22 +12,34 @@ const academicsLinks = [
   { label: 'Fee Structure', href: '/academics/fee-structure' },
   { label: 'Class Timetable', href: '/academics/class-timetable' },
 
-  { header: 'Lifecycle' },
+  { header: 'Calendars & Semesters' },
+  { label: 'Academic Calender', href: '/academics/academic-calender' },
+  { label: 'Odd Semester 2025-26', href: '/academics/odd-semster' },
+  { label: 'Even Semester 2025-26', href: '/academics/even-semester' },
+
+  { header: 'Lifecycle & Admissions' },
   { label: 'Admissions 2025-26', href: '/academics/admissions-2025-26' },
+  { label: 'Admissions Desk', href: '/academics/admissions-desk' },
+  { label: 'Admissions & Registrations', href: '/academics/admissions-registrations' },
   { label: 'Registration 2025-26', href: '/academics/registration-2025-26' },
   { label: 'International Admissions', href: '/academics/international-admissions' },
-  { label: 'Examinations & Evaluation', href: '/academics/examinations-evaluation' },
-  { label: 'Results', href: '/academics/results' },
 
-  { header: 'Programmes' },
+  { header: 'Examinations & Results' },
+  { label: 'Examinations & Evaluation', href: '/academics/examinations-evaluation' },
+  { label: 'Examination Schedule', href: '/academics/examination-schedule' },
+  { label: 'Examination Guidelines', href: '/academics/examination-guidelines' },
+  { label: 'Evaluation Guidelines', href: '/academics/evaluation-guidelines' },
+  { label: 'Results', href: '/academics/results' },
+  { label: 'Results Certificates', href: '/academics/results-certificates' },
+
+  { header: 'Programmes & Manuals' },
   { label: 'Bachelor Ordinances', href: '/academics/bachelor-ordinances' },
   { label: 'Bachelor Syllabus', href: '/academics/bachelor-course-structure-syllabus' },
+  { label: 'Old UG Manual', href: '/academics/old-ugmanual' },
   { label: 'Master Ordinances', href: '/academics/master-ordinances' },
   { label: 'Master Syllabus', href: '/academics/master-course-structure-syllabus' },
+  { label: 'Old PG Manual', href: '/academics/old-pgmanual' },
   { label: 'Doctoral Ordinances', href: '/academics/doctoral-ordinances' },
-
-  { header: 'Calendars' },
-  { label: 'Academic Calender', href: '/academics/academic-calender' },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {

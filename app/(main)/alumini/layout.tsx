@@ -4,28 +4,23 @@ import { usePathname } from 'next/navigation';
 import { Sidebar } from '@/app/sidebar/page';
 
 const homeLinks = [
-  { label: 'Activites', href: '/alumini/activites' },
-  { label: 'Functionaries', href: '/alumini/functionaries' },
-  {
-    label: 'Alumni Related Services ',
-    href: '/alumini/alumni-related-services',
-  },
-  { label: 'Alumni Related Mou', href: '/alumini/alumni-related-mou' },
-  { label: 'Alumni Assist', href: '/alumini/alumni-assist' },
-  { label: 'Distinguished Alumni', href: '/alumini/distinguished' },
-  {
-    label: 'Alumni Affair Activites',
-    href: '/alumini/alumni-affair-activites',
-  },
-  {
-    label: 'Resource Generation Activities',
-    href: '/alumini/resource-generation-activities',
-  },
-  { label: 'Portal', href: '/alumini/portal' },
+  { label: 'Activities', href: '/alumini/activites' },
+  { label: 'Alumni Related Notices', href: '/alumini/alumini-realted-notices' },
+  { label: 'Alumni Related MoU', href: '/alumini/alumni-related-mou' },
+  { label: 'List of Alumni', href: '/alumini/list-of-alumini' },
   { label: 'Alumni Registration', href: '/alumini/registration' },
+  { label: 'Local Chapters', href: '/alumini/local-chapters' },
+  { label: 'Annual Alumni Meet', href: '/alumini/annual-meet' },
   { label: 'Endowment Fund', href: '/alumini/endowment-fund' },
   { label: 'Award Initiatives', href: '/alumini/award-initiatives' },
-  { label: 'Annual Meet', href: '/alumini/annual-meet' },
+  { label: 'Alumni Network / Portal', href: '/alumini/netwrok' },
+  { label: 'Functionaries', href: '/alumini/functionaries' },
+  { label: 'Alumni Related Services', href: '/alumini/alumni-related-services' },
+  { label: 'Alumni Assist', href: '/alumini/alumni-assist' },
+  { label: 'Distinguished Alumni', href: '/alumini/distinguished' },
+  { label: 'Alumni Affair Activities', href: '/alumini/alumni-affair-activites' },
+  { label: 'Resource Generation Activities', href: '/alumini/resource-generation-activities' },
+  { label: 'Portal', href: '/alumini/portal' },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {

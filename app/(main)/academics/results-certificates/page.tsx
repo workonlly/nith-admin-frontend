@@ -1,7 +1,14 @@
-import React from 'react';
+'use client';
 
-function Page() {
-  return <div>Results & Certificates</div>;
+import SingleAnchorLinkManager from '@/app/components/SingleAnchorLinkManager';
+
+export default function Page() {
+  return (
+    <SingleAnchorLinkManager
+      id="results-certificates"
+      defaultText="Results Certificates"
+      title="Results Certificates"
+      category="Academics"
+    />
+  );
 }
-
-export default Page;

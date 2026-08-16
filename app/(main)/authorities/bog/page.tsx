@@ -1,5 +1,14 @@
-import AuthorityManager from '@/app/components/AuthorityManager';
+'use client';
 
-export default function BOGPage() {
-  return <AuthorityManager authorityName="Board of Governors (BOG)" apiBase="bog" />;
+import SingleAnchorLinkManager from '@/app/components/SingleAnchorLinkManager';
+
+export default function Page() {
+  return (
+    <SingleAnchorLinkManager
+      id="bog"
+      defaultText="Composition of Board of Governors (BOG)"
+      title="Composition of Board of Governors (BOG)"
+      category="Authorities"
+    />
+  );
 }

@@ -1,7 +1,14 @@
-import React from 'react';
+'use client';
 
-function Page() {
-  return <div>Admissions & Registrations</div>;
+import SingleAnchorLinkManager from '@/app/components/SingleAnchorLinkManager';
+
+export default function Page() {
+  return (
+    <SingleAnchorLinkManager
+      id="admissions-registrations"
+      defaultText="Admissions & Registrations"
+      title="Admissions & Registrations"
+      category="Academics"
+    />
+  );
 }
-
-export default Page;

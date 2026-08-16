@@ -1,5 +1,14 @@
-import AuthorityManager from '@/app/components/AuthorityManager';
+'use client';
 
-export default function BWCPage() {
-  return <AuthorityManager authorityName="Building Works Committee (BWC)" apiBase="bwc" />;
+import SingleAnchorLinkManager from '@/app/components/SingleAnchorLinkManager';
+
+export default function Page() {
+  return (
+    <SingleAnchorLinkManager
+      id="bwc"
+      defaultText="Composition of Building & Works Committee (BWC)"
+      title="Composition of Building & Works Committee (BWC)"
+      category="Authorities"
+    />
+  );
 }
