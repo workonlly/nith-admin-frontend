@@ -18,7 +18,7 @@ export default function AchievementsAdminPage() {
   return (
     <CRUDAdmin
       title="Achievements"
-      endpoint=`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/v1/homepage/achievements`
+      endpoint={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/v1/homepage/achievements`}
       dataKey="" // Because achievements API directly returns the array in data
       fields={achievementsFields}
     />

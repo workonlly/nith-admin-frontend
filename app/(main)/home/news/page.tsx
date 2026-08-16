@@ -18,7 +18,7 @@ export default function NewsAdminPage() {
   return (
     <CRUDAdmin
       title="News"
-      endpoint=`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/v1/homepage/news`
+      endpoint={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/v1/homepage/news`}
       dataKey="newss"
       fields={newsFields}
     />

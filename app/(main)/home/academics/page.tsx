@@ -18,7 +18,7 @@ export default function AcademicsAdminPage() {
   return (
     <CRUDAdmin
       title="Academics"
-      endpoint=`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/v1/homepage/academic`
+      endpoint={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/v1/homepage/academic`}
       dataKey="academics"
       fields={academicsFields}
     />

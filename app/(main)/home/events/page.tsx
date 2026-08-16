@@ -18,7 +18,7 @@ export default function EventsAdminPage() {
   return (
     <CRUDAdmin
       title="Events"
-      endpoint=`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/v1/homepage/event`
+      endpoint={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/v1/homepage/event`}
       dataKey="events"
       fields={eventsFields}
     />

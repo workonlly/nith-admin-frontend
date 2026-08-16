@@ -18,7 +18,7 @@ export default function AdmissionsPage() {
   return (
     <CRUDAdmin
       title="Admissions"
-      endpoint=`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/v1/homepage/admission`
+      endpoint={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/v1/homepage/admission`}
       dataKey="admissions"
       fields={admissionsFields}
     />
