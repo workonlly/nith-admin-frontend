@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Shield } from 'lucide-react';
 
@@ -13,6 +13,35 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [verifying, setVerifying] = useState(true);
+
+  // On mount: check if a valid token already exists — if so, skip login
+  useEffect(() => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) {
+      setVerifying(false);
+      return;
+    }
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+    fetch(`${API_BASE}/auth/faculty/verify`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          router.replace('/admin');
+        } else {
+          // Token invalid — clear storage and show login
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setVerifying(false);
+        }
+      })
+      .catch(() => {
+        setVerifying(false);
+      });
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -28,7 +57,7 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000');
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
       
       const res = await fetch(`${API_BASE}/auth/faculty/login`, {
         method: 'POST',
@@ -50,7 +79,6 @@ export default function LoginPage() {
       // Store JWT token and faculty user info in localStorage
       if (data.token) {
         localStorage.setItem('token', data.token);
-        localStorage.setItem('faculty_token', data.token);
         // Optional session cookie for Next.js SSR / route guards
         document.cookie = `token=${data.token}; path=/; max-age=604800; SameSite=Lax`;
       }
@@ -70,6 +98,18 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
+
+  // While auto-verifying an existing token, show a minimal spinner
+  if (verifying) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0f0f0f]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-4 border-[#631012] border-t-transparent rounded-full animate-spin" />
+          <p className="text-white/50 text-sm">Verifying session…</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex">
