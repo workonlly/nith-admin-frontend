@@ -3,556 +3,483 @@
 import React, { useState, useEffect } from 'react';
 import {
   Save,
-  Calendar,
   Plus,
   Trash2,
+  Edit2,
+  RefreshCw,
+  Layout,
+  CheckCircle2,
+  X,
   FileText,
-  Filter,
-  MapPin,
-  Monitor,
 } from 'lucide-react';
 
-interface Activity {
+interface ActivitySubtext {
   id: number;
-  date: string;
-  title: string;
-  description: string;
-  category: string;
-  mode: string;
-  location: string;
+  heading_en: string;
+  heading_hn: string;
+  subheading_en: string;
+  subheading_hn: string;
+  small_text: string;
 }
 
-interface ActivitiesData {
-  heroHeadingEn: string;
-  heroHeadingHn: string;
-  heroDescriptionEn: string;
-  heroDescriptionHn: string;
-  filterHeading: string;
-  categories: string[];
-  activitiesTableHeading: string;
-  activities: Activity[];
+interface HeadingData {
+  title_en: string;
+  title_hn: string;
+  sub_title_en: string;
+  sub_title_hn: string;
 }
 
-type TabType = 'hero' | 'activities' | 'sections';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
-export default function FacultyActivitiesPage() {
-  const [activeTab, setActiveTab] = useState<TabType>('hero');
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+export default function FacultyActivitiesAdmin() {
+  const [heading, setHeading] = useState<HeadingData>({
+    title_en: 'ACTIVITIES',
+    title_hn: 'गतिविधियां',
+    sub_title_en: 'As per the schedule ‘C’ of NIT statutes the role and responsibilities of the Dean (Faculty Welfare) is to advice the Director in matters related to:',
+    sub_title_hn: 'एनआईटी संविधियों की अनुसूची \'सी\' के अनुसार डीन (संकाय कल्याण) की भूमिका और जिम्मेदारियां निदेशक को निम्नलिखित से संबंधित मामलों में सलाह देना है:',
+  });
 
-  const [subtexts, setSubtexts] = useState<any[]>([]);
+  const [subtexts, setSubtexts] = useState<ActivitySubtext[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [savingHeading, setSavingHeading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'responsibilities' | 'heading'>('responsibilities');
 
-  // Fetch heading and subtexts from backend on mount
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const hData = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-activities`).then(res => res.json());
-        if (hData) {
-          setActivitiesData(prev => ({
-            ...prev,
-            heroHeadingEn: hData.title_en || prev.heroHeadingEn,
-            heroHeadingHn: hData.title_hn || prev.heroHeadingHn,
-            heroDescriptionEn: hData.sub_title_en || prev.heroDescriptionEn,
-            heroDescriptionHn: hData.sub_title_hn || prev.heroDescriptionHn,
-          }));
+  // Modal states for Subtext
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [formHeadingEn, setFormHeadingEn] = useState('');
+  const [formHeadingHn, setFormHeadingHn] = useState('');
+  const [formSubheadingEn, setFormSubheadingEn] = useState('');
+  const [formSubheadingHn, setFormSubheadingHn] = useState('');
+  const [formSmallText, setFormSmallText] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      // 1. Fetch Heading
+      const hRes = await fetch(`${API_BASE}/api/faculty-activities`);
+      if (hRes.ok) {
+        const hData = await hRes.json();
+        if (hData && hData.title_en) {
+          setHeading({
+            title_en: hData.title_en || '',
+            title_hn: hData.title_hn || '',
+            sub_title_en: hData.sub_title_en || '',
+            sub_title_hn: hData.sub_title_hn || '',
+          });
         }
-        
-        const sData = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-activities/subtext`).then(res => res.json());
+      }
+
+      // 2. Fetch Subtexts / Responsibilities
+      const sRes = await fetch(`${API_BASE}/api/faculty-activities/subtext`);
+      if (sRes.ok) {
+        const sData = await sRes.json();
         if (Array.isArray(sData)) {
           setSubtexts(sData);
         }
-      } catch (err) {
-        console.error('Failed to fetch data:', err);
       }
-    };
+    } catch (err) {
+      console.error('Error fetching faculty activities:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
   }, []);
 
-  const [activitiesData, setActivitiesData] = useState<ActivitiesData>({
-    heroHeadingEn: 'Faculty Activities',
-    heroHeadingHn: 'संकाय गतिविधियां',
-    heroDescriptionEn: 'Stay connected with your alma mater through reunions, webinars, hackathons, and campus events.',
-    heroDescriptionHn: 'पुनर्मिलन, वेबिनार, हैकाथॉन और कैंपस कार्यक्रमों के माध्यम से अपने अल्मा मेटर से जुड़े रहें।',
-    filterHeading: 'Filter by Category:',
-    categories: ['All', 'Reunions', 'Webinars', 'Hackathons', 'Campus Events'],
-    activitiesTableHeading: 'Faculty Activities',
-    activities: [
-      {
-        id: 1,
-        date: 'Jan 20, 2025',
-        title: 'Tech Talk: AI in Industry',
-        description:
-          'Learn about AI applications in modern industry from our distinguished alumni.',
-        category: 'Webinars',
-        mode: 'Online',
-        location: 'Zoom',
-      },
-      {
-        id: 2,
-        date: 'Feb 5, 2025',
-        title: 'Code Sprint 2025',
-        description: '48-hour hackathon with mentorship from industry experts.',
-        category: 'Hackathons',
-        mode: 'Hybrid',
-        location: 'CS Block & Online',
-      },
-      {
-        id: 3,
-        date: 'Feb 14, 2025',
-        title: 'Campus Tour & Meet',
-        description:
-          'Explore the new campus developments with current students.',
-        category: 'Campus Events',
-        mode: 'Offline',
-        location: 'NIT Hamirpur Campus',
-      },
-      {
-        id: 4,
-        date: 'Feb 28, 2025',
-        title: 'Batch of 2015 Reunion',
-        description: 'Special reunion for the graduating class of 2015.',
-        category: 'Reunions',
-        mode: 'Offline',
-        location: 'Guest House, NIT Hamirpur',
-      },
-      {
-        id: 5,
-        date: 'Mar 10, 2025',
-        title: 'Career Guidance Webinar',
-        description: 'Alumni sharing career insights with current students.',
-        category: 'Webinars',
-        mode: 'Online',
-        location: 'Google Meet',
-      },
-      {
-        id: 6,
-        date: 'Mar 20, 2025',
-        title: 'Innovation Hackathon',
-        description: 'Build innovative solutions for real-world problems.',
-        category: 'Hackathons',
-        mode: 'Hybrid',
-        location: 'Innovation Hub & Discord',
-      },
-      {
-        id: 7,
-        date: 'Apr 1, 2025',
-        title: 'Foundation Day Celebration',
-        description:
-          "Celebrate the institute's foundation day with cultural events.",
-        category: 'Campus Events',
-        mode: 'Offline',
-        location: 'Open Air Theatre',
-      },
-      {
-        id: 8,
-        date: 'Apr 15, 2025',
-        title: 'Startup Stories Webinar',
-        description: 'Alumni entrepreneurs share their startup journeys.',
-        category: 'Webinars',
-        mode: 'Online',
-        location: 'Microsoft Teams',
-      },
-      {
-        id: 9,
-        date: 'Apr 25, 2025',
-        title: 'Silver Jubilee Reunion',
-        description: '25 years celebration for batch of 2000.',
-        category: 'Reunions',
-        mode: 'Offline',
-        location: 'Convention Center',
-      },
-    ],
-  });
-
-  const tabs = [
-    {
-      id: 'hero' as TabType,
-      label: 'Hero Section',
-      icon: <FileText size={18} />,
-    },
-    {
-      id: 'sections' as TabType,
-      label: 'Responsibility Sections',
-      icon: <Monitor size={18} />,
-    },
-  ];
-
-  const handleSaveSections = async () => {
+  const handleSaveHeading = async () => {
     try {
-      for (const section of subtexts) {
-        if (section.id > 0 && section.id < 1000000) {
-          await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/faculty-activities/subtext/${section.id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(section),
-          });
-        } else {
-          await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-activities/subtext`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(section),
-          });
-        }
-      }
-      alert('Sections saved successfully!');
-      window.location.reload();
-    } catch (err) {
-      console.error('Save sections failed:', err);
-      alert('Failed to save sections');
-    }
-  };
-
-  const addSection = () => {
-    setSubtexts([
-      ...subtexts,
-      {
-        id: Date.now() + Math.floor(Math.random() * 1000),
-        heading_en: 'New Section Header',
-        heading_hn: 'नया अनुभाग',
-        subheading_en: 'Role & Responsibilities Description',
-        subheading_hn: 'भूमिका और जिम्मेदारियां विवरण',
-        small_text: '• Bullet Point 1\n• Bullet Point 2',
-      },
-    ]);
-  };
-
-  const removeSection = async (index: number, id?: number) => {
-    if (id && id > 0 && id < 1000000) {
-      if (!confirm('Are you sure you want to delete this section from database?')) return;
-      try {
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/faculty-activities/subtext/${id}`, {
-          method: 'DELETE',
-        });
-      } catch (err) {
-        console.error('Delete failed:', err);
-      }
-    }
-    setSubtexts(subtexts.filter((_, i) => i !== index));
-  };
-
-  const updateSection = (index: number, field: string, value: string) => {
-    const updated = [...subtexts];
-    updated[index] = { ...updated[index], [field]: value };
-    setSubtexts(updated);
-  };
-
-  const handleSave = async () => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-activities`, {
+      setSavingHeading(true);
+      const res = await fetch(`${API_BASE}/api/faculty-activities`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title_en: activitiesData.heroHeadingEn,
-          title_hn: activitiesData.heroHeadingHn,
-          sub_title_en: activitiesData.heroDescriptionEn,
-          sub_title_hn: activitiesData.heroDescriptionHn,
-        }),
+        body: JSON.stringify(heading),
       });
-      const res = await response.json();
-      console.log('Saved:', res);
-      alert('Changes saved successfully!');
-      window.location.reload();
+      if (res.ok) {
+        alert('Heading settings saved successfully!');
+      } else {
+        alert('Failed to save heading');
+      }
     } catch (err) {
-      console.error('Save failed:', err);
-      alert('Failed to save changes');
+      console.error(err);
+      alert('Error saving heading');
+    } finally {
+      setSavingHeading(false);
     }
   };
 
-  // Activities
-  const updateActivity = (id: number, field: keyof Activity, value: string) => {
-    setActivitiesData({
-      ...activitiesData,
-      activities: activitiesData.activities.map((activity) =>
-        activity.id === id ? { ...activity, [field]: value } : activity
-      ),
-    });
+  const openAddModal = () => {
+    setEditingId(null);
+    setFormHeadingEn('');
+    setFormHeadingHn('');
+    setFormSubheadingEn('');
+    setFormSubheadingHn('');
+    setFormSmallText('');
+    setModalOpen(true);
   };
 
-  const addActivity = () => {
-    const newId =
-      activitiesData.activities.length > 0
-        ? Math.max(...activitiesData.activities.map((a) => a.id)) + 1
-        : 1;
-    setActivitiesData({
-      ...activitiesData,
-      activities: [
-        ...activitiesData.activities,
-        {
-          id: newId,
-          date: '',
-          title: '',
-          description: '',
-          category: 'Webinars',
-          mode: 'Online',
-          location: '',
-        },
-      ],
-    });
+  const openEditModal = (item: ActivitySubtext) => {
+    setEditingId(item.id);
+    setFormHeadingEn(item.heading_en || '');
+    setFormHeadingHn(item.heading_hn || '');
+    setFormSubheadingEn(item.subheading_en || '');
+    setFormSubheadingHn(item.subheading_hn || '');
+    setFormSmallText(item.small_text || '');
+    setModalOpen(true);
   };
 
-  const removeActivity = (id: number) => {
-    setActivitiesData({
-      ...activitiesData,
-      activities: activitiesData.activities.filter((a) => a.id !== id),
-    });
+  const handleSubmitSubtext = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formSmallText.trim() && !formHeadingEn.trim()) {
+      alert('Please enter responsibility or title text');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      const payload = {
+        heading_en: formHeadingEn || formSmallText.substring(0, 50),
+        heading_hn: formHeadingHn,
+        subheading_en: formSubheadingEn,
+        subheading_hn: formSubheadingHn,
+        small_text: formSmallText || formHeadingEn,
+      };
+
+      let res;
+      if (editingId) {
+        res = await fetch(`${API_BASE}/api/faculty-activities/subtext/${editingId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        res = await fetch(`${API_BASE}/api/faculty-activities/subtext`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      }
+
+      if (res.ok) {
+        alert(editingId ? 'Responsibility updated successfully!' : 'Responsibility added successfully!');
+        setModalOpen(false);
+        fetchData();
+      } else {
+        alert('Failed to save responsibility');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error saving record');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  // Categories
-  const updateCategory = (index: number, value: string) => {
-    const updated = [...activitiesData.categories];
-    updated[index] = value;
-    setActivitiesData({ ...activitiesData, categories: updated });
+  const handleDeleteSubtext = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this responsibility?')) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/faculty-activities/subtext/${id}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        fetchData();
+      } else {
+        alert('Failed to delete responsibility');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error deleting responsibility');
+    }
   };
-
-  const addCategory = () => {
-    setActivitiesData({
-      ...activitiesData,
-      categories: [...activitiesData.categories, ''],
-    });
-  };
-
-  const removeCategory = (index: number) => {
-    setActivitiesData({
-      ...activitiesData,
-      categories: activitiesData.categories.filter((_, i) => i !== index),
-    });
-  };
-
-  // Filter activities
-  const filteredActivities =
-    selectedCategory === 'All'
-      ? activitiesData.activities
-      : activitiesData.activities.filter(
-          (activity) => activity.category === selectedCategory
-        );
 
   return (
-    <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 lg:p-6">
-      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+    <div className="space-y-6 p-6 font-sans">
+      {/* Header */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="bg-[#631012]/10 p-2 sm:p-3 rounded-full text-[#631012] flex-shrink-0">
-              <Calendar className="w-6 h-6 sm:w-7 sm:h-7" />
+          <div className="flex items-center gap-3">
+            <div className="bg-[#631012]/10 p-3 rounded-lg text-[#631012]">
+              <FileText size={28} />
             </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#171717] break-words">
-                Faculty Activities Editor
-              </h1>
-              <p className="text-sm sm:text-base text-[#171717]/60 mt-1">
-                Manage faculty activities, events, and reunions
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Faculty Activities Manager</h1>
+              <p className="text-xs text-gray-500">
+                Manage roles, responsibilities, and guidelines of Dean (Faculty Welfare) as per NIT statutes.
               </p>
             </div>
           </div>
-          <button
-            onClick={handleSave}
-            className="bg-[#631012] hover:bg-[#7a1214] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg flex items-center gap-2 transition-colors shadow-md w-full sm:w-auto justify-center text-sm sm:text-base"
-          >
-            <Save className="w-4 h-4 sm:w-5 sm:h-5" />
-            Save Changes
-          </button>
-        </div>
-      </div>
 
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="border-b border-[#171717]/10">
-          <div className="flex overflow-x-auto scrollbar-thin scrollbar-thumb-[#631012]/30 scrollbar-track-gray-100">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`
-                  flex items-center gap-2 px-4 sm:px-6 py-3 sm:py-4 font-medium transition-colors whitespace-nowrap text-sm sm:text-base flex-shrink-0
-                  ${
-                    activeTab === tab.id
-                      ? 'bg-[#631012] text-white border-b-2 border-[#631012]'
-                      : 'text-[#171717]/70 hover:bg-[#F9F9F9] hover:text-[#171717]'
-                  }
-                `}
-              >
-                <span className="w-4 h-4 sm:w-5 sm:h-5">{tab.icon}</span>
-                <span>{tab.label}</span>
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={fetchData}
+              disabled={loading}
+              className="px-3 py-2 border border-gray-300 hover:bg-gray-50 rounded-lg text-xs font-semibold text-gray-700 flex items-center gap-1.5 transition-colors"
+            >
+              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+              <span>Refresh</span>
+            </button>
+            <button
+              onClick={openAddModal}
+              className="bg-[#631012] hover:bg-[#500c0e] text-white px-4 py-2 rounded-lg flex items-center gap-2 text-xs font-bold transition-colors shadow-sm"
+            >
+              <Plus size={16} />
+              <span>Add Responsibility</span>
+            </button>
           </div>
         </div>
+      </div>
 
-        <div className="p-4 sm:p-6">
-          {/* Hero Section */}
-          {activeTab === 'hero' && (
-            <div className="space-y-4 sm:space-y-6">
-              <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                <FileText className="text-[#631012] w-5 h-5 sm:w-6 sm:h-6" />
-                <h2 className="text-xl sm:text-2xl font-bold text-[#171717]">
-                  Hero Section Content
-                </h2>
-              </div>
+      {/* Tabs */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="flex border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab('responsibilities')}
+            className={`flex items-center gap-2 px-6 py-3.5 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 ${
+              activeTab === 'responsibilities'
+                ? 'border-[#631012] text-[#631012] bg-gray-50/70'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <FileText size={16} />
+            <span>Responsibilities List ({subtexts.length})</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('heading')}
+            className={`flex items-center gap-2 px-6 py-3.5 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 ${
+              activeTab === 'heading'
+                ? 'border-[#631012] text-[#631012] bg-gray-50/70'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <Layout size={16} />
+            <span>Page Header & Intro Settings</span>
+          </button>
+        </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-4">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-[#171717]/50">English Content</label>
-                  <div>
-                    <label className="block text-sm font-medium text-[#171717] mb-2">Heading</label>
-                    <input
-                      type="text"
-                      value={activitiesData.heroHeadingEn}
-                      onChange={(e) => setActivitiesData({...activitiesData, heroHeadingEn: e.target.value})}
-                      className="w-full px-4 py-2.5 border border-[#171717]/15 rounded-lg focus:ring-2 focus:ring-[#631012] outline-none text-sm"
-                      placeholder="Faculty Activities"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-[#171717] mb-2">Description</label>
-                    <textarea
-                      rows={4}
-                      value={activitiesData.heroDescriptionEn}
-                      onChange={(e) => setActivitiesData({...activitiesData, heroDescriptionEn: e.target.value})}
-                      className="w-full px-4 py-2.5 border border-[#171717]/15 rounded-lg focus:ring-2 focus:ring-[#631012] outline-none text-sm"
-                      placeholder="Enter description"
-                    />
-                  </div>
+        <div className="p-6">
+          {/* Tab 1: Responsibilities List */}
+          {activeTab === 'responsibilities' && (
+            <div className="space-y-4">
+              {subtexts.length === 0 ? (
+                <div className="text-center py-16 bg-gray-50 border border-gray-200 rounded-lg p-6">
+                  <FileText className="w-10 h-10 text-gray-400 mx-auto mb-2" />
+                  <p className="text-sm font-semibold text-gray-700">No responsibilities added yet.</p>
+                  <button
+                    onClick={openAddModal}
+                    className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 bg-[#631012] text-white text-xs font-bold rounded-lg"
+                  >
+                    <Plus size={14} /> Add First Item
+                  </button>
                 </div>
-
-                <div className="space-y-4">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-[#171717]/50">Hindi Content</label>
-                  <div>
-                    <label className="block text-sm font-medium text-[#171717] mb-2">Heading (Hindi)</label>
-                    <input
-                      type="text"
-                      value={activitiesData.heroHeadingHn}
-                      onChange={(e) => setActivitiesData({...activitiesData, heroHeadingHn: e.target.value})}
-                      className="w-full px-4 py-2.5 border border-[#171717]/15 rounded-lg focus:ring-2 focus:ring-[#631012] outline-none text-sm"
-                      placeholder="संकाय गतिविधियां"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-[#171717] mb-2">Description (Hindi)</label>
-                    <textarea
-                      rows={4}
-                      value={activitiesData.heroDescriptionHn}
-                      onChange={(e) => setActivitiesData({...activitiesData, heroDescriptionHn: e.target.value})}
-                      className="w-full px-4 py-2.5 border border-[#171717]/15 rounded-lg focus:ring-2 focus:ring-[#631012] outline-none text-sm"
-                      placeholder="विवरण दर्ज करें"
-                    />
-                  </div>
+              ) : (
+                <div className="border border-gray-300 rounded-lg overflow-x-auto">
+                  <table className="w-full text-left text-xs sm:text-sm text-gray-800 border-collapse">
+                    <thead className="bg-[#f0f4f8] border-b border-gray-300 text-[#0c344e] font-mono uppercase text-xs">
+                      <tr>
+                        <th className="py-3 px-4 w-16 text-center">Sl. No.</th>
+                        <th className="py-3 px-4">Responsibility / Role Description</th>
+                        <th className="py-3 px-4 w-60">Category / Subheading</th>
+                        <th className="py-3 px-4 w-28 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 bg-white">
+                      {subtexts.map((item, index) => (
+                        <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="py-3.5 px-4 font-mono text-center font-bold text-gray-600 align-top">
+                            {index + 1}
+                          </td>
+                          <td className="py-3.5 px-4 space-y-1.5">
+                            <div className="font-semibold text-gray-900 leading-relaxed">
+                              {item.small_text || item.heading_en}
+                            </div>
+                            {item.heading_hn && (
+                              <div className="text-xs text-gray-600 font-medium">
+                                {item.heading_hn}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4 font-mono text-xs text-gray-600 align-top">
+                            {item.subheading_en || item.heading_en || '--'}
+                          </td>
+                          <td className="py-3.5 px-4 text-right whitespace-nowrap align-top">
+                            <div className="inline-flex items-center gap-2">
+                              <button
+                                onClick={() => openEditModal(item)}
+                                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
+                                title="Edit"
+                              >
+                                <Edit2 size={15} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteSubtext(item.id)}
+                                className="p-1.5 text-red-600 hover:bg-red-50 rounded"
+                                title="Delete"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              </div>
-
-              <div className="mt-8 p-6 bg-[#F9F9F9] rounded-xl border-2 border-dashed border-[#171717]/10">
-                <p className="text-xs font-bold uppercase tracking-wider text-[#171717]/50 mb-4">Preview (English):</p>
-                <div className="bg-white p-6 rounded-lg shadow-sm">
-                  <h3 className="text-2xl sm:text-3xl font-bold text-[#171717] mb-3">
-                    {activitiesData.heroHeadingEn}
-                  </h3>
-                  <p className="text-base text-[#171717]/70 leading-relaxed">
-                    {activitiesData.heroDescriptionEn}
-                  </p>
-                </div>
-              </div>
+              )}
             </div>
           )}
 
-
-          {/* Responsibility Sections (Bullet Points) */}
-          {activeTab === 'sections' && (
-            <div className="space-y-6">
-              <div className="flex items-start sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-2">
-                  <Monitor className="text-[#631012] w-5 h-5 sm:w-6 sm:h-6" />
-                  <h2 className="text-xl sm:text-2xl font-bold text-[#171717]">
-                    Responsibility Sections (Bullet Points)
-                  </h2>
+          {/* Tab 2: Header Settings */}
+          {activeTab === 'heading' && (
+            <div className="space-y-6 max-w-3xl">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-3 bg-gray-50/70 p-5 rounded-lg border border-gray-200">
+                  <label className="text-xs font-bold uppercase text-gray-700 block">
+                    Page Title (English)
+                  </label>
+                  <input
+                    type="text"
+                    value={heading.title_en}
+                    onChange={(e) => setHeading({ ...heading, title_en: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:border-[#631012]"
+                  />
+                  <label className="text-xs font-bold uppercase text-gray-700 block pt-2">
+                    Subtitle / Statutory Introduction (English)
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={heading.sub_title_en}
+                    onChange={(e) => setHeading({ ...heading, sub_title_en: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:border-[#631012]"
+                  />
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={addSection}
-                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shadow-md text-sm sm:text-base font-medium"
-                  >
-                    <Plus size={18} />
-                    Add Section
-                  </button>
-                  <button
-                    onClick={handleSaveSections}
-                    className="bg-[#631012] hover:bg-[#7a1214] text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shadow-md text-sm sm:text-base font-medium"
-                  >
-                    <Save size={18} />
-                    Save All
-                  </button>
+
+                <div className="space-y-3 bg-gray-50/70 p-5 rounded-lg border border-gray-200">
+                  <label className="text-xs font-bold uppercase text-gray-700 block">
+                    Page Title (Hindi)
+                  </label>
+                  <input
+                    type="text"
+                    value={heading.title_hn}
+                    onChange={(e) => setHeading({ ...heading, title_hn: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:border-[#631012]"
+                  />
+                  <label className="text-xs font-bold uppercase text-gray-700 block pt-2">
+                    Subtitle / Statutory Introduction (Hindi)
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={heading.sub_title_hn}
+                    onChange={(e) => setHeading({ ...heading, sub_title_hn: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:border-[#631012]"
+                  />
                 </div>
               </div>
 
-              <div className="space-y-8 mt-6">
-                {subtexts.map((item, index) => (
-                  <div key={index} className="p-6 border border-[#171717]/10 rounded-xl bg-[#F9F9F9] shadow-sm relative">
-                    <button
-                      onClick={() => removeSection(index, item.id)}
-                      className="absolute top-4 right-4 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Remove Section"
-                    >
-                      <Trash2 size={20} />
-                    </button>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                      <div className="space-y-4">
-                        <label className="block text-xs font-bold uppercase tracking-wider text-[#171717]/50">English Content</label>
-                        <input
-                          type="text"
-                          value={item.heading_en}
-                          onChange={(e) => updateSection(index, 'heading_en', e.target.value)}
-                          className="w-full px-4 py-2.5 border border-[#171717]/15 rounded-lg focus:ring-2 focus:ring-[#631012] outline-none text-sm font-semibold"
-                          placeholder="Section Heading (English)"
-                        />
-                        <textarea
-                          rows={2}
-                          value={item.subheading_en}
-                          onChange={(e) => updateSection(index, 'subheading_en', e.target.value)}
-                          className="w-full px-4 py-2.5 border border-[#171717]/15 rounded-lg focus:ring-2 focus:ring-[#631012] outline-none text-sm"
-                          placeholder="Section Subheading (English)"
-                        />
-                      </div>
-
-                      <div className="space-y-4">
-                        <label className="block text-xs font-bold uppercase tracking-wider text-[#171717]/50">Hindi Content</label>
-                        <input
-                          type="text"
-                          value={item.heading_hn}
-                          onChange={(e) => updateSection(index, 'heading_hn', e.target.value)}
-                          className="w-full px-4 py-2.5 border border-[#171717]/15 rounded-lg focus:ring-2 focus:ring-[#631012] outline-none text-sm font-semibold"
-                          placeholder="Section Heading (Hindi)"
-                        />
-                        <textarea
-                          rows={2}
-                          value={item.subheading_hn}
-                          onChange={(e) => updateSection(index, 'subheading_hn', e.target.value)}
-                          className="w-full px-4 py-2.5 border border-[#171717]/15 rounded-lg focus:ring-2 focus:ring-[#631012] outline-none text-sm"
-                          placeholder="Section Subheading (Hindi)"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="mt-4">
-                      <label className="block text-xs font-bold uppercase tracking-wider text-[#171717]/50 mb-2">Bullet Points (One per line)</label>
-                      <textarea
-                        rows={6}
-                        value={item.small_text}
-                        onChange={(e) => updateSection(index, 'small_text', e.target.value)}
-                        className="w-full px-4 py-2.5 border border-[#171717]/15 rounded-lg focus:ring-2 focus:ring-[#631012] outline-none text-sm font-mono"
-                        placeholder="• Point 1&#10;• Point 2"
-                      />
-                      <p className="text-[10px] text-[#171717]/40 mt-1 italic">Note: Content will be split by new lines on the website.</p>
-                    </div>
-                  </div>
-                ))}
-
-                {subtexts.length === 0 && (
-                  <div className="text-center py-20 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-                    <Monitor className="mx-auto w-12 h-12 text-gray-300 mb-3" />
-                    <p className="text-gray-500 font-medium">No sections found. Add a new section to get started.</p>
-                  </div>
-                )}
-              </div>
+              <button
+                onClick={handleSaveHeading}
+                disabled={savingHeading}
+                className="bg-[#631012] hover:bg-[#500c0e] text-white px-6 py-2.5 rounded-lg flex items-center gap-2 text-xs font-bold transition-colors shadow-sm disabled:opacity-50"
+              >
+                <Save size={16} />
+                <span>{savingHeading ? 'Saving...' : 'Save Title Settings'}</span>
+              </button>
             </div>
           )}
         </div>
       </div>
+
+      {/* Add / Edit Modal */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-xl w-full overflow-hidden border border-gray-200 max-h-[90vh] flex flex-col">
+            <div className="bg-[#500c0e] text-white px-6 py-4 flex items-center justify-between shrink-0">
+              <h2 className="text-base font-bold">
+                {editingId ? 'Edit Responsibility' : 'Add New Responsibility'}
+              </h2>
+              <button onClick={() => setModalOpen(false)} className="text-white/70 hover:text-white">
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitSubtext} className="p-6 space-y-4 overflow-y-auto">
+              <div>
+                <label className="text-[11px] font-bold uppercase text-gray-600 block mb-1">
+                  Responsibility Description (English) *
+                </label>
+                <textarea
+                  rows={4}
+                  required
+                  value={formSmallText}
+                  onChange={(e) => setFormSmallText(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-gray-300 rounded focus:outline-none focus:border-[#631012]"
+                  placeholder="e.g. Deputation of faculty to various institutions under Quality Improvement Programme."
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold uppercase text-gray-600 block mb-1">
+                  Responsibility Description (Hindi)
+                </label>
+                <textarea
+                  rows={3}
+                  value={formHeadingHn}
+                  onChange={(e) => setFormHeadingHn(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-gray-300 rounded focus:outline-none focus:border-[#631012]"
+                  placeholder="हिंदी विवरण..."
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[11px] font-bold uppercase text-gray-600 block mb-1">
+                    Short Title / Category (English)
+                  </label>
+                  <input
+                    type="text"
+                    value={formHeadingEn}
+                    onChange={(e) => setFormHeadingEn(e.target.value)}
+                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded focus:outline-none focus:border-[#631012]"
+                    placeholder="e.g. Faculty Deputation under QIP"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold uppercase text-gray-600 block mb-1">
+                    Subheading / Scope (English)
+                  </label>
+                  <input
+                    type="text"
+                    value={formSubheadingEn}
+                    onChange={(e) => setFormSubheadingEn(e.target.value)}
+                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded focus:outline-none focus:border-[#631012]"
+                    placeholder="e.g. Quality Improvement Programme"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-gray-200 flex items-center justify-end gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-xs font-semibold hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-5 py-2 bg-[#631012] hover:bg-[#500c0e] text-white rounded-lg text-xs font-bold shadow-sm disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  <CheckCircle2 size={15} />
+                  <span>{submitting ? 'Saving...' : editingId ? 'Update Item' : 'Add Item'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

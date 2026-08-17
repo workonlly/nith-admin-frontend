@@ -2,356 +2,496 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Save,
   FileText,
+  Save,
   Plus,
   Trash2,
-  BookOpen,
-  Download,
+  Edit2,
+  RefreshCw,
+  Layout,
+  CheckCircle2,
+  X,
   ExternalLink,
-  Calendar,
-  Upload,
 } from 'lucide-react';
 
-interface Rule {
+interface CpdaRule {
   id: number;
+  sl_no: string;
   particulars_en: string;
   particulars_hn: string;
   pdf_url: string;
   word_url: string;
 }
 
-interface CPDAData {
-  heroHeadingEn: string;
-  heroHeadingHn: string;
-  heroDescriptionEn: string;
-  heroDescriptionHn: string;
-  rules: Rule[];
+interface HeadingData {
+  title_en: string;
+  title_hn: string;
+  sub_title_en: string;
+  sub_title_hn: string;
 }
 
-const INITIAL_RULES: Rule[] = [
-  {
-    id: 1,
-    particulars_en: 'CUMULATIVE PROFESSIONAL DEVELOPMENT ALLOWANCE (CPDA) RULES W.E.F. 1st APRIL, 2021 to 31st MARCH, 2024',
-    particulars_hn: '1 अप्रैल, 2021 से 31 मार्च, 2024 तक संचयी व्यावसायिक विकास भत्ता (सीपीडीए) नियम',
-    pdf_url: '/documents/cpda-rules.pdf',
-    word_url: '/documents/cpda-rules.docx',
-  }
-];
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
-type TabType = 'hero' | 'rules';
-
-export default function CPDARulesPage() {
-  const [activeTab, setActiveTab] = useState<TabType>('hero');
-  const [cpdaData, setCpdaData] = useState<CPDAData>({
-    heroHeadingEn: 'CPDA Rules',
-    heroHeadingHn: 'सीपीडीए नियम',
-    heroDescriptionEn: 'Important rules and guidelines for Cumulative Professional Development Allowance.',
-    heroDescriptionHn: 'संचयी व्यावसायिक विकास भत्ते के लिए महत्वपूर्ण नियम और दिशा-निर्देश।',
-    rules: INITIAL_RULES,
+export default function CpdaRulesAdmin() {
+  const [heading, setHeading] = useState<HeadingData>({
+    title_en: 'CUMULATIVE PROFESSIONAL DEVELOPMENT ALLOWANCE (CPDA) RULES W.E.F. 1st APRIL, 2021 to 31st MARCH, 2024',
+    title_hn: 'संचयी व्यावसायिक विकास भत्ता (सीपीडीए) नियम - 1 अप्रैल 2021 से 31 मार्च 2024 तक लागू',
+    sub_title_en: 'Guidelines, notifications, and office orders for the grant and utilization of CPDA for faculty members.',
+    sub_title_hn: 'संकाय सदस्यों के लिए सीपीडीए के अनुदान और उपयोग के लिए दिशानिर्देश, अधिसूचनाएं और कार्यालय आदेश।',
   });
-  const [uploadingState, setUploadingState] = useState<{ [key: string]: boolean }>({});
 
-  const handleFileUpload = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-    id: number,
-    type: 'pdf' | 'word'
-  ) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const [rules, setRules] = useState<CpdaRule[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [savingHeading, setSavingHeading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'rules' | 'heading'>('rules');
 
-    if (type === 'pdf' && file.type !== 'application/pdf') {
-      alert('Only PDF files are allowed!');
-      return;
-    }
-    
-    if (
-      type === 'word' &&
-      !file.name.endsWith('.doc') &&
-      !file.name.endsWith('.docx') &&
-      file.type !== 'application/msword' &&
-      file.type !== 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    ) {
-      alert('Only Word documents (.doc, .docx) are allowed!');
-      return;
-    }
+  // Modal / Form states
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [formSlNo, setFormSlNo] = useState('1');
+  const [formParticularsEn, setFormParticularsEn] = useState('');
+  const [formParticularsHn, setFormParticularsHn] = useState('');
+  const [formPdfUrl, setFormPdfUrl] = useState('');
+  const [formWordUrl, setFormWordUrl] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-    const uploadKey = `${id}-${type}`;
-    setUploadingState((prev) => ({ ...prev, [uploadKey]: true }));
+  const fetchData = async () => {
     try {
-      const formData = new FormData();
-      formData.append('file', file);
+      setLoading(true);
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/upload`, {
-        method: 'POST',
-        headers: {
-          'x-bucket-name': 'faculty-section',
-        },
-        body: formData,
-      });
+      // Fetch heading
+      const hRes = await fetch(`${API_BASE}/api/faculty-cpda`);
+      if (hRes.ok) {
+        const hData = await hRes.json();
+        if (hData && hData.title_en) {
+          setHeading({
+            title_en: hData.title_en || '',
+            title_hn: hData.title_hn || '',
+            sub_title_en: hData.sub_title_en || '',
+            sub_title_hn: hData.sub_title_hn || '',
+          });
+        }
+      }
 
-      const result = await res.json();
-      if (result.success && result.url) {
-        setCpdaData((prev) => ({
-          ...prev,
-          rules: prev.rules.map((r) =>
-            r.id === id ? { ...r, [type === 'pdf' ? 'pdf_url' : 'word_url']: result.url } : r
-          ),
-        }));
-        alert(`${type.toUpperCase()} uploaded successfully!`);
-      } else {
-        alert(`Failed to upload ${type.toUpperCase()}: ` + (result.error || 'Unknown error'));
+      // Fetch list
+      const lRes = await fetch(`${API_BASE}/api/faculty-cpda/list`);
+      if (lRes.ok) {
+        const lData = await lRes.json();
+        if (Array.isArray(lData)) {
+          setRules(lData);
+        }
       }
     } catch (err) {
-      console.error(err);
-      alert(`Error uploading ${type.toUpperCase()} to server`);
+      console.error('Error fetching CPDA rules:', err);
     } finally {
-      setUploadingState((prev) => ({ ...prev, [uploadKey]: false }));
+      setLoading(false);
     }
   };
 
-  const tabs = [
-    { id: 'hero' as TabType, label: 'Hero Section', icon: <FileText size={18} /> },
-    { id: 'rules' as TabType, label: 'Rules Management', icon: <BookOpen size={18} /> },
-  ];
-
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const hRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-cpda`);
-        const hData = await hRes.json();
-        if (hData && hData.title_en) {
-          setCpdaData(prev => ({
-            ...prev,
-            heroHeadingEn: hData.title_en,
-            heroHeadingHn: hData.title_hn,
-            heroDescriptionEn: hData.sub_title_en,
-            heroDescriptionHn: hData.sub_title_hn,
-          }));
-        }
-
-        const lRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-cpda/list`);
-        const lData = await lRes.json();
-        if (Array.isArray(lData) && lData.length > 0) {
-          setCpdaData(prev => ({ ...prev, rules: lData }));
-        }
-      } catch (err) {
-        console.error('Fetch failed:', err);
-      }
-    };
     fetchData();
   }, []);
 
-  const handleSave = async () => {
+  const handleSaveHeading = async () => {
     try {
-      // Save Hero
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-cpda`, {
+      setSavingHeading(true);
+      const res = await fetch(`${API_BASE}/api/faculty-cpda`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title_en: cpdaData.heroHeadingEn,
-          title_hn: cpdaData.heroHeadingHn,
-          sub_title_en: cpdaData.heroDescriptionEn,
-          sub_title_hn: cpdaData.heroDescriptionHn,
-        }),
+        body: JSON.stringify(heading),
       });
-
-      // Save Rules
-      for (const rule of cpdaData.rules) {
-        if (rule.id > 0 && rule.id < 1000000) { // Existing Database ID
-          await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/faculty-cpda/list/${rule.id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(rule),
-          });
-        } else {
-          // New Rule (Date.now() or Negative Hardcoded ID)
-          await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000')}/api/faculty-cpda/list`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(rule),
-          });
-        }
+      if (res.ok) {
+        alert('Heading settings saved successfully!');
+      } else {
+        alert('Failed to save heading');
       }
-      alert('Changes saved successfully!');
-      // Re-fetch to get real database IDs for new items
-      window.location.reload(); 
     } catch (err) {
-      console.error('Save failed:', err);
-      alert('Failed to save changes');
+      console.error(err);
+      alert('Error saving heading');
+    } finally {
+      setSavingHeading(false);
     }
   };
 
-  const updateRule = (id: number, field: keyof Rule, value: string) => {
-    setCpdaData({
-      ...cpdaData,
-      rules: cpdaData.rules.map((r) => r.id === id ? { ...r, [field]: value } : r),
-    });
+  const openAddModal = () => {
+    setEditingId(null);
+    setFormSlNo((rules.length + 1).toString());
+    setFormParticularsEn('');
+    setFormParticularsHn('');
+    setFormPdfUrl('');
+    setFormWordUrl('');
+    setModalOpen(true);
   };
 
-  const addRule = () => {
-    setCpdaData({
-      ...cpdaData,
-      rules: [
-        ...cpdaData.rules,
-        { id: Date.now() + Math.floor(Math.random() * 1000), particulars_en: '', particulars_hn: '', pdf_url: '', word_url: '' },
-      ],
-    });
+  const openEditModal = (item: CpdaRule) => {
+    setEditingId(item.id);
+    setFormSlNo(item.sl_no || '1');
+    setFormParticularsEn(item.particulars_en || '');
+    setFormParticularsHn(item.particulars_hn || '');
+    setFormPdfUrl(item.pdf_url || '');
+    setFormWordUrl(item.word_url || '');
+    setModalOpen(true);
   };
 
-  const removeRule = async (id: number) => {
-    if (id > 0 && id < 1000000) {
-      if (!confirm('Delete from database?')) return;
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/faculty-cpda/list/${id}`, { method: 'DELETE' });
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formParticularsEn.trim()) {
+      alert('Please enter Particulars text');
+      return;
     }
-    setCpdaData({
-      ...cpdaData,
-      rules: cpdaData.rules.filter((r) => r.id !== id),
-    });
+
+    try {
+      setSubmitting(true);
+      const payload = {
+        sl_no: formSlNo,
+        particulars_en: formParticularsEn,
+        particulars_hn: formParticularsHn,
+        pdf_url: formPdfUrl,
+        word_url: formWordUrl,
+      };
+
+      let res;
+      if (editingId) {
+        res = await fetch(`${API_BASE}/api/faculty-cpda/list/${editingId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        res = await fetch(`${API_BASE}/api/faculty-cpda/list`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      }
+
+      if (res.ok) {
+        alert(editingId ? 'CPDA rule updated!' : 'CPDA rule added successfully!');
+        setModalOpen(false);
+        fetchData();
+      } else {
+        alert('Failed to save CPDA rule');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error saving record');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this CPDA rule?')) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/faculty-cpda/list/${id}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        fetchData();
+      } else {
+        alert('Failed to delete rule');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error deleting rule');
+    }
   };
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex items-center justify-between">
+    <div className="space-y-6 p-6 font-sans">
+      {/* Header */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="bg-[#631012]/10 p-3 rounded-full text-[#631012]">
-              <BookOpen size={28} />
+            <div className="bg-[#631012]/10 p-3 rounded-lg text-[#631012]">
+              <FileText size={28} />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-[#171717]">CPDA Rules Editor</h1>
-              <p className="text-[#171717]/60">Manage faculty CPDA guidelines and documents</p>
+              <h1 className="text-2xl font-bold text-gray-900">CPDA Rules Manager</h1>
+              <p className="text-xs text-gray-500">
+                Manage Cumulative Professional Development Allowance orders, circulars, and notifications.
+              </p>
             </div>
           </div>
-          <button onClick={handleSave} className="bg-[#631012] hover:bg-[#7a1214] text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors shadow-md">
-            <Save size={20} /> Save Changes
-          </button>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={fetchData}
+              disabled={loading}
+              className="px-3 py-2 border border-gray-300 hover:bg-gray-50 rounded-lg text-xs font-semibold text-gray-700 flex items-center gap-1.5 transition-colors"
+            >
+              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+              <span>Refresh</span>
+            </button>
+            <button
+              onClick={openAddModal}
+              className="bg-[#631012] hover:bg-[#500c0e] text-white px-4 py-2 rounded-lg flex items-center gap-2 text-xs font-bold transition-colors shadow-sm"
+            >
+              <Plus size={16} />
+              <span>Add CPDA Order</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="flex border-b border-[#171717]/10">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors ${activeTab === tab.id ? 'bg-[#631012] text-white' : 'text-[#171717]/70 hover:bg-gray-50'}`}
-            >
-              {tab.icon} {tab.label}
-            </button>
-          ))}
+      {/* Tabs */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="flex border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab('rules')}
+            className={`flex items-center gap-2 px-6 py-3.5 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 ${
+              activeTab === 'rules'
+                ? 'border-[#631012] text-[#631012] bg-gray-50/70'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <FileText size={16} />
+            <span>CPDA Particulars ({rules.length})</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('heading')}
+            className={`flex items-center gap-2 px-6 py-3.5 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 ${
+              activeTab === 'heading'
+                ? 'border-[#631012] text-[#631012] bg-gray-50/70'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <Layout size={16} />
+            <span>Page Title Settings</span>
+          </button>
         </div>
 
         <div className="p-6">
-          {activeTab === 'hero' && (
-            <div className="grid grid-cols-2 gap-8">
-              <div className="space-y-4">
-                <label className="block text-xs font-bold uppercase text-gray-500">English Header</label>
-                <input type="text" value={cpdaData.heroHeadingEn} onChange={(e) => setCpdaData({...cpdaData, heroHeadingEn: e.target.value})} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#631012]" placeholder="Heading" />
-                <textarea rows={3} value={cpdaData.heroDescriptionEn} onChange={(e) => setCpdaData({...cpdaData, heroDescriptionEn: e.target.value})} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#631012]" placeholder="Description" />
-              </div>
-              <div className="space-y-4">
-                <label className="block text-xs font-bold uppercase text-gray-500">Hindi Header</label>
-                <input type="text" value={cpdaData.heroHeadingHn} onChange={(e) => setCpdaData({...cpdaData, heroHeadingHn: e.target.value})} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#631012]" placeholder="शीर्षक" />
-                <textarea rows={3} value={cpdaData.heroDescriptionHn} onChange={(e) => setCpdaData({...cpdaData, heroDescriptionHn: e.target.value})} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#631012]" placeholder="विवरण" />
-              </div>
+          {/* Tab 1: Rules List */}
+          {activeTab === 'rules' && (
+            <div className="space-y-4">
+              {rules.length === 0 ? (
+                <div className="text-center py-16 bg-gray-50 border border-gray-200 rounded-lg p-6">
+                  <FileText className="w-10 h-10 text-gray-400 mx-auto mb-2" />
+                  <p className="text-sm font-semibold text-gray-700">No CPDA orders added yet.</p>
+                  <button
+                    onClick={openAddModal}
+                    className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 bg-[#631012] text-white text-xs font-bold rounded-lg"
+                  >
+                    <Plus size={14} /> Add First Entry
+                  </button>
+                </div>
+              ) : (
+                <div className="border border-gray-300 rounded-lg overflow-x-auto">
+                  <table className="w-full text-left text-xs sm:text-sm text-gray-800 border-collapse">
+                    <thead className="bg-[#f0f4f8] border-b border-gray-300 text-[#0c344e] font-mono uppercase text-xs">
+                      <tr>
+                        <th className="py-3 px-4 w-16 text-center">Sl. No.</th>
+                        <th className="py-3 px-4">Particulars</th>
+                        <th className="py-3 px-4 w-40">Document Link</th>
+                        <th className="py-3 px-4 w-28 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 bg-white">
+                      {rules.map((item, index) => (
+                        <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="py-3.5 px-4 font-mono text-center font-bold text-gray-600">
+                            {item.sl_no || index + 1}
+                          </td>
+                          <td className="py-3.5 px-4 space-y-1">
+                            <div className="font-bold text-gray-900 leading-snug">
+                              {item.particulars_en}
+                            </div>
+                            {item.particulars_hn && (
+                              <div className="text-xs text-gray-600 font-medium">
+                                {item.particulars_hn}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4">
+                            {item.pdf_url && item.pdf_url !== '#' ? (
+                              <a
+                                href={item.pdf_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-xs text-[#631012] hover:underline font-semibold"
+                              >
+                                <span>View PDF</span>
+                                <ExternalLink size={12} />
+                              </a>
+                            ) : (
+                              <span className="text-gray-400 text-xs font-mono">No Link</span>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                            <div className="inline-flex items-center gap-2">
+                              <button
+                                onClick={() => openEditModal(item)}
+                                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
+                                title="Edit"
+                              >
+                                <Edit2 size={15} />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(item.id)}
+                                className="p-1.5 text-red-600 hover:bg-red-50 rounded"
+                                title="Delete"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
 
-          {activeTab === 'rules' && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold text-gray-800">Rules Management</h2>
-                <button onClick={addRule} className="bg-[#631012] text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-[#7a1214]">
-                  <Plus size={18} /> Add Rule
-                </button>
+          {/* Tab 2: Title Settings */}
+          {activeTab === 'heading' && (
+            <div className="space-y-6 max-w-3xl">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-3 bg-gray-50/70 p-5 rounded-lg border border-gray-200">
+                  <label className="text-xs font-bold uppercase text-gray-700 block">
+                    Page Title (English)
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={heading.title_en}
+                    onChange={(e) => setHeading({ ...heading, title_en: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:border-[#631012]"
+                  />
+                  <label className="text-xs font-bold uppercase text-gray-700 block pt-2">
+                    Subtitle (English)
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={heading.sub_title_en}
+                    onChange={(e) => setHeading({ ...heading, sub_title_en: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:border-[#631012]"
+                  />
+                </div>
+
+                <div className="space-y-3 bg-gray-50/70 p-5 rounded-lg border border-gray-200">
+                  <label className="text-xs font-bold uppercase text-gray-700 block">
+                    Page Title (Hindi)
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={heading.title_hn}
+                    onChange={(e) => setHeading({ ...heading, title_hn: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:border-[#631012]"
+                  />
+                  <label className="text-xs font-bold uppercase text-gray-700 block pt-2">
+                    Subtitle (Hindi)
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={heading.sub_title_hn}
+                    onChange={(e) => setHeading({ ...heading, sub_title_hn: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:border-[#631012]"
+                  />
+                </div>
               </div>
 
-              <div className="space-y-4">
-                {cpdaData.rules.map((rule, idx) => (
-                  <div key={rule.id} className="p-4 border rounded-xl bg-gray-50 relative group">
-                    <button onClick={() => removeRule(rule.id)} className="absolute top-4 right-4 text-red-500 hover:bg-red-50 p-2 rounded-lg">
-                      <Trash2 size={18} />
-                    </button>
-                    
-                    <div className="grid grid-cols-2 gap-6">
-                      <div className="space-y-3">
-                        <label className="text-xs font-bold text-[#631012] uppercase">English Particulars</label>
-                        <textarea value={rule.particulars_en} onChange={(e) => updateRule(rule.id, 'particulars_en', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm h-24" placeholder="Description in English" />
-                      </div>
-                      <div className="space-y-3">
-                        <label className="text-xs font-bold text-[#631012] uppercase">Hindi Particulars</label>
-                        <textarea value={rule.particulars_hn} onChange={(e) => updateRule(rule.id, 'particulars_hn', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm h-24" placeholder="हिंदी में विवरण" />
-                      </div>
-                      <div className="col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-4">
-                        {/* PDF Upload and URL */}
-                        <div className="space-y-3 p-3 bg-white rounded-lg border border-gray-200">
-                          <label className="text-[10px] font-bold text-[#631012] uppercase block">PDF Document</label>
-                          <input 
-                            type="text" 
-                            value={rule.pdf_url} 
-                            onChange={(e) => updateRule(rule.id, 'pdf_url', e.target.value)} 
-                            className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50" 
-                            placeholder="PDF URL" 
-                          />
-                          <div className="flex items-center gap-3">
-                            <label className={`px-3 py-1.5 rounded-lg text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm ${uploadingState[`${rule.id}-pdf`] ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#631012] hover:bg-[#7a1214]'}`}>
-                              <Upload size={12} />
-                              {uploadingState[`${rule.id}-pdf`] ? 'Uploading...' : 'Upload PDF'}
-                              <input 
-                                type="file" 
-                                accept="application/pdf" 
-                                disabled={!!uploadingState[`${rule.id}-pdf`]}
-                                onChange={(e) => handleFileUpload(e, rule.id, 'pdf')} 
-                                className="hidden" 
-                              />
-                            </label>
-                            {rule.pdf_url && (
-                              <span className="text-[11px] text-green-600 font-semibold flex items-center gap-1 truncate max-w-[180px]">
-                                ✓ Active PDF
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Word Upload and URL */}
-                        <div className="space-y-3 p-3 bg-white rounded-lg border border-gray-200">
-                          <label className="text-[10px] font-bold text-[#631012] uppercase block">Word Document</label>
-                          <input 
-                            type="text" 
-                            value={rule.word_url} 
-                            onChange={(e) => updateRule(rule.id, 'word_url', e.target.value)} 
-                            className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50" 
-                            placeholder="Word Document URL" 
-                          />
-                          <div className="flex items-center gap-3">
-                            <label className={`px-3 py-1.5 rounded-lg text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm ${uploadingState[`${rule.id}-word`] ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#631012] hover:bg-[#7a1214]'}`}>
-                              <Upload size={12} />
-                              {uploadingState[`${rule.id}-word`] ? 'Uploading...' : 'Upload Word'}
-                              <input 
-                                type="file" 
-                                accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
-                                disabled={!!uploadingState[`${rule.id}-word`]}
-                                onChange={(e) => handleFileUpload(e, rule.id, 'word')} 
-                                className="hidden" 
-                              />
-                            </label>
-                            {rule.word_url && (
-                              <span className="text-[11px] text-green-600 font-semibold flex items-center gap-1 truncate max-w-[180px]">
-                                ✓ Active Word Doc
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <button
+                onClick={handleSaveHeading}
+                disabled={savingHeading}
+                className="bg-[#631012] hover:bg-[#500c0e] text-white px-6 py-2.5 rounded-lg flex items-center gap-2 text-xs font-bold transition-colors shadow-sm disabled:opacity-50"
+              >
+                <Save size={16} />
+                <span>{savingHeading ? 'Saving...' : 'Save Title Settings'}</span>
+              </button>
             </div>
           )}
         </div>
       </div>
+
+      {/* Add / Edit Modal */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-xl w-full overflow-hidden border border-gray-200 max-h-[90vh] flex flex-col">
+            <div className="bg-[#500c0e] text-white px-6 py-4 flex items-center justify-between shrink-0">
+              <h2 className="text-base font-bold">
+                {editingId ? 'Edit CPDA Order' : 'Add New CPDA Order'}
+              </h2>
+              <button onClick={() => setModalOpen(false)} className="text-white/70 hover:text-white">
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
+              <div className="w-24">
+                <label className="text-[11px] font-bold uppercase text-gray-600 block mb-1">
+                  Sl. No.
+                </label>
+                <input
+                  type="text"
+                  value={formSlNo}
+                  onChange={(e) => setFormSlNo(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-gray-300 rounded focus:outline-none focus:border-[#631012] font-mono font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold uppercase text-gray-600 block mb-1">
+                  Particulars / Order Title (English) *
+                </label>
+                <textarea
+                  rows={3}
+                  required
+                  value={formParticularsEn}
+                  onChange={(e) => setFormParticularsEn(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-gray-300 rounded focus:outline-none focus:border-[#631012] font-semibold"
+                  placeholder="e.g. Office order regarding CPDA dated 13-03-2023"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold uppercase text-gray-600 block mb-1">
+                  Particulars / Order Title (Hindi)
+                </label>
+                <textarea
+                  rows={2}
+                  value={formParticularsHn}
+                  onChange={(e) => setFormParticularsHn(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-gray-300 rounded focus:outline-none focus:border-[#631012]"
+                  placeholder="उदा. सीपीडीए के संबंध में कार्यालय आदेश..."
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold uppercase text-gray-600 block mb-1">
+                  Document PDF URL
+                </label>
+                <input
+                  type="text"
+                  value={formPdfUrl}
+                  onChange={(e) => setFormPdfUrl(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-gray-300 rounded focus:outline-none focus:border-[#631012]"
+                  placeholder="https://nith.ac.in/uploads/..."
+                />
+              </div>
+
+              <div className="pt-3 border-t border-gray-200 flex items-center justify-end gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-xs font-semibold hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-5 py-2 bg-[#631012] hover:bg-[#500c0e] text-white rounded-lg text-xs font-bold shadow-sm disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  <CheckCircle2 size={15} />
+                  <span>{submitting ? 'Saving...' : editingId ? 'Update Record' : 'Add Order'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
