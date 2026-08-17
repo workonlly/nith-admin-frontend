@@ -1,272 +1,208 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Save, User, ExternalLink, Plus, Trash2 } from 'lucide-react';
+import { Landmark, Save, RefreshCw, Loader2 } from 'lucide-react';
 
-interface Visitor {
+interface VisitorData {
   id?: number;
-  name: string;
-  title: string;
-  description: string;
-  website_label: string;
-  website_url: string;
-  name_en?: string;
-  name_hi?: string;
-  title_en?: string;
-  title_hi?: string;
+  image?: string;
+  heading_en?: string;
+  heading_hi?: string;
+  designation_en?: string;
+  designation_hi?: string;
   description_en?: string;
   description_hi?: string;
-  website_label_en?: string;
-  website_label_hi?: string;
 }
 
-interface PageInfo {
-  hero_heading: string;
-  hero_subheading: string;
-  hero_heading_en?: string;
-  hero_heading_hi?: string;
-  hero_subheading_en?: string;
-  hero_subheading_hi?: string;
-}
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 export default function VisitorAdminPage() {
-  const [visitors, setVisitors] = useState<Visitor[]>([]);
-  const [info, setInfo] = useState<PageInfo>({ hero_heading: '', hero_subheading: '' });
-  const [loading, setLoading] = useState(true);
-  
-  const [formData, setFormData] = useState<Visitor>({
-    name: '', name_en: '', name_hi: '', title: '', title_en: '', title_hi: '', description: '', description_en: '', description_hi: '', website_label: '', website_label_en: '', website_label_hi: '', website_url: ''
+  const [visitor, setVisitor] = useState<VisitorData>({
+    heading_en: 'Smt. Droupadi Murmu',
+    heading_hi: 'श्रीमती द्रौपदी मुर्मु',
+    designation_en: "Hon'ble President of India & Visitor of NIT Hamirpur",
+    designation_hi: 'माननीय भारत की राष्ट्रपति एवं एनआईटी हमीरपुर की कुलाध्यक्ष',
+    description_en: '',
+    description_hi: '',
+    image: '',
   });
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`${API_BASE}/api/administration/visitor`, { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.heading_en) setVisitor(data);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchData();
   }, []);
 
-  const isHindi = (text: string) => /[\u0900-\u097F]/.test(text || '');
-
-  const fetchData = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
-      const [infoRes, listRes] = await Promise.all([
-        fetch('http://localhost:5000/api/v1/administration/visitors-info'),
-        fetch('http://localhost:5000/api/v1/administration/visitors')
-      ]);
-      const infoData = await infoRes.json();
-      const listData = await listRes.json();
-      
-      if (infoData.success && infoData.data) {
-        const inf = infoData.data;
-        setInfo({
-          ...inf,
-          hero_heading_en: isHindi(inf.hero_heading) ? '' : inf.hero_heading,
-          hero_heading_hi: isHindi(inf.hero_heading) ? inf.hero_heading : '',
-          hero_subheading_en: isHindi(inf.hero_subheading) ? '' : inf.hero_subheading,
-          hero_subheading_hi: isHindi(inf.hero_subheading) ? inf.hero_subheading : '',
-        });
+      setSaving(true);
+      const formData = new FormData();
+      formData.append('heading_en', visitor.heading_en || '');
+      formData.append('heading_hi', visitor.heading_hi || '');
+      formData.append('designation_en', visitor.designation_en || '');
+      formData.append('designation_hi', visitor.designation_hi || '');
+      formData.append('description_en', visitor.description_en || '');
+      formData.append('description_hi', visitor.description_hi || '');
+      if (file) formData.append('image_file', file);
+      else if (visitor.image) formData.append('image', visitor.image);
+
+      const res = await fetch(`${API_BASE}/api/administration/visitor`, {
+        method: 'PUT',
+        body: formData,
+      });
+      if (res.ok) {
+        alert('Visitor profile saved successfully!');
+        fetchData();
+      } else {
+        alert('Failed to save visitor profile');
       }
-      if (listData.success) {
-        const mapped = listData.data.map((v: any) => ({
-          ...v,
-          name_en: isHindi(v.name) ? '' : v.name,
-          name_hi: isHindi(v.name) ? v.name : '',
-          title_en: isHindi(v.title) ? '' : v.title,
-          title_hi: isHindi(v.title) ? v.title : '',
-          description_en: isHindi(v.description) ? '' : v.description,
-          description_hi: isHindi(v.description) ? v.description : '',
-          website_label_en: isHindi(v.website_label) ? '' : v.website_label,
-          website_label_hi: isHindi(v.website_label) ? v.website_label : '',
-        }));
-        setVisitors(mapped);
-      }
-      setLoading(false);
     } catch (err) {
       console.error(err);
-      setLoading(false);
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleSaveInfo = async () => {
-    const payload = {
-      ...info,
-      hero_heading: info.hero_heading_hi || info.hero_heading_en || info.hero_heading,
-      hero_subheading: info.hero_subheading_hi || info.hero_subheading_en || info.hero_subheading
-    };
-    try {
-      const res = await fetch('http://localhost:5000/api/v1/administration/visitors-info', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if ((await res.json()).success) alert('Header saved!');
-    } catch (err) { alert('Error saving header'); }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const payload = {
-      ...formData,
-      name: formData.name_hi || formData.name_en || formData.name,
-      title: formData.title_hi || formData.title_en || formData.title,
-      description: formData.description_hi || formData.description_en || formData.description,
-      website_label: formData.website_label_hi || formData.website_label_en || formData.website_label
-    };
-    try {
-      const method = editingId ? 'PUT' : 'POST';
-      const url = editingId 
-        ? `http://localhost:5000/api/v1/administration/visitors/${editingId}`
-        : 'http://localhost:5000/api/v1/administration/visitors';
-      
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if ((await res.json()).success) {
-        fetchData();
-        setFormData({ name: '', name_en: '', name_hi: '', title: '', title_en: '', title_hi: '', description: '', description_en: '', description_hi: '', website_label: '', website_label_en: '', website_label_hi: '', website_url: '' });
-        setEditingId(null);
-      }
-    } catch (err) { alert('Error saving visitor'); }
-  };
-
-  const handleEdit = (v: Visitor) => {
-    setFormData({
-      ...v,
-      name_en: isHindi(v.name) ? '' : v.name,
-      name_hi: isHindi(v.name) ? v.name : '',
-      title_en: isHindi(v.title) ? '' : v.title,
-      title_hi: isHindi(v.title) ? v.title : '',
-      description_en: isHindi(v.description) ? '' : v.description,
-      description_hi: isHindi(v.description) ? v.description : '',
-      website_label_en: isHindi(v.website_label) ? '' : v.website_label,
-      website_label_hi: isHindi(v.website_label) ? v.website_label : '',
-    });
-    setEditingId(v.id!);
-  };
-
-  const handleDelete = async (id: number) => {
-    if (!confirm('Delete this visitor?')) return;
-    try {
-      await fetch(`http://localhost:5000/api/v1/administration/visitors/${id}`, { method: 'DELETE' });
-      setVisitors(visitors.filter(v => v.id !== id));
-    } catch (err) { alert('Error deleting'); }
-  };
-
-  if (loading) return <div className="p-8 text-black font-bold">Loading...</div>;
-
   return (
-    <div className="space-y-6 p-4 lg:p-8 text-black bg-[#F8F9FA] min-h-screen">
-      <div className="bg-gradient-to-r from-[#631012] to-[#800000] rounded-2xl shadow-xl p-8 text-white">
-        <div className="flex items-center gap-4 mb-2">
-          <User className="w-10 h-10" />
-          <h1 className="text-3xl font-extrabold tracking-tight">Visitor Management</h1>
-        </div>
-        <p className="text-white/80 text-lg">Manage institutional visitors and their profiles</p>
-      </div>
-
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-        <h2 className="text-xl font-bold mb-4 border-b pb-4">Page Header</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div className="space-y-2">
-            <label className="text-sm font-bold text-gray-400 uppercase">Heading</label>
-            <div className="flex flex-col gap-2">
-              <input type="text" value={info.hero_heading_en || ''} onChange={e => setInfo({...info, hero_heading_en: e.target.value, hero_heading: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" placeholder="Heading (English)" />
-              <input type="text" value={info.hero_heading_hi || ''} onChange={e => setInfo({...info, hero_heading_hi: e.target.value, hero_heading: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" placeholder="शीर्षक (हिंदी)" />
+    <div className="p-6 space-y-6 font-sans">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="bg-[#631012]/10 p-3 rounded-lg text-[#631012]">
+              <Landmark size={28} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Visitor Profile Manager</h1>
+              <p className="text-xs text-gray-500">
+                Manage the Hon'ble Visitor (President of India) profile of NIT Hamirpur.
+              </p>
             </div>
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-bold text-gray-400 uppercase">Subheading</label>
-            <div className="flex flex-col gap-2">
-              <input type="text" value={info.hero_subheading_en || ''} onChange={e => setInfo({...info, hero_subheading_en: e.target.value, hero_subheading: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" placeholder="Subheading (English)" />
-              <input type="text" value={info.hero_subheading_hi || ''} onChange={e => setInfo({...info, hero_subheading_hi: e.target.value, hero_subheading: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" placeholder="उपशीर्षक (हिंदी)" />
+          <button
+            onClick={fetchData}
+            disabled={loading}
+            className="px-3 py-2 border rounded-lg text-xs font-semibold hover:bg-gray-50 flex items-center gap-1.5"
+          >
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+            <span>Refresh</span>
+          </button>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="space-y-3">
+            <label className="text-xs font-bold text-gray-700 block">Visitor Photo</label>
+            <div className="border rounded-lg p-2 text-center bg-gray-50 space-y-2">
+              <img
+                src={visitor.image || 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=400&q=80'}
+                alt="Visitor"
+                className="w-full h-52 object-cover rounded border"
+              />
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
+                className="text-xs text-gray-600 w-full"
+              />
+            </div>
+          </div>
+
+          <div className="md:col-span-2 space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-[11px] font-bold uppercase text-gray-600 block mb-1">Name (English) *</label>
+                <input
+                  type="text"
+                  required
+                  value={visitor.heading_en || ''}
+                  onChange={(e) => setVisitor({ ...visitor, heading_en: e.target.value })}
+                  className="w-full px-3 py-2 text-xs border rounded font-bold"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-bold uppercase text-gray-600 block mb-1">Name (Hindi)</label>
+                <input
+                  type="text"
+                  value={visitor.heading_hi || ''}
+                  onChange={(e) => setVisitor({ ...visitor, heading_hi: e.target.value })}
+                  className="w-full px-3 py-2 text-xs border rounded font-bold"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-[11px] font-bold uppercase text-gray-600 block mb-1">Designation (English)</label>
+                <input
+                  type="text"
+                  value={visitor.designation_en || ''}
+                  onChange={(e) => setVisitor({ ...visitor, designation_en: e.target.value })}
+                  className="w-full px-3 py-2 text-xs border rounded"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-bold uppercase text-gray-600 block mb-1">Designation (Hindi)</label>
+                <input
+                  type="text"
+                  value={visitor.designation_hi || ''}
+                  onChange={(e) => setVisitor({ ...visitor, designation_hi: e.target.value })}
+                  className="w-full px-3 py-2 text-xs border rounded"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[11px] font-bold uppercase text-gray-600 block mb-1">Description (English) *</label>
+              <textarea
+                rows={4}
+                required
+                value={visitor.description_en || ''}
+                onChange={(e) => setVisitor({ ...visitor, description_en: e.target.value })}
+                className="w-full px-3 py-2 text-xs border rounded leading-relaxed"
+              />
+            </div>
+
+            <div>
+              <label className="text-[11px] font-bold uppercase text-gray-600 block mb-1">Description (Hindi)</label>
+              <textarea
+                rows={3}
+                value={visitor.description_hi || ''}
+                onChange={(e) => setVisitor({ ...visitor, description_hi: e.target.value })}
+                className="w-full px-3 py-2 text-xs border rounded leading-relaxed"
+              />
             </div>
           </div>
         </div>
-        <button onClick={handleSaveInfo} className="bg-[#631012] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#800000] flex items-center gap-2">
-          <Save size={20} /> Save Headers
-        </button>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-2xl shadow-sm border p-6 sticky top-8">
-            <h2 className="text-xl font-bold mb-6">{editingId ? 'Edit Visitor' : 'Add New Visitor'}</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-bold text-gray-400 mb-1 uppercase">Name</label>
-                <div className="flex flex-col gap-2">
-                  <input type="text" value={formData.name_en || ''} onChange={e => setFormData({...formData, name_en: e.target.value, name: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" placeholder="Name (English)" required />
-                  <input type="text" value={formData.name_hi || ''} onChange={e => setFormData({...formData, name_hi: e.target.value, name: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" placeholder="नाम (हिंदी)" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-400 mb-1 uppercase">Title/Salutation</label>
-                <div className="flex flex-col gap-2">
-                  <input type="text" value={formData.title_en || ''} onChange={e => setFormData({...formData, title_en: e.target.value, title: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" placeholder="Title/Salutation (English)" />
-                  <input type="text" value={formData.title_hi || ''} onChange={e => setFormData({...formData, title_hi: e.target.value, title: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" placeholder="अभिवादन/पद (हिंदी)" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-400 mb-1 uppercase">Description</label>
-                <div className="flex flex-col gap-2">
-                  <textarea value={formData.description_en || ''} onChange={e => setFormData({...formData, description_en: e.target.value, description: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" rows={3} placeholder="Description (English)" />
-                  <textarea value={formData.description_hi || ''} onChange={e => setFormData({...formData, description_hi: e.target.value, description: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" rows={3} placeholder="विवरण (हिंदी)" />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <label className="block text-sm font-bold text-gray-400 mb-1 uppercase">Website Label</label>
-                  <div className="flex flex-col gap-2">
-                    <input type="text" value={formData.website_label_en || ''} onChange={e => setFormData({...formData, website_label_en: e.target.value, website_label: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" placeholder="Website Label (English)" />
-                    <input type="text" value={formData.website_label_hi || ''} onChange={e => setFormData({...formData, website_label_hi: e.target.value, website_label: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" placeholder="वेबसाइट लेबल (हिंदी)" />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-gray-400 mb-1 uppercase">Website URL</label>
-                  <input type="text" value={formData.website_url} onChange={e => setFormData({...formData, website_url: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" placeholder="Website URL" />
-                </div>
-              </div>
-              <div className="flex gap-2 pt-2">
-                <button type="submit" className="flex-1 bg-[#631012] text-white py-3 rounded-xl font-bold hover:bg-[#800000]">
-                  {editingId ? 'Update' : 'Add Visitor'}
-                </button>
-                {editingId && (
-                  <button type="button" onClick={() => {setEditingId(null); setFormData({name:'', title:'', description:'', website_label:'', website_url:''})}} className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-xl font-bold">
-                    Cancel
-                  </button>
-                )}
-              </div>
-            </form>
-          </div>
+        <div className="flex justify-end pt-4 border-t">
+          <button
+            type="submit"
+            disabled={saving}
+            className="bg-[#631012] text-white px-6 py-2 rounded-lg text-xs font-bold flex items-center gap-2"
+          >
+            {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+            <span>Save Visitor Profile</span>
+          </button>
         </div>
-
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-             <div className="grid grid-cols-1 gap-4 p-4">
-                {visitors.map(v => (
-                  <div key={v.id} className="p-6 border rounded-2xl bg-gray-50 hover:border-[#631012] transition-all relative group">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <div className="text-xs text-gray-400 font-bold uppercase mb-1">{v.title}</div>
-                        <h3 className="text-xl font-bold text-gray-900">{v.name}</h3>
-                      </div>
-                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                        <button onClick={() => handleEdit(v)} className="p-2 text-blue-600 hover:bg-white rounded-xl shadow-sm border"><Save size={18}/></button>
-                        <button onClick={() => handleDelete(v.id!)} className="p-2 text-red-600 hover:bg-white rounded-xl shadow-sm border"><Trash2 size={18}/></button>
-                      </div>
-                    </div>
-                    <p className="text-gray-600 text-sm leading-relaxed mb-4">{v.description}</p>
-                    {v.website_url && (
-                      <a href={v.website_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-[#631012] font-bold text-sm hover:underline">
-                        <ExternalLink size={16}/> {v.website_label || 'Visit Official Website'}
-                      </a>
-                    )}
-                  </div>
-                ))}
-             </div>
-          </div>
-        </div>
-      </div>
+      </form>
     </div>
   );
 }

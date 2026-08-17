@@ -1,217 +1,527 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Save, User, Plus, Trash2, Users } from 'lucide-react';
+import { Users, Plus, Edit2, Trash2, RefreshCw, X, Loader2, Phone, Mail, Award } from 'lucide-react';
 
-interface DeanMember {
-  id?: number;
+interface DeanRecord {
+  id: number;
+  type: string; // 'Deans' | 'Associate Deans'
+  sl_no: string;
   name: string;
-  title?: string;
+  designation: string;
+  department: string;
   responsibility: string;
-  phone: string;
+  phone_no: string;
   email: string;
-  category: string;
-  designation?: string;
-  name_en?: string;
-  name_hi?: string;
-  title_en?: string;
-  title_hi?: string;
-  responsibility_en?: string;
-  responsibility_hi?: string;
+  faculty_id?: string;
 }
 
-export default function DeansPage() {
-  const [deans, setDeans] = useState<DeanMember[]>([]);
+interface FacultyOption {
+  id: number;
+  name_en: string;
+  email: string;
+  designation_en?: string;
+  department_en?: string;
+  phone_no?: string;
+}
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
+export default function DeansAdminPage() {
+  const [records, setRecords] = useState<DeanRecord[]>([]);
+  const [facultyOptions, setFacultyOptions] = useState<FacultyOption[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'All' | 'Deans' | 'Associate Deans'>('All');
 
-  useEffect(() => {
-    fetchDeans();
-  }, []);
+  // Modal
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [formType, setFormType] = useState('Deans');
+  const [formSlNo, setFormSlNo] = useState('1');
+  const [formName, setFormName] = useState('');
+  const [formDesignation, setFormDesignation] = useState('Professor');
+  const [formDepartment, setFormDepartment] = useState('');
+  const [formResponsibility, setFormResponsibility] = useState('');
+  const [formPhone, setFormPhone] = useState('');
+  const [formEmail, setFormEmail] = useState('');
+  const [formFacultyId, setFormFacultyId] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const isHindi = (text: string) => /[\u0900-\u097F]/.test(text || '');
-
-  const fetchDeans = async () => {
+  const fetchData = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/v1/administration/deans');
-      const json = await res.json();
-      if (json.success) {
-        const mapped = json.data.map((d: any) => ({
-          ...d,
-          name_en: isHindi(d.name) ? '' : d.name,
-          name_hi: isHindi(d.name) ? d.name : '',
-          responsibility_en: isHindi(d.responsibility) ? '' : d.responsibility,
-          responsibility_hi: isHindi(d.responsibility) ? d.responsibility : '',
-          title_en: isHindi(d.title || d.designation) ? '' : (d.title || d.designation),
-          title_hi: isHindi(d.title || d.designation) ? (d.title || d.designation) : '',
-        }));
-        setDeans(mapped);
+      setLoading(true);
+      const [res, fRes] = await Promise.all([
+        fetch(`${API_BASE}/api/administration/deans`, { cache: 'no-store' }),
+        fetch(`${API_BASE}/api/faculties`, { cache: 'no-store' }).catch(() => null),
+      ]);
+
+      if (res.ok) {
+        const data = await res.json();
+        setRecords(Array.isArray(data) ? data : []);
       }
-      setLoading(false);
+      if (fRes && fRes.ok) {
+        const fData = await fRes.json();
+        if (Array.isArray(fData)) setFacultyOptions(fData);
+      }
     } catch (err) {
       console.error('Error fetching deans:', err);
+    } finally {
       setLoading(false);
     }
   };
 
-  const handleSave = async (dean: DeanMember) => {
-    const method = dean.id ? 'PUT' : 'POST';
-    const url = dean.id 
-      ? `http://localhost:5000/api/v1/administration/deans/${dean.id}`
-      : 'http://localhost:5000/api/v1/administration/deans';
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-    const payload = {
-      ...dean,
-      name: dean.name_hi || dean.name_en || dean.name,
-      responsibility: dean.responsibility_hi || dean.responsibility_en || dean.responsibility,
-      title: dean.title_hi || dean.title_en || dean.title || dean.designation
-    };
+  const openAddModal = (defaultType = 'Deans') => {
+    setEditingId(null);
+    setFormType(defaultType);
+    const filteredCount = records.filter((r) => r.type === defaultType).length;
+    setFormSlNo((filteredCount + 1).toString());
+    setFormName('');
+    setFormDesignation('Professor');
+    setFormDepartment('');
+    setFormResponsibility('');
+    setFormPhone('');
+    setFormEmail('');
+    setFormFacultyId('');
+    setModalOpen(true);
+  };
+
+  const openEditModal = (item: DeanRecord) => {
+    setEditingId(item.id);
+    setFormType(item.type || 'Deans');
+    setFormSlNo(item.sl_no || '1');
+    setFormName(item.name || '');
+    setFormDesignation(item.designation || '');
+    setFormDepartment(item.department || '');
+    setFormResponsibility(item.responsibility || '');
+    setFormPhone(item.phone_no || '');
+    setFormEmail(item.email || '');
+    setFormFacultyId(item.faculty_id || '');
+    setModalOpen(true);
+  };
+
+  const handleFacultySelect = (fId: string) => {
+    setFormFacultyId(fId);
+    if (!fId) return;
+    const found = facultyOptions.find((f) => f.id.toString() === fId);
+    if (found) {
+      setFormName(found.name_en || '');
+      if (found.email) setFormEmail(found.email);
+      if (found.designation_en) setFormDesignation(found.designation_en);
+      if (found.department_en) setFormDepartment(found.department_en);
+      if (found.phone_no) setFormPhone(found.phone_no);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formName.trim()) {
+      alert('Please enter Name');
+      return;
+    }
 
     try {
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if ((await res.json()).success) {
-        alert('Saved!');
-        fetchDeans();
+      setSubmitting(true);
+      const payload = {
+        type: formType,
+        sl_no: formSlNo,
+        name: formName.trim(),
+        designation: formDesignation.trim(),
+        department: formDepartment.trim(),
+        responsibility: formResponsibility.trim(),
+        phone_no: formPhone.trim(),
+        email: formEmail.trim(),
+        faculty_id: formFacultyId,
+      };
+
+      let res;
+      if (editingId) {
+        res = await fetch(`${API_BASE}/api/administration/deans/${editingId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        res = await fetch(`${API_BASE}/api/administration/deans`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
       }
-    } catch (err) { alert('Error saving'); }
+
+      if (res.ok) {
+        alert(editingId ? 'Record updated!' : 'Record added!');
+        setModalOpen(false);
+        fetchData();
+      } else {
+        alert('Failed to save record');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error saving record');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Delete?')) return;
-    await fetch(`http://localhost:5000/api/v1/administration/deans/${id}`, { method: 'DELETE' });
-    setDeans(deans.filter(d => d.id !== id));
+    if (!confirm('Are you sure you want to delete this record?')) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/administration/deans/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        fetchData();
+      } else {
+        alert('Failed to delete');
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const addEmptyDean = () => {
-    setDeans([{
-      name: '', name_en: '', name_hi: '',
-      title: '', title_en: '', title_hi: '',
-      responsibility: '', responsibility_en: '', responsibility_hi: '',
-      phone: '', email: '', category: 'Dean'
-    }, ...deans]);
-  };
-
-  if (loading) return <div className="p-8 text-black font-bold">Loading...</div>;
+  const deansList = records.filter((r) => r.type === 'Deans');
+  const assocDeansList = records.filter((r) => r.type === 'Associate Deans');
 
   return (
-    <div className="space-y-6 p-4 lg:p-8 text-black bg-[#F8F9FA] min-h-screen">
-      <div className="bg-gradient-to-r from-[#800000] to-[#631012] rounded-2xl shadow-xl p-8 text-white">
-        <div className="flex items-center gap-4 mb-2">
-          <Users className="w-10 h-10" />
-          <h1 className="text-3xl font-extrabold tracking-tight">Deans & Associate Deans</h1>
-        </div>
-        <p className="text-white/80 text-lg">Manage institutional leadership and categories</p>
-      </div>
-
-      <button onClick={addEmptyDean} className="w-full py-4 border-2 border-dashed border-gray-300 rounded-2xl text-gray-400 hover:border-[#800000] hover:text-[#800000] transition-all flex items-center justify-center gap-2 bg-white">
-        <Plus size={24} /> <span className="font-bold">Add New Entry</span>
-      </button>
-
-      <div className="space-y-4">
-        {deans.map((d, i) => (
-          <div key={d.id || `new-${i}`} className="bg-white p-6 rounded-2xl border shadow-sm group">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-gray-400 uppercase">Category</label>
-                <select value={d.category} onChange={e => {
-                  const next = [...deans];
-                  next[i].category = e.target.value;
-                  setDeans(next);
-                }} className="w-full p-2 border rounded-lg bg-gray-50 font-bold text-[#631012]">
-                  <option value="Dean">Dean</option>
-                  <option value="Associate Dean">Associate Dean</option>
-                </select>
-              </div>
-              <div className="space-y-1 lg:col-span-1 flex flex-col gap-1">
-                <div>
-                  <label className="text-[10px] font-bold text-gray-400 uppercase">Name</label>
-                  <input type="text" value={d.name_en || ''} onChange={e => {
-                    const next = [...deans];
-                    next[i].name_en = e.target.value;
-                    next[i].name = e.target.value;
-                    setDeans(next);
-                  }} className="w-full p-2 border rounded-lg text-sm" placeholder="Name (English)" />
-                </div>
-                <div>
-                  <input type="text" value={d.name_hi || ''} onChange={e => {
-                    const next = [...deans];
-                    next[i].name_hi = e.target.value;
-                    next[i].name = e.target.value;
-                    setDeans(next);
-                  }} className="w-full p-2 border rounded-lg text-sm" placeholder="नाम (हिंदी)" />
-                </div>
-              </div>
-              <div className="space-y-1 lg:col-span-2 flex flex-col gap-1">
-                <div>
-                  <label className="text-[10px] font-bold text-gray-400 uppercase">Responsibility</label>
-                  <input type="text" value={d.responsibility_en || ''} onChange={e => {
-                    const next = [...deans];
-                    next[i].responsibility_en = e.target.value;
-                    next[i].responsibility = e.target.value;
-                    setDeans(next);
-                  }} className="w-full p-2 border rounded-lg text-sm" placeholder="Responsibility (English)" />
-                </div>
-                <div>
-                  <input type="text" value={d.responsibility_hi || ''} onChange={e => {
-                    const next = [...deans];
-                    next[i].responsibility_hi = e.target.value;
-                    next[i].responsibility = e.target.value;
-                    setDeans(next);
-                  }} className="w-full p-2 border rounded-lg text-sm" placeholder="उत्तरदायित्व (हिंदी)" />
-                </div>
-              </div>
-              <div className="space-y-1 flex flex-col gap-1">
-                <div>
-                  <label className="text-[10px] font-bold text-gray-400 uppercase">Title / Dept</label>
-                  <input type="text" value={d.title_en || ''} onChange={e => {
-                    const next = [...deans];
-                    next[i].title_en = e.target.value;
-                    next[i].title = e.target.value;
-                    setDeans(next);
-                  }} className="w-full p-2 border rounded-lg text-xs" placeholder="Title/Dept (English)" />
-                </div>
-                <div>
-                  <input type="text" value={d.title_hi || ''} onChange={e => {
-                    const next = [...deans];
-                    next[i].title_hi = e.target.value;
-                    next[i].title = e.target.value;
-                    setDeans(next);
-                  }} className="w-full p-2 border rounded-lg text-xs" placeholder="शीर्षक / विभाग (हिंदी)" />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-gray-400 uppercase">Email</label>
-                <input type="email" value={d.email} onChange={e => {
-                  const next = [...deans];
-                  next[i].email = e.target.value;
-                  setDeans(next);
-                }} className="w-full p-2 border rounded-lg text-xs" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-gray-400 uppercase">Phone</label>
-                <input type="text" value={d.phone} onChange={e => {
-                  const next = [...deans];
-                  next[i].phone = e.target.value;
-                  setDeans(next);
-                }} className="w-full p-2 border rounded-lg text-xs" />
-              </div>
-              <div className="flex items-end gap-2">
-                <button onClick={() => handleSave(d)} className="flex-1 bg-[#631012] text-white py-2 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-[#800000]">
-                  <Save size={16}/> Save
-                </button>
-                {d.id && (
-                  <button onClick={() => handleDelete(d.id!)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg border border-red-100">
-                    <Trash2 size={20}/>
-                  </button>
-                )}
-              </div>
+    <div className="p-6 space-y-6 font-sans">
+      {/* Header */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="bg-[#631012]/10 p-3 rounded-lg text-[#631012]">
+              <Users size={28} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Deans & Associate Deans Manager
+              </h1>
+              <p className="text-xs text-gray-500">
+                Manage the Deans and Associate Deans of NIT Hamirpur with responsibilities, departments, and contacts.
+              </p>
             </div>
           </div>
-        ))}
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={fetchData}
+              disabled={loading}
+              className="px-3 py-2 border border-gray-300 hover:bg-gray-50 rounded-lg text-xs font-semibold text-gray-700 flex items-center gap-1.5 transition-colors"
+            >
+              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+              <span>Refresh</span>
+            </button>
+            <button
+              onClick={() => openAddModal('Deans')}
+              className="bg-[#631012] hover:bg-[#500c0e] text-white px-4 py-2 rounded-lg flex items-center gap-2 text-xs font-bold transition-colors shadow-sm"
+            >
+              <Plus size={16} />
+              <span>Add Dean / Assoc. Dean</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Filter Tabs */}
+        <div className="flex gap-2 mt-6 border-b border-gray-200">
+          {(['All', 'Deans', 'Associate Deans'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`pb-2 px-3 text-xs font-bold transition-colors relative ${
+                activeTab === tab
+                  ? 'text-[#631012] border-b-2 border-[#631012]'
+                  : 'text-gray-500 hover:text-gray-800'
+              }`}
+            >
+              {tab} (
+              {tab === 'All'
+                ? records.length
+                : tab === 'Deans'
+                ? deansList.length
+                : assocDeansList.length}
+              )
+            </button>
+          ))}
+        </div>
       </div>
+
+      {/* Sections Table (Image 1 Style) */}
+      {(activeTab === 'All' || activeTab === 'Deans') && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="bg-[#e9f2f8] border-b border-gray-300 px-6 py-3 text-center">
+            <h2 className="text-base font-bold text-[#0c344e]">Deans</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs sm:text-sm text-gray-800 border-collapse">
+              <thead className="bg-[#002b49] text-white font-bold text-xs uppercase">
+                <tr>
+                  <th className="py-3 px-4 w-16 text-center border-r border-white/20">Sl. No.</th>
+                  <th className="py-3 px-6 border-r border-white/20">Name</th>
+                  <th className="py-3 px-6 border-r border-white/20">Responsibility</th>
+                  <th className="py-3 px-4 w-32 border-r border-white/20">Phone No.</th>
+                  <th className="py-3 px-6 border-r border-white/20">Email</th>
+                  <th className="py-3 px-4 w-24 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 bg-white">
+                {deansList.map((item, idx) => (
+                  <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="py-3 px-4 text-center font-bold text-gray-600 border-r border-gray-200">
+                      {item.sl_no || idx + 1}
+                    </td>
+                    <td className="py-3 px-6 border-r border-gray-200">
+                      <div className="font-bold text-gray-900">{item.name}</div>
+                      {item.designation && (
+                        <div className="text-xs text-gray-500">{item.designation}</div>
+                      )}
+                    </td>
+                    <td className="py-3 px-6 border-r border-gray-200 font-medium text-gray-800">
+                      {item.responsibility}
+                    </td>
+                    <td className="py-3 px-4 border-r border-gray-200 text-gray-700 font-mono text-xs">
+                      {item.phone_no || '-'}
+                    </td>
+                    <td className="py-3 px-6 border-r border-gray-200 font-mono text-xs text-blue-700">
+                      {item.email || '-'}
+                    </td>
+                    <td className="py-3 px-4 text-right whitespace-nowrap">
+                      <div className="inline-flex items-center gap-1.5">
+                        <button
+                          onClick={() => openEditModal(item)}
+                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
+                          title="Edit"
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          className="p-1.5 text-red-600 hover:bg-red-50 rounded"
+                          title="Delete"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {(activeTab === 'All' || activeTab === 'Associate Deans') && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="bg-[#e9f2f8] border-b border-gray-300 px-6 py-3 text-center">
+            <h2 className="text-base font-bold text-[#0c344e]">Associate Deans</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs sm:text-sm text-gray-800 border-collapse">
+              <thead className="bg-[#002b49] text-white font-bold text-xs uppercase">
+                <tr>
+                  <th className="py-3 px-4 w-16 text-center border-r border-white/20">Sl. No.</th>
+                  <th className="py-3 px-6 border-r border-white/20">Name</th>
+                  <th className="py-3 px-6 border-r border-white/20">Responsibility</th>
+                  <th className="py-3 px-4 w-32 border-r border-white/20">Phone No.</th>
+                  <th className="py-3 px-6 border-r border-white/20">Email</th>
+                  <th className="py-3 px-4 w-24 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 bg-white">
+                {assocDeansList.map((item, idx) => (
+                  <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="py-3 px-4 text-center font-bold text-gray-600 border-r border-gray-200">
+                      {item.sl_no || idx + 1}
+                    </td>
+                    <td className="py-3 px-6 border-r border-gray-200">
+                      <div className="font-bold text-gray-900">{item.name}</div>
+                      {item.designation && (
+                        <div className="text-xs text-gray-500">{item.designation}</div>
+                      )}
+                    </td>
+                    <td className="py-3 px-6 border-r border-gray-200 font-medium text-gray-800">
+                      {item.responsibility}
+                    </td>
+                    <td className="py-3 px-4 border-r border-gray-200 text-gray-700 font-mono text-xs">
+                      {item.phone_no || '-'}
+                    </td>
+                    <td className="py-3 px-6 border-r border-gray-200 font-mono text-xs text-blue-700">
+                      {item.email || '-'}
+                    </td>
+                    <td className="py-3 px-4 text-right whitespace-nowrap">
+                      <div className="inline-flex items-center gap-1.5">
+                        <button
+                          onClick={() => openEditModal(item)}
+                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
+                          title="Edit"
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          className="p-1.5 text-red-600 hover:bg-red-50 rounded"
+                          title="Delete"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Modal */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full overflow-hidden border border-gray-200">
+            <div className="bg-[#500c0e] text-white px-6 py-4 flex items-center justify-between">
+              <h2 className="text-base font-bold">
+                {editingId ? 'Edit Record' : 'Add Dean / Associate Dean'}
+              </h2>
+              <button onClick={() => setModalOpen(false)} className="text-white/70 hover:text-white">
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[85vh] overflow-y-auto">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[11px] font-bold uppercase text-gray-600 block mb-1">
+                    Category Type *
+                  </label>
+                  <select
+                    value={formType}
+                    onChange={(e) => setFormType(e.target.value)}
+                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded font-semibold text-[#631012]"
+                  >
+                    <option value="Deans">Deans</option>
+                    <option value="Associate Deans">Associate Deans</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold uppercase text-gray-600 block mb-1">
+                    Sl. No.
+                  </label>
+                  <input
+                    type="text"
+                    value={formSlNo}
+                    onChange={(e) => setFormSlNo(e.target.value)}
+                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded"
+                  />
+                </div>
+              </div>
+
+              {/* Faculty Table Quick-Select */}
+              {facultyOptions.length > 0 && (
+                <div className="bg-amber-50/70 p-3 rounded-lg border border-amber-200 space-y-1">
+                  <label className="text-[11px] font-bold uppercase text-amber-900 flex items-center gap-1">
+                    <Award size={13} />
+                    <span>Quick Select from Faculties Table</span>
+                  </label>
+                  <select
+                    value={formFacultyId}
+                    onChange={(e) => handleFacultySelect(e.target.value)}
+                    className="w-full px-2.5 py-1.5 text-xs border border-amber-300 rounded bg-white"
+                  >
+                    <option value="">-- Choose faculty to auto-fill --</option>
+                    {facultyOptions.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.name_en} ({f.department_en || 'Faculty'})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div>
+                <label className="text-[11px] font-bold uppercase text-gray-600 block mb-1">
+                  Full Name with Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-gray-300 rounded focus:outline-none focus:border-[#631012] font-bold"
+                  placeholder="e.g. Prof. Sushil Chauhan"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold uppercase text-gray-600 block mb-1">
+                  Responsibility / Portfolio *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formResponsibility}
+                  onChange={(e) => setFormResponsibility(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-gray-300 rounded font-semibold text-[#0c344e]"
+                  placeholder="e.g. Faculty Welfare / Academics"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold uppercase text-gray-600 block mb-1">
+                  Designation & Sub-text
+                </label>
+                <input
+                  type="text"
+                  value={formDesignation}
+                  onChange={(e) => setFormDesignation(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-gray-300 rounded"
+                  placeholder="e.g. Professor, Department of Electrical Engineering"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[11px] font-bold uppercase text-gray-600 block mb-1">Phone No.</label>
+                  <input
+                    type="text"
+                    value={formPhone}
+                    onChange={(e) => setFormPhone(e.target.value)}
+                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded"
+                    placeholder="254009"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold uppercase text-gray-600 block mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={formEmail}
+                    onChange={(e) => setFormEmail(e.target.value)}
+                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded"
+                    placeholder="dfw@nith.ac.in"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-gray-200 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-xs font-semibold hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-5 py-2 bg-[#631012] hover:bg-[#500c0e] text-white rounded-lg text-xs font-bold shadow-sm flex items-center gap-1.5"
+                >
+                  {submitting && <Loader2 size={14} className="animate-spin" />}
+                  <span>{submitting ? 'Saving...' : editingId ? 'Update Record' : 'Save Record'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

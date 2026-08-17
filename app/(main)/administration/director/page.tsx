@@ -1,479 +1,652 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Save, User, Plus, Trash2, FileText, Users, Building } from 'lucide-react';
+import {
+  User,
+  Plus,
+  Edit2,
+  Trash2,
+  RefreshCw,
+  X,
+  Upload,
+  Save,
+  Loader2,
+  Calendar,
+  Building,
+  Phone,
+  Mail,
+} from 'lucide-react';
+
+interface DirectorData {
+  id?: number;
+  image?: string;
+  heading_en?: string;
+  heading_hi?: string;
+  designation_en?: string;
+  designation_hi?: string;
+  description_en?: string;
+  description_hi?: string;
+}
 
 interface FormerDirector {
-  id?: number;
-  name: string;
-  tenure: string;
-  type: 'NIT' | 'REC';
-  name_en?: string;
-  name_hi?: string;
-  tenure_en?: string;
-  tenure_hi?: string;
+  id: number;
+  type: string; // 'Former Directors, NIT Hamirpur' | 'Former Principals, REC Hamirpur'
+  heading_en: string;
+  heading_hi?: string;
+  dates: string;
+  image: string;
 }
 
 interface OfficeStaff {
-  id?: number;
+  id: number;
+  type: string;
   name: string;
   designation: string;
-  phone: string;
+  phone_no: string;
   email: string;
-  is_director?: boolean;
-  name_en?: string;
-  name_hi?: string;
-  designation_en?: string;
-  designation_hi?: string;
 }
 
-interface DirectorInfo {
-  hero_heading: string;
-  hero_subheading: string;
-  current_name: string;
-  current_designation: string;
-  message_heading: string;
-  message_paragraphs: string[];
-  message_closing: string;
-  message_signature_title: string;
-  message_signature_org: string;
-  message_signature_location: string;
-  
-  hero_heading_en?: string;
-  hero_heading_hi?: string;
-  hero_subheading_en?: string;
-  hero_subheading_hi?: string;
-  current_name_en?: string;
-  current_name_hi?: string;
-  current_designation_en?: string;
-  current_designation_hi?: string;
-
-  message_heading_en?: string;
-  message_heading_hi?: string;
-  message_paragraphs_en?: string[];
-  message_paragraphs_hi?: string[];
-  message_closing_en?: string;
-  message_closing_hi?: string;
-  message_signature_title_en?: string;
-  message_signature_title_hi?: string;
-  message_signature_org_en?: string;
-  message_signature_org_hi?: string;
-  message_signature_location_en?: string;
-  message_signature_location_hi?: string;
-}
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 export default function DirectorAdminPage() {
-  const [activeTab, setActiveTab] = useState<'current' | 'message' | 'former' | 'office'>('current');
-  const [info, setInfo] = useState<DirectorInfo>({
-    hero_heading: '', hero_subheading: '', current_name: '', current_designation: '',
-    message_heading: '', message_paragraphs: [], message_closing: '',
-    message_signature_title: '', message_signature_org: '', message_signature_location: ''
-  });
-  const [former, setFormer] = useState<FormerDirector[]>([]);
-  const [staff, setStaff] = useState<OfficeStaff[]>([]);
+  const [activeTab, setActiveTab] = useState<'profile' | 'former' | 'office'>('profile');
   const [loading, setLoading] = useState(true);
 
-  const [formerForm, setFormerForm] = useState<FormerDirector>({ name: '', name_en: '', name_hi: '', tenure: '', tenure_en: '', tenure_hi: '', type: 'NIT' });
-  const [staffForm, setStaffForm] = useState<OfficeStaff>({ name: '', name_en: '', name_hi: '', designation: '', designation_en: '', designation_hi: '', phone: '', email: '' });
-  const [showFormerForm, setShowFormerForm] = useState<boolean>(false);
-  const [showStaffForm, setShowStaffForm] = useState<boolean>(false);
+  // Director profile state
+  const [director, setDirector] = useState<DirectorData>({
+    heading_en: 'Prof. Hiralal Murlidhar Suryawanshi',
+    heading_hi: 'प्रो. हीरालाल मुरलीधर सूर्यवंशी',
+    designation_en: 'Director, NIT Hamirpur',
+    designation_hi: 'निदेशक, एनआईटी हमीरपुर',
+    description_en: '',
+    description_hi: '',
+    image: '',
+  });
+  const [directorFile, setDirectorFile] = useState<File | null>(null);
+  const [savingDirector, setSavingDirector] = useState(false);
+
+  // Former directors state
+  const [formerList, setFormerList] = useState<FormerDirector[]>([]);
+  const [formerModalOpen, setFormerModalOpen] = useState(false);
+  const [formerType, setFormerType] = useState('Former Directors, NIT Hamirpur');
+  const [formerName, setFormerName] = useState('');
+  const [formerDates, setFormerDates] = useState('');
+  const [formerFile, setFormerFile] = useState<File | null>(null);
+  const [submittingFormer, setSubmittingFormer] = useState(false);
+
+  // Office staff state
+  const [officeList, setOfficeList] = useState<OfficeStaff[]>([]);
+  const [officeModalOpen, setOfficeModalOpen] = useState(false);
+  const [staffName, setStaffName] = useState('');
+  const [staffDesignation, setStaffDesignation] = useState('');
+  const [staffPhone, setStaffPhone] = useState('');
+  const [staffEmail, setStaffEmail] = useState('');
+  const [submittingStaff, setSubmittingStaff] = useState(false);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`${API_BASE}/api/administration/director`, { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.director) setDirector(data.director);
+        if (data.formerDirectors) setFormerList(data.formerDirectors);
+        if (data.directorOffice) setOfficeList(data.directorOffice);
+      }
+    } catch (err) {
+      console.error('Error fetching director admin data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchData();
   }, []);
 
-  const isHindi = (text: string) => /[\u0900-\u097F]/.test(text || '');
-
-  const fetchData = async () => {
+  const handleSaveDirector = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
-      const [infoRes, formerRes, staffRes] = await Promise.allSettled([
-        fetch('http://localhost:5000/api/v1/administration/director'),
-        fetch('http://localhost:5000/api/v1/administration/former-directors'),
-        fetch('http://localhost:5000/api/v1/administration/office-staff')
-      ]);
+      setSavingDirector(true);
+      const formData = new FormData();
+      formData.append('heading_en', director.heading_en || '');
+      formData.append('heading_hi', director.heading_hi || '');
+      formData.append('designation_en', director.designation_en || '');
+      formData.append('designation_hi', director.designation_hi || '');
+      formData.append('description_en', director.description_en || '');
+      formData.append('description_hi', director.description_hi || '');
+      if (directorFile) formData.append('image_file', directorFile);
+      else if (director.image) formData.append('image', director.image);
 
-      if (infoRes.status === 'fulfilled') {
-        const data = await infoRes.value.json();
-        if (data.success && data.data) {
-          const d = data.data;
-          const msgPara = d.message_paragraphs || [];
-          const isMsgParaHi = msgPara.some((p: string) => isHindi(p));
-          setInfo({
-            ...d,
-            hero_heading_en: isHindi(d.hero_heading) ? '' : d.hero_heading,
-            hero_heading_hi: isHindi(d.hero_heading) ? d.hero_heading : '',
-            hero_subheading_en: isHindi(d.hero_subheading) ? '' : d.hero_subheading,
-            hero_subheading_hi: isHindi(d.hero_subheading) ? d.hero_subheading : '',
-            current_name_en: isHindi(d.current_name) ? '' : d.current_name,
-            current_name_hi: isHindi(d.current_name) ? d.current_name : '',
-            current_designation_en: isHindi(d.current_designation) ? '' : d.current_designation,
-            current_designation_hi: isHindi(d.current_designation) ? d.current_designation : '',
-            message_heading_en: isHindi(d.message_heading) ? '' : d.message_heading,
-            message_heading_hi: isHindi(d.message_heading) ? d.message_heading : '',
-            message_paragraphs_en: isMsgParaHi ? [] : msgPara,
-            message_paragraphs_hi: isMsgParaHi ? msgPara : [],
-            message_closing_en: isHindi(d.message_closing) ? '' : d.message_closing,
-            message_closing_hi: isHindi(d.message_closing) ? d.message_closing : '',
-            message_signature_title_en: isHindi(d.message_signature_title) ? '' : d.message_signature_title,
-            message_signature_title_hi: isHindi(d.message_signature_title) ? d.message_signature_title : '',
-            message_signature_org_en: isHindi(d.message_signature_org) ? '' : d.message_signature_org,
-            message_signature_org_hi: isHindi(d.message_signature_org) ? d.message_signature_org : '',
-            message_signature_location_en: isHindi(d.message_signature_location) ? '' : d.message_signature_location,
-            message_signature_location_hi: isHindi(d.message_signature_location) ? d.message_signature_location : '',
-          });
-        }
+      const res = await fetch(`${API_BASE}/api/administration/director`, {
+        method: 'PUT',
+        body: formData,
+      });
+      if (res.ok) {
+        alert('Director profile saved successfully!');
+        fetchData();
+      } else {
+        alert('Failed to save Director profile');
       }
-      
-      if (formerRes.status === 'fulfilled') {
-        const data = await formerRes.value.json();
-        if (data.success) {
-          const mapped = data.data.map((f: any) => ({
-            ...f,
-            name_en: isHindi(f.name) ? '' : f.name,
-            name_hi: isHindi(f.name) ? f.name : '',
-            tenure_en: isHindi(f.tenure) ? '' : f.tenure,
-            tenure_hi: isHindi(f.tenure) ? f.tenure : '',
-          }));
-          setFormer(mapped);
-        }
-      }
-
-      if (staffRes.status === 'fulfilled') {
-        const data = await staffRes.value.json();
-        if (data.success) {
-          const mapped = data.data.map((s: any) => ({
-            ...s,
-            name_en: isHindi(s.name) ? '' : s.name,
-            name_hi: isHindi(s.name) ? s.name : '',
-            designation_en: isHindi(s.designation) ? '' : s.designation,
-            designation_hi: isHindi(s.designation) ? s.designation : '',
-          }));
-          setStaff(mapped);
-        }
-      }
-
-      setLoading(false);
     } catch (err) {
-      console.error('Fetch error:', err);
-      setLoading(false);
+      console.error(err);
+      alert('Error saving director profile');
+    } finally {
+      setSavingDirector(false);
     }
   };
 
-  const handleSaveInfo = async () => {
-    const payload = {
-      ...info,
-      hero_heading: info.hero_heading_hi || info.hero_heading_en || info.hero_heading,
-      hero_subheading: info.hero_subheading_hi || info.hero_subheading_en || info.hero_subheading,
-      current_name: info.current_name_hi || info.current_name_en || info.current_name,
-      current_designation: info.current_designation_hi || info.current_designation_en || info.current_designation,
-      message_heading: info.message_heading_hi || info.message_heading_en || info.message_heading,
-      message_paragraphs: (info.message_paragraphs_hi && info.message_paragraphs_hi.length > 0) 
-        ? info.message_paragraphs_hi 
-        : (info.message_paragraphs_en || info.message_paragraphs),
-      message_closing: info.message_closing_hi || info.message_closing_en || info.message_closing,
-      message_signature_title: info.message_signature_title_hi || info.message_signature_title_en || info.message_signature_title,
-      message_signature_org: info.message_signature_org_hi || info.message_signature_org_en || info.message_signature_org,
-      message_signature_location: info.message_signature_location_hi || info.message_signature_location_en || info.message_signature_location
-    };
-    try {
-      const res = await fetch('http://localhost:5000/api/v1/administration/director', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const json = await res.json();
-      if (json.success) alert('Director Info Saved!');
-    } catch (err) { alert('Error saving info'); }
-  };
-
-  const handleFormerSubmit = async (e: React.FormEvent) => {
+  const handleAddFormer = async (e: React.FormEvent) => {
     e.preventDefault();
-    const nameVal = formerForm.name_hi || formerForm.name_en || formerForm.name;
-    const tenureVal = formerForm.tenure_hi || formerForm.tenure_en || formerForm.tenure;
-    if (!nameVal || !tenureVal) return;
-    const payload = {
-      ...formerForm,
-      name: nameVal,
-      tenure: tenureVal
-    };
+    if (!formerName.trim()) {
+      alert('Please enter name');
+      return;
+    }
     try {
-      const res = await fetch('http://localhost:5000/api/v1/administration/former-directors', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const json = await res.json();
-      if (json.success) {
-        fetchData();
-        setFormerForm({ name: '', name_en: '', name_hi: '', tenure: '', tenure_en: '', tenure_hi: '', type: formerForm.type });
-        setShowFormerForm(false);
-        alert('Added successfully!');
-      }
-    } catch (err) { alert('Error adding'); }
-  };
+      setSubmittingFormer(true);
+      const formData = new FormData();
+      formData.append('type', formerType);
+      formData.append('heading_en', formerName.trim());
+      formData.append('dates', formerDates.trim());
+      if (formerFile) formData.append('image_file', formerFile);
 
-  const handleStaffSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const nameVal = staffForm.name_hi || staffForm.name_en || staffForm.name;
-    const designationVal = staffForm.designation_hi || staffForm.designation_en || staffForm.designation;
-    if (!nameVal || !designationVal) return;
-    const payload = {
-      ...staffForm,
-      name: nameVal,
-      designation: designationVal
-    };
-    try {
-      const res = await fetch('http://localhost:5000/api/v1/administration/office-staff', {
+      const res = await fetch(`${API_BASE}/api/administration/former-directors`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: formData,
       });
-      const json = await res.json();
-      if (json.success) {
+      if (res.ok) {
+        alert('Former Director record added!');
+        setFormerModalOpen(false);
+        setFormerName('');
+        setFormerDates('');
+        setFormerFile(null);
         fetchData();
-        setStaffForm({ name: '', name_en: '', name_hi: '', designation: '', designation_en: '', designation_hi: '', phone: '', email: '' });
-        setShowStaffForm(false);
-        alert('Staff added successfully!');
+      } else {
+        alert('Failed to save record');
       }
-    } catch (err) { alert('Error adding staff'); }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSubmittingFormer(false);
+    }
   };
 
   const handleDeleteFormer = async (id: number) => {
-    if (!confirm('Delete?')) return;
+    if (!confirm('Delete this former director record?')) return;
     try {
-      await fetch(`http://localhost:5000/api/v1/administration/former-directors/${id}`, { method: 'DELETE' });
-      setFormer(former.filter(f => f.id !== id));
-    } catch (err) { alert('Error deleting'); }
+      const res = await fetch(`${API_BASE}/api/administration/former-directors/${id}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) fetchData();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  if (loading) return <div className="p-8 text-black">Loading Director Data...</div>;
+  const handleAddStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!staffName.trim()) {
+      alert('Please enter staff name');
+      return;
+    }
+    try {
+      setSubmittingStaff(true);
+      const res = await fetch(`${API_BASE}/api/administration/director-office`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: staffName.trim(),
+          designation: staffDesignation.trim(),
+          phone_no: staffPhone.trim(),
+          email: staffEmail.trim(),
+        }),
+      });
+      if (res.ok) {
+        alert('Staff added successfully!');
+        setOfficeModalOpen(false);
+        setStaffName('');
+        setStaffDesignation('');
+        setStaffPhone('');
+        setStaffEmail('');
+        fetchData();
+      } else {
+        alert('Failed to add staff');
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSubmittingStaff(false);
+    }
+  };
+
+  const handleDeleteStaff = async (id: number) => {
+    if (!confirm('Delete this staff record?')) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/administration/director-office/${id}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) fetchData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   return (
-    <div className="space-y-6 p-4 lg:p-8 text-black bg-[#F8F9FA] min-h-screen">
-      <div className="bg-gradient-to-r from-[#631012] to-[#800000] rounded-2xl shadow-xl p-8 text-white">
-        <div className="flex items-center gap-4 mb-2">
-          <User className="w-10 h-10" />
-          <h1 className="text-3xl font-extrabold tracking-tight">Director Section</h1>
-        </div>
-        <p className="text-white/80 text-lg">Manage current director info, message, and office staff</p>
-      </div>
+    <div className="p-6 space-y-6 font-sans">
+      {/* Top Header */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="bg-[#631012]/10 p-3 rounded-lg text-[#631012]">
+              <User size={28} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Director's Section Manager</h1>
+              <p className="text-xs text-gray-500">
+                Manage Director's Profile & Message, Former Directors/Principals, and Director Office Staff.
+              </p>
+            </div>
+          </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-2">
-        {['current', 'message', 'former', 'office'].map((tab) => (
           <button
-            key={tab}
-            onClick={() => setActiveTab(tab as any)}
-            className={`px-6 py-2 rounded-full font-bold transition-all whitespace-nowrap ${
-              activeTab === tab ? 'bg-[#631012] text-white shadow-lg' : 'bg-white text-gray-600 hover:bg-gray-50 border'
+            onClick={fetchData}
+            disabled={loading}
+            className="px-3 py-2 border border-gray-300 hover:bg-gray-50 rounded-lg text-xs font-semibold text-gray-700 flex items-center gap-1.5 transition-colors"
+          >
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+            <span>Refresh</span>
+          </button>
+        </div>
+
+        {/* Tab switcher */}
+        <div className="flex gap-4 mt-6 border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab('profile')}
+            className={`pb-3 px-2 text-xs font-bold transition-colors relative ${
+              activeTab === 'profile'
+                ? 'text-[#631012] border-b-2 border-[#631012]'
+                : 'text-gray-500 hover:text-gray-800'
             }`}
           >
-            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            Director's Profile & Message
           </button>
-        ))}
+          <button
+            onClick={() => setActiveTab('former')}
+            className={`pb-3 px-2 text-xs font-bold transition-colors relative ${
+              activeTab === 'former'
+                ? 'text-[#631012] border-b-2 border-[#631012]'
+                : 'text-gray-500 hover:text-gray-800'
+            }`}
+          >
+            Former Directors & Principals ({formerList.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('office')}
+            className={`pb-3 px-2 text-xs font-bold transition-colors relative ${
+              activeTab === 'office'
+                ? 'text-[#631012] border-b-2 border-[#631012]'
+                : 'text-gray-500 hover:text-gray-800'
+            }`}
+          >
+            Director Office Staff ({officeList.length})
+          </button>
+        </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-        {activeTab === 'current' && (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold flex items-center gap-2 border-b pb-4"><User className="text-[#631012]" /> Current Director</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-400 uppercase">Director Name</label>
-                <div className="flex flex-col gap-2">
-                  <input type="text" value={info.current_name_en || ''} onChange={e => setInfo({...info, current_name_en: e.target.value, current_name: e.target.value})} className="w-full p-3 border rounded-xl font-bold bg-gray-50" placeholder="Director Name (English)" />
-                  <input type="text" value={info.current_name_hi || ''} onChange={e => setInfo({...info, current_name_hi: e.target.value, current_name: e.target.value})} className="w-full p-3 border rounded-xl font-bold bg-gray-50" placeholder="निदेशक का नाम (हिंदी)" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-400 uppercase">Designation</label>
-                <div className="flex flex-col gap-2">
-                  <input type="text" value={info.current_designation_en || ''} onChange={e => setInfo({...info, current_designation_en: e.target.value, current_designation: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" placeholder="Designation (English)" />
-                  <input type="text" value={info.current_designation_hi || ''} onChange={e => setInfo({...info, current_designation_hi: e.target.value, current_designation: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" placeholder="पद (हिंदी)" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-400 uppercase">Hero Heading</label>
-                <div className="flex flex-col gap-2">
-                  <input type="text" value={info.hero_heading_en || ''} onChange={e => setInfo({...info, hero_heading_en: e.target.value, hero_heading: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" placeholder="Hero Heading (English)" />
-                  <input type="text" value={info.hero_heading_hi || ''} onChange={e => setInfo({...info, hero_heading_hi: e.target.value, hero_heading: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" placeholder="मुख्य शीर्षक (हिंदी)" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-400 uppercase">Hero Subheading</label>
-                <div className="flex flex-col gap-2">
-                  <input type="text" value={info.hero_subheading_en || ''} onChange={e => setInfo({...info, hero_subheading_en: e.target.value, hero_subheading: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" placeholder="Hero Subheading (English)" />
-                  <input type="text" value={info.hero_subheading_hi || ''} onChange={e => setInfo({...info, hero_subheading_hi: e.target.value, hero_subheading: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" placeholder="मुख्य उपशीर्षक (हिंदी)" />
-                </div>
+      {/* TAB 1: Profile & Message */}
+      {activeTab === 'profile' && (
+        <form onSubmit={handleSaveDirector} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="space-y-3">
+              <label className="text-xs font-bold text-gray-700 block">Director Photo</label>
+              <div className="border border-gray-300 rounded-lg p-2 text-center bg-gray-50 space-y-2">
+                <img
+                  src={
+                    director.image ||
+                    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'
+                  }
+                  alt="Director"
+                  className="w-full h-48 object-cover rounded-md border border-gray-200"
+                />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setDirectorFile(e.target.files?.[0] || null)}
+                  className="text-xs text-gray-600 w-full"
+                />
               </div>
             </div>
-            <button onClick={handleSaveInfo} className="bg-[#631012] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#800000] transition-all flex items-center gap-2">
-              <Save size={20} /> Save Changes
+
+            <div className="md:col-span-2 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[11px] font-bold uppercase text-gray-600 block mb-1">
+                    Director Name (English) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={director.heading_en || ''}
+                    onChange={(e) => setDirector({ ...director, heading_en: e.target.value })}
+                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold uppercase text-gray-600 block mb-1">
+                    Director Name (Hindi)
+                  </label>
+                  <input
+                    type="text"
+                    value={director.heading_hi || ''}
+                    onChange={(e) => setDirector({ ...director, heading_hi: e.target.value })}
+                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[11px] font-bold uppercase text-gray-600 block mb-1">
+                    Designation (English)
+                  </label>
+                  <input
+                    type="text"
+                    value={director.designation_en || ''}
+                    onChange={(e) => setDirector({ ...director, designation_en: e.target.value })}
+                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold uppercase text-gray-600 block mb-1">
+                    Designation (Hindi)
+                  </label>
+                  <input
+                    type="text"
+                    value={director.designation_hi || ''}
+                    onChange={(e) => setDirector({ ...director, designation_hi: e.target.value })}
+                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold uppercase text-gray-600 block mb-1">
+                  Message / Address (English) *
+                </label>
+                <textarea
+                  rows={5}
+                  required
+                  value={director.description_en || ''}
+                  onChange={(e) => setDirector({ ...director, description_en: e.target.value })}
+                  className="w-full px-3 py-2 text-xs border border-gray-300 rounded font-sans leading-relaxed"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold uppercase text-gray-600 block mb-1">
+                  Message / Address (Hindi)
+                </label>
+                <textarea
+                  rows={4}
+                  value={director.description_hi || ''}
+                  onChange={(e) => setDirector({ ...director, description_hi: e.target.value })}
+                  className="w-full px-3 py-2 text-xs border border-gray-300 rounded font-sans leading-relaxed"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-4 border-t border-gray-200">
+            <button
+              type="submit"
+              disabled={savingDirector}
+              className="bg-[#631012] hover:bg-[#500c0e] text-white px-6 py-2 rounded-lg text-xs font-bold flex items-center gap-2 shadow-sm"
+            >
+              {savingDirector ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+              <span>Save Director's Profile</span>
             </button>
           </div>
-        )}
+        </form>
+      )}
 
-        {activeTab === 'message' && (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold flex items-center gap-2 border-b pb-4"><FileText className="text-[#631012]" /> Director Message</h2>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-400 uppercase">Message Heading</label>
-                <div className="flex flex-col gap-2">
-                  <input type="text" value={info.message_heading_en || ''} onChange={e => setInfo({...info, message_heading_en: e.target.value, message_heading: e.target.value})} className="w-full p-3 border rounded-xl font-bold bg-gray-50" placeholder="Message Heading (English)" />
-                  <input type="text" value={info.message_heading_hi || ''} onChange={e => setInfo({...info, message_heading_hi: e.target.value, message_heading: e.target.value})} className="w-full p-3 border rounded-xl font-bold bg-gray-50" placeholder="संदेश शीर्षक (हिंदी)" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-400 uppercase">Message Body (One paragraph per line)</label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <textarea 
-                      value={(info.message_paragraphs_en || []).join('\n')} 
-                      onChange={e => setInfo({...info, message_paragraphs_en: e.target.value.split('\n').filter(p => p.trim()), message_paragraphs: e.target.value.split('\n').filter(p => p.trim())})} 
-                      className="w-full p-3 border rounded-xl min-h-[300px] bg-gray-50" 
-                      placeholder="Paste message paragraphs in English here..."
-                    />
-                  </div>
-                  <div>
-                    <textarea 
-                      value={(info.message_paragraphs_hi || []).join('\n')} 
-                      onChange={e => setInfo({...info, message_paragraphs_hi: e.target.value.split('\n').filter(p => p.trim()), message_paragraphs: e.target.value.split('\n').filter(p => p.trim())})} 
-                      className="w-full p-3 border rounded-xl min-h-[300px] bg-gray-50" 
-                      placeholder="संदेश के पैराग्राफ यहाँ हिंदी में डालें..."
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-400 uppercase">Closing Line</label>
-                  <div className="flex flex-col gap-2">
-                    <input type="text" value={info.message_closing_en || ''} onChange={e => setInfo({...info, message_closing_en: e.target.value, message_closing: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" placeholder="e.g. With warm regards (English)" />
-                    <input type="text" value={info.message_closing_hi || ''} onChange={e => setInfo({...info, message_closing_hi: e.target.value, message_closing: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" placeholder="उदा. सस्नेह आदर सहित (हिंदी)" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-400 uppercase">Signature Title</label>
-                  <div className="flex flex-col gap-2">
-                    <input type="text" value={info.message_signature_title_en || ''} onChange={e => setInfo({...info, message_signature_title_en: e.target.value, message_signature_title: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" placeholder="Signature Title (English)" />
-                    <input type="text" value={info.message_signature_title_hi || ''} onChange={e => setInfo({...info, message_signature_title_hi: e.target.value, message_signature_title: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" placeholder="हस्ताक्षर शीर्षक (हिंदी)" />
-                  </div>
-                </div>
-              </div>
-            </div>
-            <button onClick={handleSaveInfo} className="bg-[#631012] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#800000] transition-all flex items-center gap-2">
-              <Save size={20} /> Save Message
+      {/* TAB 2: Former Directors & Principals (Image 3 Style) */}
+      {activeTab === 'former' && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-base font-bold text-[#631012]">
+              Former Directors & Principals Gallery
+            </h2>
+            <button
+              onClick={() => setFormerModalOpen(true)}
+              className="bg-[#631012] hover:bg-[#500c0e] text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5"
+            >
+              <Plus size={14} />
+              <span>Add Former Director / Principal</span>
             </button>
           </div>
-        )}
 
-        {activeTab === 'former' && (
-          <div className="space-y-8">
-            {showFormerForm && (
-              <div className="bg-gray-50 p-6 rounded-2xl border-2 border-[#631012]/10 mb-8 animate-in fade-in slide-in-from-top-4">
-                <h3 className="text-lg font-bold mb-4">Add Former {formerForm.type === 'NIT' ? 'Director' : 'Principal'}</h3>
-                <form onSubmit={handleFormerSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="flex flex-col gap-2">
-                    <input type="text" placeholder="Name (English)" value={formerForm.name_en || ''} onChange={e => setFormerForm({...formerForm, name_en: e.target.value, name: e.target.value})} className="p-2 border rounded-lg" required />
-                    <input type="text" placeholder="नाम (हिंदी)" value={formerForm.name_hi || ''} onChange={e => setFormerForm({...formerForm, name_hi: e.target.value, name: e.target.value})} className="p-2 border rounded-lg" />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <input type="text" placeholder="Tenure (e.g. 2010-2015)" value={formerForm.tenure_en || ''} onChange={e => setFormerForm({...formerForm, tenure_en: e.target.value, tenure: e.target.value})} className="p-2 border rounded-lg" required />
-                    <input type="text" placeholder="कार्यकाल (उदा. 2010-2015)" value={formerForm.tenure_hi || ''} onChange={e => setFormerForm({...formerForm, tenure_hi: e.target.value, tenure: e.target.value})} className="p-2 border rounded-lg" />
-                  </div>
-                  <div className="flex gap-2 items-end">
-                    <button type="submit" className="bg-[#631012] text-white px-4 py-2 rounded-lg font-bold flex-1 h-fit">Save</button>
-                    <button type="button" onClick={() => setShowFormerForm(false)} className="bg-gray-200 px-4 py-2 rounded-lg font-bold h-fit">Cancel</button>
-                  </div>
-                </form>
+          {/* Grid matching Image 3 */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+            {formerList.map((item) => (
+              <div
+                key={item.id}
+                className="bg-white border border-gray-200 rounded-lg p-3 text-center space-y-2 hover:shadow-md transition-shadow relative group"
+              >
+                <button
+                  onClick={() => handleDeleteFormer(item.id)}
+                  className="absolute top-2 right-2 p-1 bg-red-100 text-red-600 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-200"
+                  title="Delete"
+                >
+                  <Trash2 size={12} />
+                </button>
+                <img
+                  src={
+                    item.image ||
+                    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80'
+                  }
+                  alt={item.heading_en}
+                  className="w-28 h-32 mx-auto object-cover rounded border border-gray-300"
+                />
+                <div className="font-bold text-xs text-[#631012]">{item.heading_en}</div>
+                <div className="text-[11px] text-gray-500 font-mono">{item.dates}</div>
+                <div className="text-[10px] text-gray-400 uppercase font-semibold">{item.type}</div>
               </div>
-            )}
-
-            <div>
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold flex items-center gap-2"><Users className="text-[#631012]" /> Former NIT Directors</h2>
-                <button onClick={() => { setFormerForm({...formerForm, type: 'NIT'}); setShowFormerForm(true); }} className="bg-[#631012] text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2"><Plus size={18}/> Add</button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {former.filter(f => f.type === 'NIT').map(f => (
-                  <div key={f.id} className="p-4 border rounded-xl bg-gray-50 relative group">
-                    <button onClick={() => handleDeleteFormer(f.id!)} className="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={16}/></button>
-                    <p className="font-bold text-[#631012]">{f.name}</p>
-                    <p className="text-sm text-gray-500">{f.tenure}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="border-t pt-8">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold flex items-center gap-2"><Users className="text-[#631012]" /> Former REC Principals</h2>
-                <button onClick={() => { setFormerForm({...formerForm, type: 'REC'}); setShowFormerForm(true); }} className="bg-[#631012] text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2"><Plus size={18}/> Add</button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {former.filter(f => f.type === 'REC').map(f => (
-                  <div key={f.id} className="p-4 border rounded-xl bg-gray-50 relative group">
-                    <button onClick={() => handleDeleteFormer(f.id!)} className="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={16}/></button>
-                    <p className="font-bold text-[#631012]">{f.name}</p>
-                    <p className="text-sm text-gray-500">{f.tenure}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
+            ))}
           </div>
-        )}
+        </div>
+      )}
 
-        {activeTab === 'office' && (
-          <div className="space-y-6">
-             <h2 className="text-2xl font-bold flex items-center gap-2 border-b pb-4"><Building className="text-[#631012]" /> Director Office Staff</h2>
-             
-             {showStaffForm && (
-               <div className="bg-gray-50 p-6 rounded-2xl border-2 border-[#631012]/10 mb-8 animate-in fade-in slide-in-from-top-4">
-                 <h3 className="text-lg font-bold mb-4">Add Office Staff</h3>
-                 <form onSubmit={handleStaffSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-2">
-                      <input type="text" placeholder="Name (English)" value={staffForm.name_en || ''} onChange={e => setStaffForm({...staffForm, name_en: e.target.value, name: e.target.value})} className="p-2 border rounded-lg" required />
-                      <input type="text" placeholder="नाम (हिंदी)" value={staffForm.name_hi || ''} onChange={e => setStaffForm({...staffForm, name_hi: e.target.value, name: e.target.value})} className="p-2 border rounded-lg" />
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <input type="text" placeholder="Designation (English)" value={staffForm.designation_en || ''} onChange={e => setStaffForm({...staffForm, designation_en: e.target.value, designation: e.target.value})} className="p-2 border rounded-lg" required />
-                      <input type="text" placeholder="पद (हिंदी)" value={staffForm.designation_hi || ''} onChange={e => setStaffForm({...staffForm, designation_hi: e.target.value, designation: e.target.value})} className="p-2 border rounded-lg" />
-                    </div>
-                    <input type="text" placeholder="Phone" value={staffForm.phone} onChange={e => setStaffForm({...staffForm, phone: e.target.value})} className="p-2 border rounded-lg" />
-                    <input type="email" placeholder="Email" value={staffForm.email} onChange={e => setStaffForm({...staffForm, email: e.target.value})} className="p-2 border rounded-lg" />
-                    <div className="md:col-span-2 flex gap-2">
-                      <button type="submit" className="bg-[#631012] text-white px-6 py-2 rounded-lg font-bold flex-1">Save Staff</button>
-                      <button type="button" onClick={() => setShowStaffForm(false)} className="bg-gray-200 px-6 py-2 rounded-lg font-bold">Cancel</button>
-                    </div>
-                 </form>
-               </div>
-             )}
-
-             <div className="grid grid-cols-1 gap-4">
-                {staff.map((s, idx) => (
-                  <div key={s.id || idx} className="p-4 border rounded-xl flex justify-between items-center bg-gray-50 hover:shadow-md transition-shadow">
-                     <div>
-                       <p className="font-bold text-lg">{s.name}</p>
-                       <p className="text-sm text-[#631012] font-medium">{s.designation}</p>
-                       <p className="text-xs text-gray-500 mt-1">{s.email} | {s.phone}</p>
-                     </div>
-                     <button onClick={async () => {
-                        if(confirm('Delete?')) {
-                          await fetch(`http://localhost:5000/api/v1/administration/office-staff/${s.id}`, {method:'DELETE'});
-                          setStaff(staff.filter(st => st.id !== s.id));
-                        }
-                     }} className="text-red-500 hover:bg-red-50 p-2 rounded-full transition-colors"><Trash2 size={20}/></button>
-                  </div>
-                ))}
-                {!showStaffForm && (
-                  <button onClick={() => setShowStaffForm(true)} className="w-full py-6 border-2 border-dashed border-gray-300 rounded-xl text-gray-400 font-bold hover:border-[#631012] hover:text-[#631012] transition-all bg-white flex items-center justify-center gap-2">
-                    <Plus size={24}/> Add Staff Member
-                  </button>
-                )}
-             </div>
+      {/* TAB 3: Office Staff */}
+      {activeTab === 'office' && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-base font-bold text-[#631012]">Director Office Staff</h2>
+            <button
+              onClick={() => setOfficeModalOpen(true)}
+              className="bg-[#631012] hover:bg-[#500c0e] text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5"
+            >
+              <Plus size={14} />
+              <span>Add Staff Member</span>
+            </button>
           </div>
-        )}
-      </div>
+
+          <table className="w-full text-left text-xs sm:text-sm border-collapse">
+            <thead className="bg-[#f0f4f8] border-b text-[#0c344e] font-bold">
+              <tr>
+                <th className="py-2.5 px-4">Name</th>
+                <th className="py-2.5 px-4">Designation</th>
+                <th className="py-2.5 px-4">Phone No.</th>
+                <th className="py-2.5 px-4">Email</th>
+                <th className="py-2.5 px-4 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 bg-white">
+              {officeList.map((item) => (
+                <tr key={item.id} className="hover:bg-gray-50">
+                  <td className="py-3 px-4 font-bold text-gray-900">{item.name}</td>
+                  <td className="py-3 px-4 text-gray-600">{item.designation}</td>
+                  <td className="py-3 px-4 text-gray-700 font-mono text-xs">{item.phone_no}</td>
+                  <td className="py-3 px-4 text-blue-700 font-mono text-xs">{item.email}</td>
+                  <td className="py-3 px-4 text-right">
+                    <button
+                      onClick={() => handleDeleteStaff(item.id)}
+                      className="p-1 text-red-600 hover:bg-red-50 rounded"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Modal for Former Director */}
+      {formerModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
+            <div className="bg-[#500c0e] text-white px-6 py-4 flex items-center justify-between">
+              <h3 className="font-bold text-sm">Add Former Director / Principal</h3>
+              <button onClick={() => setFormerModalOpen(false)}>
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleAddFormer} className="p-6 space-y-4">
+              <div>
+                <label className="text-xs font-bold text-gray-600 block mb-1">Category Type</label>
+                <select
+                  value={formerType}
+                  onChange={(e) => setFormerType(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border rounded font-semibold text-[#631012]"
+                >
+                  <option value="Former Directors, NIT Hamirpur">Former Directors, NIT Hamirpur</option>
+                  <option value="Former Principals, REC Hamirpur">Former Principals, REC Hamirpur</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-600 block mb-1">Name with Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={formerName}
+                  onChange={(e) => setFormerName(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border rounded font-bold"
+                  placeholder="e.g. Prof. Lalit Kumar Awasthi"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-600 block mb-1">Tenure Dates</label>
+                <input
+                  type="text"
+                  value={formerDates}
+                  onChange={(e) => setFormerDates(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border rounded"
+                  placeholder="e.g. Tenure: 18.10.2020 to 02.02.2022"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-600 block mb-1">Photo</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setFormerFile(e.target.files?.[0] || null)}
+                  className="text-xs text-gray-600 w-full"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <button
+                  type="button"
+                  onClick={() => setFormerModalOpen(false)}
+                  className="px-4 py-1.5 border rounded text-xs"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingFormer}
+                  className="px-4 py-1.5 bg-[#631012] text-white rounded text-xs font-bold"
+                >
+                  {submittingFormer ? 'Saving...' : 'Add Record'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal for Staff */}
+      {officeModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
+            <div className="bg-[#500c0e] text-white px-6 py-4 flex items-center justify-between">
+              <h3 className="font-bold text-sm">Add Director Office Staff</h3>
+              <button onClick={() => setOfficeModalOpen(false)}>
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleAddStaff} className="p-6 space-y-4">
+              <div>
+                <label className="text-xs font-bold text-gray-600 block mb-1">Staff Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={staffName}
+                  onChange={(e) => setStaffName(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border rounded font-bold"
+                  placeholder="e.g. Sh. Ramesh Kumar"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-600 block mb-1">Designation</label>
+                <input
+                  type="text"
+                  value={staffDesignation}
+                  onChange={(e) => setStaffDesignation(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border rounded"
+                  placeholder="e.g. Private Secretary to Director"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-600 block mb-1">Phone No.</label>
+                <input
+                  type="text"
+                  value={staffPhone}
+                  onChange={(e) => setStaffPhone(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border rounded"
+                  placeholder="01972-254001"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-600 block mb-1">Email</label>
+                <input
+                  type="email"
+                  value={staffEmail}
+                  onChange={(e) => setStaffEmail(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border rounded"
+                  placeholder="ps-director@nith.ac.in"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <button
+                  type="button"
+                  onClick={() => setOfficeModalOpen(false)}
+                  className="px-4 py-1.5 border rounded text-xs"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingStaff}
+                  className="px-4 py-1.5 bg-[#631012] text-white rounded text-xs font-bold"
+                >
+                  {submittingStaff ? 'Saving...' : 'Add Staff'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

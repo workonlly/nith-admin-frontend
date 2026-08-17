@@ -1,251 +1,323 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Save, User, Plus, Trash2, ShieldCheck, Mail, Phone, FileDown, AlertTriangle } from 'lucide-react';
+import { Shield, Plus, Trash2, RefreshCw, X, Save, Loader2, ExternalLink } from 'lucide-react';
 
-interface Member {
+interface CVOData {
   id?: number;
+  name?: string;
+  responsibility?: string;
+  phone_no?: string;
+  email?: string;
+  photo?: string;
+}
+
+interface CVOLink {
+  id: number;
   name: string;
-  responsibility: string;
-  phone: string;
-  email: string;
-  name_en?: string;
-  name_hi?: string;
-  responsibility_en?: string;
-  responsibility_hi?: string;
+  links: string;
 }
 
-interface Download {
-  id?: number;
-  title: string;
-  file_path: string;
-  title_en?: string;
-  title_hi?: string;
-}
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
-export default function VigilanceAdminPage() {
-  const [activeTab, setActiveTab] = useState<'members' | 'downloads'>('members');
-  const [members, setMembers] = useState<Member[]>([]);
-  const [downloads, setDownloads] = useState<Download[]>([]);
+export default function CVOAdminPage() {
+  const [officer, setOfficer] = useState<CVOData>({
+    name: 'Prof. Raman Parti',
+    responsibility: 'Chief Vigilance Officer (CVO)',
+    phone_no: '01972-254005',
+    email: 'cvo@nith.ac.in',
+    photo: '',
+  });
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [links, setLinks] = useState<CVOLink[]>([]);
   const [loading, setLoading] = useState(true);
+  const [savingOfficer, setSavingOfficer] = useState(false);
 
-  // Forms
-  const [memberForm, setMemberForm] = useState<Member>({ name: '', name_en: '', name_hi: '', responsibility: '', responsibility_en: '', responsibility_hi: '', phone: '', email: '' });
-  const [editingMemberId, setEditingMemberId] = useState<number | null>(null);
-  
-  const [downloadForm, setDownloadForm] = useState<Download>({ title: '', title_en: '', title_hi: '', file_path: '' });
+  // Link modal
+  const [linkModalOpen, setLinkModalOpen] = useState(false);
+  const [linkName, setLinkName] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
+  const [submittingLink, setSubmittingLink] = useState(false);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`${API_BASE}/api/administration/cvo`, { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.officer && data.officer.name) setOfficer(data.officer);
+        if (data.links) setLinks(data.links);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchData();
   }, []);
 
-  const isHindi = (text: string) => /[\u0900-\u097F]/.test(text || '');
-
-  const fetchData = async () => {
+  const handleSaveOfficer = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
-      const [memRes, dlRes] = await Promise.all([
-        fetch('http://localhost:5000/api/v1/administration/vigilance'),
-        fetch('http://localhost:5000/api/v1/administration/vigilance-downloads')
-      ]);
-      const memData = await memRes.json();
-      const dlData = await dlRes.json();
-      if (memData.success) {
-        const mapped = memData.data.map((m: any) => ({
-          ...m,
-          name_en: isHindi(m.name) ? '' : m.name,
-          name_hi: isHindi(m.name) ? m.name : '',
-          responsibility_en: isHindi(m.responsibility) ? '' : m.responsibility,
-          responsibility_hi: isHindi(m.responsibility) ? m.responsibility : '',
-        }));
-        setMembers(mapped);
+      setSavingOfficer(true);
+      const formData = new FormData();
+      formData.append('name', officer.name || '');
+      formData.append('responsibility', officer.responsibility || '');
+      formData.append('phone_no', officer.phone_no || '');
+      formData.append('email', officer.email || '');
+      if (photoFile) formData.append('photo_file', photoFile);
+      else if (officer.photo) formData.append('photo', officer.photo);
+
+      const res = await fetch(`${API_BASE}/api/administration/cvo`, {
+        method: 'PUT',
+        body: formData,
+      });
+      if (res.ok) {
+        alert('CVO profile updated!');
+        fetchData();
+      } else {
+        alert('Failed to update');
       }
-      if (dlData.success) {
-        const mapped = dlData.data.map((d: any) => ({
-          ...d,
-          title_en: isHindi(d.title) ? '' : d.title,
-          title_hi: isHindi(d.title) ? d.title : '',
-        }));
-        setDownloads(mapped);
-      }
-      setLoading(false);
     } catch (err) {
       console.error(err);
-      setLoading(false);
+    } finally {
+      setSavingOfficer(false);
     }
   };
 
-  const handleMemberSubmit = async (e: React.FormEvent) => {
+  const handleAddLink = async (e: React.FormEvent) => {
     e.preventDefault();
-    const nameVal = memberForm.name_hi || memberForm.name_en || memberForm.name;
-    const responsibilityVal = memberForm.responsibility_hi || memberForm.responsibility_en || memberForm.responsibility;
-    if (!nameVal || !responsibilityVal) return;
-    const payload = {
-      ...memberForm,
-      name: nameVal,
-      responsibility: responsibilityVal
-    };
-    const method = editingMemberId ? 'PUT' : 'POST';
-    const url = editingMemberId 
-      ? `http://localhost:5000/api/v1/administration/vigilance/${editingMemberId}`
-      : 'http://localhost:5000/api/v1/administration/vigilance';
-    
-    const res = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    if ((await res.json()).success) {
-      alert('Member saved successfully!');
-      fetchData();
-      setMemberForm({ name: '', name_en: '', name_hi: '', responsibility: '', responsibility_en: '', responsibility_hi: '', phone: '', email: '' });
-      setEditingMemberId(null);
+    if (!linkName.trim() || !linkUrl.trim()) return;
+    try {
+      setSubmittingLink(true);
+      const res = await fetch(`${API_BASE}/api/administration/cvo/links`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: linkName.trim(), links: linkUrl.trim() }),
+      });
+      if (res.ok) {
+        setLinkModalOpen(false);
+        setLinkName('');
+        setLinkUrl('');
+        fetchData();
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSubmittingLink(false);
     }
   };
 
-  const handleDownloadSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const titleVal = downloadForm.title_hi || downloadForm.title_en || downloadForm.title;
-    if (!titleVal) return;
-    const payload = {
-      ...downloadForm,
-      title: titleVal
-    };
-    const res = await fetch('http://localhost:5000/api/v1/administration/vigilance-downloads', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    const json = await res.json();
-    if (json.success) {
-      alert('Download added successfully!');
-      fetchData();
-      setDownloadForm({ title: '', title_en: '', title_hi: '', file_path: '' });
-    } else {
-      alert('Error: ' + json.message);
+  const handleDeleteLink = async (id: number) => {
+    if (!confirm('Delete this vigilance link?')) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/administration/cvo/links/${id}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) fetchData();
+    } catch (err) {
+      console.error(err);
     }
   };
-
-  const handleEditMember = (m: Member) => {
-    setMemberForm({
-      ...m,
-      name_en: isHindi(m.name) ? '' : m.name,
-      name_hi: isHindi(m.name) ? m.name : '',
-      responsibility_en: isHindi(m.responsibility) ? '' : m.responsibility,
-      responsibility_hi: isHindi(m.responsibility) ? m.responsibility : '',
-    });
-    setEditingMemberId(m.id!);
-  };
-
-  if (loading) return <div className="p-8 text-black font-bold text-center">Loading...</div>;
 
   return (
-    <div className="space-y-6 p-4 lg:p-8 text-black bg-[#F8F9FA] min-h-screen">
-      <div className="bg-gradient-to-r from-[#631012] to-[#800000] rounded-2xl shadow-xl p-8 text-white">
-        <div className="flex items-center gap-4 mb-2">
-          <AlertTriangle className="w-10 h-10 text-yellow-400" />
-          <h1 className="text-3xl font-extrabold tracking-tight">Vigilance Corner Admin</h1>
+    <div className="p-6 space-y-6 font-sans">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="bg-[#631012]/10 p-3 rounded-lg text-[#631012]">
+              <Shield size={28} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Chief Vigilance Officer Manager</h1>
+              <p className="text-xs text-gray-500">
+                Manage CVO officer details, contact information, and vigilance portal circular links.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={fetchData}
+            disabled={loading}
+            className="px-3 py-2 border rounded-lg text-xs font-semibold hover:bg-gray-50 flex items-center gap-1.5"
+          >
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+            <span>Refresh</span>
+          </button>
         </div>
-        <p className="text-white/80 text-lg">Manage CVO members and vigilance resources</p>
       </div>
 
-      <div className="flex gap-4 border-b">
-        <button onClick={() => setActiveTab('members')} className={`pb-4 px-6 font-bold transition-all ${activeTab === 'members' ? 'border-b-4 border-[#631012] text-[#631012]' : 'text-gray-400'}`}>
-          CVO Members
-        </button>
-        <button onClick={() => setActiveTab('downloads')} className={`pb-4 px-6 font-bold transition-all ${activeTab === 'downloads' ? 'border-b-4 border-[#631012] text-[#631012]' : 'text-gray-400'}`}>
-          Downloads
-        </button>
-      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* CVO Officer Form */}
+        <form onSubmit={handleSaveOfficer} className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+          <h2 className="text-sm font-bold text-[#631012] uppercase tracking-wider border-b pb-2">
+            Chief Vigilance Officer Details
+          </h2>
 
-      {activeTab === 'members' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl shadow-sm border p-6 sticky top-8">
-              <h2 className="text-xl font-bold mb-6">{editingMemberId ? 'Edit Member' : 'Add CVO Member'}</h2>
-              <form onSubmit={handleMemberSubmit} className="space-y-4">
-                <div className="flex flex-col gap-2">
-                  <input type="text" placeholder="Name (English)" value={memberForm.name_en || ''} onChange={e => setMemberForm({...memberForm, name_en: e.target.value, name: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" required />
-                  <input type="text" placeholder="नाम (हिंदी)" value={memberForm.name_hi || ''} onChange={e => setMemberForm({...memberForm, name_hi: e.target.value, name: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <input type="text" placeholder="Responsibility (English)" value={memberForm.responsibility_en || ''} onChange={e => setMemberForm({...memberForm, responsibility_en: e.target.value, responsibility: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" required />
-                  <input type="text" placeholder="जिम्मेदारी (हिंदी)" value={memberForm.responsibility_hi || ''} onChange={e => setMemberForm({...memberForm, responsibility_hi: e.target.value, responsibility: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" />
-                </div>
-                <input type="text" placeholder="Phone" value={memberForm.phone} onChange={e => setMemberForm({...memberForm, phone: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" />
-                <input type="email" placeholder="Email" value={memberForm.email} onChange={e => setMemberForm({...memberForm, email: e.target.value})} className="w-full p-3 border rounded-xl bg-gray-50" required />
-                <div className="flex gap-2">
-                  <button type="submit" className="flex-1 bg-[#631012] text-white py-3 rounded-xl font-bold">
-                    {editingMemberId ? 'Update' : 'Add Member'}
-                  </button>
-                  {editingMemberId && <button type="button" onClick={() => {setEditingMemberId(null); setMemberForm({name:'', name_en:'', name_hi:'', responsibility:'', responsibility_en:'', responsibility_hi:'', phone:'', email:''})}} className="bg-gray-200 px-4 rounded-xl">Cancel</button>}
-                </div>
-              </form>
+          <div className="flex items-center gap-4">
+            <img
+              src={officer.photo || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=400&q=80'}
+              alt="CVO"
+              className="w-20 h-24 object-cover rounded border border-gray-300 shrink-0"
+            />
+            <div className="space-y-1 flex-grow">
+              <label className="text-xs font-bold text-gray-600 block">Photo</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setPhotoFile(e.target.files?.[0] || null)}
+                className="text-xs text-gray-600 w-full"
+              />
             </div>
           </div>
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
-              <table className="w-full text-left">
-                <thead className="bg-gray-50 border-b">
-                  <tr><th className="p-4">Member Info</th><th className="p-4 text-right">Actions</th></tr>
-                </thead>
-                <tbody>
-                  {members.map(m => (
-                    <tr key={m.id} className="border-b hover:bg-gray-50 transition-colors">
-                      <td className="p-4">
-                        <div className="font-bold text-lg">{m.name}</div>
-                        <div className="text-[#631012] font-medium text-sm">{m.responsibility}</div>
-                        <div className="flex gap-4 text-xs text-gray-500 mt-1">
-                          <span className="flex items-center gap-1"><Phone size={12}/> {m.phone}</span>
-                          <span className="flex items-center gap-1"><Mail size={12}/> {m.email}</span>
-                        </div>
-                      </td>
-                      <td className="p-4 text-right">
-                        <button onClick={() => handleEditMember(m)} className="p-2 text-blue-600 mr-2"><Save size={18}/></button>
-                        <button onClick={async () => { if(confirm('Delete?')){ await fetch(`http://localhost:5000/api/v1/administration/vigilance/${m.id}`, {method:'DELETE'}); fetchData(); } }} className="p-2 text-red-600"><Trash2 size={18}/></button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+
+          <div>
+            <label className="text-[11px] font-bold uppercase text-gray-600 block mb-1">Name *</label>
+            <input
+              type="text"
+              required
+              value={officer.name || ''}
+              onChange={(e) => setOfficer({ ...officer, name: e.target.value })}
+              className="w-full px-3 py-2 text-xs border rounded font-bold"
+            />
+          </div>
+
+          <div>
+            <label className="text-[11px] font-bold uppercase text-gray-600 block mb-1">Responsibility / Role</label>
+            <input
+              type="text"
+              value={officer.responsibility || ''}
+              onChange={(e) => setOfficer({ ...officer, responsibility: e.target.value })}
+              className="w-full px-3 py-2 text-xs border rounded"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[11px] font-bold uppercase text-gray-600 block mb-1">Phone</label>
+              <input
+                type="text"
+                value={officer.phone_no || ''}
+                onChange={(e) => setOfficer({ ...officer, phone_no: e.target.value })}
+                className="w-full px-3 py-2 text-xs border rounded"
+              />
             </div>
+            <div>
+              <label className="text-[11px] font-bold uppercase text-gray-600 block mb-1">Email</label>
+              <input
+                type="email"
+                value={officer.email || ''}
+                onChange={(e) => setOfficer({ ...officer, email: e.target.value })}
+                className="w-full px-3 py-2 text-xs border rounded"
+              />
+            </div>
+          </div>
+
+          <div className="pt-2">
+            <button
+              type="submit"
+              disabled={savingOfficer}
+              className="w-full bg-[#631012] text-white py-2 rounded text-xs font-bold flex items-center justify-center gap-1.5"
+            >
+              {savingOfficer ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+              <span>Save CVO Details</span>
+            </button>
+          </div>
+        </form>
+
+        {/* Vigilance Links Table */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+          <div className="flex justify-between items-center border-b pb-2">
+            <h2 className="text-sm font-bold text-[#631012] uppercase tracking-wider">
+              Vigilance Portals & Circulars ({links.length})
+            </h2>
+            <button
+              onClick={() => setLinkModalOpen(true)}
+              className="bg-[#631012] text-white px-2.5 py-1 rounded text-xs font-bold flex items-center gap-1"
+            >
+              <Plus size={12} />
+              <span>Add Link</span>
+            </button>
+          </div>
+
+          <div className="divide-y">
+            {links.map((lnk) => (
+              <div key={lnk.id} className="py-2.5 flex items-center justify-between gap-3">
+                <div>
+                  <div className="font-bold text-xs text-gray-900">{lnk.name}</div>
+                  <a
+                    href={lnk.links}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[11px] text-blue-700 hover:underline flex items-center gap-1 font-mono"
+                  >
+                    <span>{lnk.links}</span>
+                    <ExternalLink size={10} />
+                  </a>
+                </div>
+                <button
+                  onClick={() => handleDeleteLink(lnk.id)}
+                  className="p-1 text-red-600 hover:bg-red-50 rounded"
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            ))}
           </div>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-           <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl shadow-sm border p-6 sticky top-8">
-              <h2 className="text-xl font-bold mb-6">Add New Download</h2>
-              <form onSubmit={handleDownloadSubmit} className="space-y-4">
-                <div className="flex flex-col gap-2">
-                  <input type="text" placeholder="Document Title (English)" value={downloadForm.title_en || ''} onChange={e => setDownloadForm({...downloadForm, title_en: e.target.value, title: e.target.value})} className="w-full p-3 border rounded-xl" required />
-                  <input type="text" placeholder="दस्तावेज़ शीर्षक (हिंदी)" value={downloadForm.title_hi || ''} onChange={e => setDownloadForm({...downloadForm, title_hi: e.target.value, title: e.target.value})} className="w-full p-3 border rounded-xl" />
-                </div>
-                <input type="text" placeholder="File Path (e.g. /pdfs/...) or URL" value={downloadForm.file_path} onChange={e => setDownloadForm({...downloadForm, file_path: e.target.value})} className="w-full p-3 border rounded-xl" required />
-                <button type="submit" className="w-full bg-[#631012] text-white py-3 rounded-xl font-bold">Add Download</button>
-              </form>
+      </div>
+
+      {linkModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
+            <div className="bg-[#500c0e] text-white px-6 py-4 flex items-center justify-between">
+              <h3 className="font-bold text-sm">Add Vigilance Link</h3>
+              <button onClick={() => setLinkModalOpen(false)}>
+                <X size={18} />
+              </button>
             </div>
-          </div>
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
-               <table className="w-full text-left">
-                  <thead className="bg-gray-50 border-b">
-                    <tr><th className="p-4">Document Title</th><th className="p-4 text-right">Actions</th></tr>
-                  </thead>
-                  <tbody>
-                    {downloads.map(d => (
-                      <tr key={d.id} className="border-b hover:bg-gray-50">
-                        <td className="p-4">
-                          <div className="font-bold flex items-center gap-2"><FileDown className="text-gray-400" size={16}/> {d.title}</div>
-                          <div className="text-xs text-gray-400">{d.file_path}</div>
-                        </td>
-                        <td className="p-4 text-right">
-                          <button onClick={async () => { if(confirm('Delete?')){ await fetch(`http://localhost:5000/api/v1/administration/vigilance-downloads/${d.id}`, {method:'DELETE'}); fetchData(); } }} className="p-2 text-red-600"><Trash2 size={18}/></button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-               </table>
-            </div>
+            <form onSubmit={handleAddLink} className="p-6 space-y-4">
+              <div>
+                <label className="text-xs font-bold text-gray-600 block mb-1">Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={linkName}
+                  onChange={(e) => setLinkName(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border rounded font-bold"
+                  placeholder="e.g. Central Vigilance Commission (CVC) Portal"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-600 block mb-1">URL *</label>
+                <input
+                  type="text"
+                  required
+                  value={linkUrl}
+                  onChange={(e) => setLinkUrl(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border rounded"
+                  placeholder="https://cvc.gov.in"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <button
+                  type="button"
+                  onClick={() => setLinkModalOpen(false)}
+                  className="px-4 py-1.5 border rounded text-xs"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingLink}
+                  className="px-4 py-1.5 bg-[#631012] text-white rounded text-xs font-bold"
+                >
+                  {submittingLink ? 'Saving...' : 'Add Link'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
