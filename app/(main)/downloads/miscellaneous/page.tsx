@@ -67,7 +67,10 @@ interface FormDataType {
 
 export default function MiscellaneousDownloadPage() {
   // const API_BASE = "http://localhost:4000/v1/downloads";
-  const API_BASE = `${process.env.NEXT_PUBLIC_API_URL}/v1/downloads`;
+  const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL
+    ? `${process.env.NEXT_PUBLIC_API_URL}/v1/downloads`
+    : "http://localhost:4000/v1/downloads";
 
   // States
   const [documents, setDocuments] = useState<DownloadsState>({
