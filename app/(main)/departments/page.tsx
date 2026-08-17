@@ -1,155 +1,156 @@
 'use client';
 
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { 
-  Building2, 
-  Users, 
-  FlaskConical,
-  Microscope,
-  ArrowRight,
-  Settings2,
-  Sparkles
-} from 'lucide-react';
+import { Building2, Plus, Pencil, Trash2, Loader2, Settings2, Sparkles } from 'lucide-react';
 
-interface SectionItem {
-  id: number;
-  title: string;
-  description: string;
-  href: string;
-  icon: React.ElementType;
-}
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
-const sections: SectionItem[] = [
-  {
-    id: 1,
-    title: 'Manage Departments',
-    description: 'Add, update or remove academic departments',
-    href: '/departments/manage',
-    icon: Building2,
-  },
-  {
-    id: 2,
-    title: 'Heads of Departments',
-    description: 'Manage HOD assignments and profiles',
-    href: '/departments/hod',
-    icon: Users,
-  },
-  {
-    id: 3,
-    title: 'Lab Facilities',
-    description: 'Manage department laboratories and equipment',
-    href: '/departments/labs',
-    icon: FlaskConical,
-  },
-  {
-    id: 4,
-    title: 'Research Centers',
-    description: 'Manage specialized research centers',
-    href: '/departments/research',
-    icon: Microscope,
-  },
-];
+interface Dept { id: number; name_en: string; name_hn?: string; description_en?: string; photo_url?: string; }
 
-export default function DepartmentsPage() {
+export default function AdminDepartmentsPage() {
+  const [depts, setDepts] = useState<Dept[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState<any>({});
+  const [msg, setMsg] = useState('');
+
+  const showMsg = (m: string) => { setMsg(m); setTimeout(() => setMsg(''), 3000); };
+
+  const fetchDepts = () => {
+    fetch(`${API_BASE}/api/departments`)
+      .then(r => r.json())
+      .then(d => { setDepts(Array.isArray(d) ? d : []); setLoading(false); })
+      .catch(() => setLoading(false));
+  };
+
+  useEffect(() => { fetchDepts(); }, []);
+
+  const addDept = async () => {
+    if (!form.name_en) return alert('Name (EN) is required');
+    const r = await fetch(`${API_BASE}/api/departments`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form),
+    });
+    const d = await r.json();
+    setDepts(prev => [...prev, d]);
+    setForm({}); setShowAdd(false); showMsg('Department added!');
+  };
+
+  const deleteDept = async (id: number) => {
+    if (!confirm('Delete this department and all its data?')) return;
+    await fetch(`${API_BASE}/api/departments/${id}`, { method: 'DELETE' });
+    setDepts(prev => prev.filter(d => d.id !== id));
+    showMsg('Deleted!');
+  };
+
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8 min-h-screen bg-gray-50/50">
-      {/* HEADER */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-[#631012] via-[#7a1214] to-[#921b1e] rounded-3xl p-8 md:p-12 text-white shadow-xl shadow-[#631012]/10">
+      {/* Header */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#631012] via-[#7a1214] to-[#921b1e] rounded-3xl p-8 text-white shadow-xl shadow-[#631012]/10">
         <div className="absolute top-0 right-0 -translate-y-12 translate-x-1/3 opacity-10 pointer-events-none">
           <Settings2 className="w-96 h-96" />
         </div>
-        <div className="absolute -bottom-10 -left-10 opacity-20 pointer-events-none">
-          <Sparkles className="w-40 h-40" />
-        </div>
-
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-sm text-sm font-medium">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-sm font-medium">
               <Building2 className="w-4 h-4" />
               <span>CMS Dashboard</span>
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-              Departments
-            </h1>
-            <p className="text-lg text-white/80 max-w-xl leading-relaxed">
-              Manage academic departments, laboratories, and research centers. Select a section below to begin editing.
-            </p>
+            <h1 className="text-4xl font-bold tracking-tight">Departments</h1>
+            <p className="text-white/80">Manage academic departments and their content</p>
           </div>
+          <button
+            onClick={() => setShowAdd(!showAdd)}
+            className="flex items-center gap-2 px-5 py-2.5 bg-white/15 hover:bg-white/25 border border-white/30 rounded-xl font-bold text-sm transition-all"
+          >
+            <Plus size={16} />
+            Add Department
+          </button>
         </div>
+        {msg && <div className="mt-4 inline-block bg-white/20 border border-white/30 text-white text-sm font-medium px-4 py-2 rounded-full">{msg}</div>}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* SECTIONS GRID */}
-        <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {sections.map((section, index) => {
-            const Icon = section.icon;
-            return (
-              <Link
-                key={section.id}
-                href={section.href}
-                className="group relative bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md hover:border-[#631012]/30 transition-all duration-300 overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-[#631012]/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                
-                <div className="relative z-10 flex flex-col h-full">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-[#631012]/5 text-[#631012] flex items-center justify-center group-hover:scale-110 group-hover:bg-[#631012] group-hover:text-white transition-all duration-300">
-                      <Icon className="w-6 h-6" strokeWidth={1.5} />
+      {/* Add form */}
+      {showAdd && (
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-4">
+          <h2 className="text-lg font-bold text-gray-800">Add New Department</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-600 mb-1">Name (English) *</label>
+              <input value={form.name_en || ''} onChange={e => setForm({ ...form, name_en: e.target.value })}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#631012]"
+                placeholder="e.g. Computer Science & Engineering" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-600 mb-1">Name (Hindi)</label>
+              <input value={form.name_hn || ''} onChange={e => setForm({ ...form, name_hn: e.target.value })}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#631012]" />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-xs font-bold text-gray-600 mb-1">Short Description</label>
+              <textarea value={form.description_en || ''} onChange={e => setForm({ ...form, description_en: e.target.value })} rows={3}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#631012] resize-none" />
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <button onClick={addDept} className="px-5 py-2 bg-[#631012] text-white rounded-lg font-bold text-sm hover:bg-[#800000]">
+              Create Department
+            </button>
+            <button onClick={() => { setShowAdd(false); setForm({}); }} className="px-5 py-2 bg-gray-100 text-gray-700 rounded-lg font-bold text-sm hover:bg-gray-200">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* List */}
+      {loading ? (
+        <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-[#631012]" /></div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                <th className="p-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wide w-12">#</th>
+                <th className="p-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wide">Department</th>
+                <th className="p-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wide hidden md:table-cell">Hindi Name</th>
+                <th className="p-4 text-center text-xs font-bold text-gray-600 uppercase tracking-wide">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {depts.map((dept, i) => (
+                <tr key={dept.id} className="hover:bg-gray-50 transition-colors group">
+                  <td className="p-4 text-gray-500 font-mono text-xs">{i + 1}</td>
+                  <td className="p-4">
+                    <div className="font-bold text-gray-900 group-hover:text-[#631012] transition-colors">{dept.name_en}</div>
+                    {dept.description_en && (
+                      <div className="text-xs text-gray-500 mt-0.5 line-clamp-1">{dept.description_en.slice(0, 80)}...</div>
+                    )}
+                  </td>
+                  <td className="p-4 text-gray-600 hidden md:table-cell">{dept.name_hn || '-'}</td>
+                  <td className="p-4">
+                    <div className="flex items-center justify-center gap-2">
+                      <Link href={`/departments/${dept.id}`}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[#631012] text-white rounded-lg text-xs font-bold hover:bg-[#800000] transition-colors">
+                        <Pencil size={12} />
+                        Manage
+                      </Link>
+                      <button onClick={() => deleteDept(dept.id)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-700 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors">
+                        <Trash2 size={12} />
+                        Delete
+                      </button>
                     </div>
-                    <span className="text-sm font-medium text-gray-300">
-                      {String(index + 1).padStart(2, '0')}
-                    </span>
-                  </div>
-
-                  <h2 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-[#631012] transition-colors">
-                    {section.title}
-                  </h2>
-                  
-                  <p className="text-gray-500 text-sm flex-grow leading-relaxed">
-                    {section.description}
-                  </p>
-
-                  <div className="mt-6 flex items-center text-sm font-medium text-[#631012] opacity-80 group-hover:opacity-100">
-                    <span className="mr-2">Edit Section</span>
-                    <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-300" />
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-
-        {/* SIDEBAR PREVIEW - Quick Navigation */}
-        <div className="space-y-6">
-          <div className="bg-white rounded-3xl p-6 md:p-8 border border-gray-100 shadow-sm sticky top-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-gray-50 rounded-lg">
-                <Settings2 className="w-5 h-5 text-gray-600" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900">
-                Quick Navigation
-              </h2>
-            </div>
-            
-            <p className="text-sm text-gray-500 mb-6 pb-6 border-b border-gray-100">
-              Jump directly to any section to update department info and facilities.
-            </p>
-
-            <div className="space-y-1">
-              {sections.map((section) => (
-                <Link
-                  key={section.id}
-                  href={section.href}
-                  className="flex items-center justify-between px-4 py-3 rounded-xl hover:bg-[#631012]/5 text-gray-600 hover:text-[#631012] transition-colors group"
-                >
-                  <span className="font-medium text-sm">{section.title}</span>
-                  <ArrowRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
-                </Link>
+                  </td>
+                </tr>
               ))}
-            </div>
-          </div>
+              {depts.length === 0 && (
+                <tr><td colSpan={4} className="p-12 text-center text-gray-500">No departments found. Add one above.</td></tr>
+              )}
+            </tbody>
+          </table>
         </div>
-      </div>
+      )}
     </div>
   );
 }
