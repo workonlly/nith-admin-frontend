@@ -4,14 +4,15 @@ import { usePathname } from 'next/navigation';
 import { Sidebar } from '@/app/sidebar/page';
 
 const authoritiesLinks = [
-  { label: "compostion_of_bog", href: "/authorities/compostion_of_bog" },
-  { label: "compostion_of_fc", href: "/authorities/compostion_of_fc" },
-  { label: "compostion_of_bwc", href: "/authorities/compostion_of_bwc" },
-  { label: 'Board of Governors (BOG)', href: '/authorities/bog' },
-  { label: 'Senate', href: '/authorities/senate' },
-  { label: 'Finance Committee (FC)', href: '/authorities/fc' },
-  { label: 'Building & Works Committee (BWC)', href: '/authorities/bwc' },
-  { label: 'Anchor Links (PDFs)', href: '/authorities/anchor-links' },
+  { label: 'Composition of BOG (Anchor)', href: '/authorities/compostion_of_bog' },
+  { label: 'Minutes of BOG', href: '/authorities/bog' },
+  { label: 'Composition of FC (Anchor)', href: '/authorities/compostion_of_fc' },
+  { label: 'Minutes of FC', href: '/authorities/fc' },
+  { label: 'Composition of BWC (Anchor)', href: '/authorities/compostion_of_bwc' },
+  { label: 'Minutes of BWC', href: '/authorities/bwc' },
+  { label: 'Composition of Senate', href: '/authorities/senate' },
+  { label: 'Minutes of Senate', href: '/authorities/senate/minutes' },
+  { label: 'All Anchor Links', href: '/authorities/anchor-links' },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {

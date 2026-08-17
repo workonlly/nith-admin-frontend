@@ -2,11 +2,11 @@
 
 import AuthorityMinutesManager from '@/app/components/AuthorityMinutesManager';
 
-export default function BogMinutesAdminPage() {
+export default function SenateMinutesAdminPage() {
   return (
     <AuthorityMinutesManager
-      authorityName="Board of Governors (BOG)"
-      apiBase="bog"
+      authorityName="Senate"
+      apiBase="senate"
     />
   );
 }

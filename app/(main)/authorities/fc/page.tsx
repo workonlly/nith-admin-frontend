@@ -1,14 +1,12 @@
 'use client';
 
-import SingleAnchorLinkManager from '@/app/components/SingleAnchorLinkManager';
+import AuthorityMinutesManager from '@/app/components/AuthorityMinutesManager';
 
-export default function Page() {
+export default function FcMinutesAdminPage() {
   return (
-    <SingleAnchorLinkManager
-      id="fc"
-      defaultText="Composition of Finance Committee (FC)"
-      title="Composition of Finance Committee (FC)"
-      category="Authorities"
+    <AuthorityMinutesManager
+      authorityName="Finance Committee (FC)"
+      apiBase="fc"
     />
   );
 }

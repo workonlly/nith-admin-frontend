@@ -1,14 +1,12 @@
 'use client';
 
-import SingleAnchorLinkManager from '@/app/components/SingleAnchorLinkManager';
+import AuthorityMinutesManager from '@/app/components/AuthorityMinutesManager';
 
-export default function Page() {
+export default function BwcMinutesAdminPage() {
   return (
-    <SingleAnchorLinkManager
-      id="bwc"
-      defaultText="Composition of Building & Works Committee (BWC)"
-      title="Composition of Building & Works Committee (BWC)"
-      category="Authorities"
+    <AuthorityMinutesManager
+      authorityName="Building Works Committee (BWC)"
+      apiBase="bwc"
     />
   );
 }
