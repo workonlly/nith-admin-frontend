@@ -34,14 +34,14 @@ export function Sidebar({
   });
 
   return (
-    <div className="w-[280px] min-h-screen bg-[#171717] flex flex-col shadow-2xl sticky top-0">
+    <div className="w-[280px] h-screen bg-[#171717] flex flex-col shadow-2xl sticky top-0 shrink-0 z-30">
       {/* HEADER */}
-      <div className="p-6 border-b border-[#631012]/30">
-        <h1 className="text-2xl font-bold text-white">
+      <div className="p-5 border-b border-[#631012]/30 shrink-0">
+        <h1 className="text-xl font-bold text-white">
           {heading}
         </h1>
 
-        <p className="text-sm text-white/60 mt-1">
+        <p className="text-xs text-white/60 mt-0.5">
           NIT Hamirpur CMS
         </p>
 
@@ -53,18 +53,18 @@ export function Sidebar({
           onChange={(e) =>
             setSearch(e.target.value)
           }
-          className="mt-4 w-full px-4 py-2 rounded-lg bg-[#262626] text-white border border-[#631012]/30 outline-none"
+          className="mt-3 w-full px-3 py-1.5 text-xs rounded-lg bg-[#262626] text-white border border-[#631012]/30 outline-none focus:border-[#631012]"
         />
       </div>
 
       {/* LINKS */}
-      <div className="flex-1 overflow-y-auto px-3 py-4">
-        <ul className="space-y-2 pb-24">
+      <div className="flex-1 overflow-y-auto px-3 py-3 scrollbar-thin scrollbar-thumb-gray-700">
+        <ul className="space-y-1 pb-10">
           {filteredLinks.map((link, index) => {
             if ('header' in link) {
               return (
-                <li key={`header-${index}`} className="pt-4 pb-2 px-4">
-                  <span className="text-[10px] font-black text-[#F9F9F9]/40 uppercase tracking-[0.2em]">
+                <li key={`header-${index}`} className="pt-3 pb-1 px-3">
+                  <span className="text-[10px] font-black text-[#F9F9F9]/50 uppercase tracking-[0.15em]">
                     {link.header}
                   </span>
                 </li>
@@ -77,21 +77,21 @@ export function Sidebar({
                   href={link.href}
                   className={`
                     flex items-center justify-between
-                    px-4 py-3 rounded-xl
+                    px-3 py-2 rounded-lg text-xs
                     transition-all duration-200
                     ${
                       isActive
-                        ? 'bg-[#631012] text-white shadow-lg'
+                        ? 'bg-[#631012] text-white shadow-md font-semibold'
                         : 'text-white/80 hover:bg-[#631012]/20 hover:text-white'
                     }
                   `}
                 >
-                  <span className="font-medium text-sm">
+                  <span className="font-medium">
                     {link.label}
                   </span>
 
                   {isActive && (
-                    <span className="w-2 h-2 rounded-full bg-white" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-white shrink-0 ml-2" />
                   )}
                 </Link>
               </li>
@@ -101,10 +101,10 @@ export function Sidebar({
       </div>
 
       {/* FOOTER */}
-      <div className="p-4 border-t border-[#631012]/30">
+      <div className="p-3 border-t border-[#631012]/30 shrink-0">
         <Link
           href={downlinkHref}
-          className="block w-full text-center px-4 py-3 rounded-xl bg-[#631012]/20 text-white hover:bg-[#631012] transition-all duration-200"
+          className="block w-full text-center px-3 py-2 rounded-lg bg-[#631012]/20 text-white hover:bg-[#631012] text-xs font-semibold transition-all duration-200"
         >
           {downlink}
         </Link>
